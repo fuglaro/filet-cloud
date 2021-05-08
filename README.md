@@ -26,7 +26,10 @@ sudo chmod a+w filetclouddata
 ```
 * Set up a new login account:
 ```bash
-sudo adduser "$(read -p 'Login: ' usr; echo $usr)"
+read -p 'Login: ' usr
+sudo adduser $usr
+sudo mkdir -o 0700 /mnt/usb/filetclouddata/&usr
+sudo chown $usr:$usr /mnt/usb/filetclouddata/&usr
 ```
 
 TBC
