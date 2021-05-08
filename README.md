@@ -8,6 +8,12 @@ It will target a single build running on a Raspberry Pi.
 ## Setup
 
 * Install Raspberry Pi OS to a microSD card (https://www.raspberrypi.org/software/)
+* Place in the Pi.
+* Format a external USB drive (for the data) as btrfs (https://wiki.archlinux.org/title/Btrfs).
+  * Create a subvolume `sudo btrfs subvolume create filetclouddata`
+  * Make it open writable `sudo chmod a+w filetclouddata`
+* Connect the external USB storage to the Pi.
+* 
 
 TBC
 
