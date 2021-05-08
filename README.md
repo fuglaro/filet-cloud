@@ -9,7 +9,7 @@ It will target a single build running on a Raspberry Pi.
 
 * Install Raspberry Pi OS to a microSD card (https://www.raspberrypi.org/software/)
 * Place in the Pi.
-* Format a external USB drive (for the data) as btrfs (https://wiki.archlinux.org/title/Btrfs).
+* Format an external USB drive (for the data) as btrfs (https://wiki.archlinux.org/title/Btrfs).
 * Connect the external USB storage to the Pi.
 * Power on and set up your Pi with WiFi and a better password.
 * Enable ssh on your Pi (https://www.raspberrypi.org/documentation/remote-access/ssh/).
