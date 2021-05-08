@@ -5,6 +5,10 @@ This project attempts to make a sofisticated personal cloud storage solution sim
 
 It will target a single build running on a Raspberry Pi.
 
+## Setup
+
+* Install Raspberry Pi OS to a microSD card (https://www.raspberrypi.org/software/)
+
 TBC
 
 ## Design and Engineering Philosophies
