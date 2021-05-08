@@ -13,6 +13,8 @@ It will target a single build running on a Raspberry Pi.
 * Connect the external USB storage to the Pi.
 * Power on and set up your Pi with WiFi and a better password.
 * Enable ssh on your Pi (https://www.raspberrypi.org/documentation/remote-access/ssh/).
+* Setup port forwarding for port 22 (https://en.wikipedia.org/wiki/Port_forwarding), if needed.
+* Setup dynamic DNS, if needed (https://wiki.archlinux.org/title/Dynamic_DNS).
 * Prepare your usb storage:
 ```bash
 sudo mkdir /mnt/usb/
