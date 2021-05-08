@@ -13,7 +13,8 @@ It will target a single build running on a Raspberry Pi.
   * Create a subvolume `sudo btrfs subvolume create filetclouddata`
   * Make it open writable `sudo chmod a+w filetclouddata`
 * Connect the external USB storage to the Pi.
-* 
+* Power on and set up your Pi with WiFi and a better password.
+* Enable ssh on your Pi (https://www.raspberrypi.org/documentation/remote-access/ssh/).
 
 TBC
 
