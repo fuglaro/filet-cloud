@@ -10,11 +10,21 @@ It will target a single build running on a Raspberry Pi.
 * Install Raspberry Pi OS to a microSD card (https://www.raspberrypi.org/software/)
 * Place in the Pi.
 * Format an external USB drive (for the data) as btrfs (https://wiki.archlinux.org/title/Btrfs).
-* Connect the external USB storage to the Pi.
+* Connect the external USB storage to the Pi (and remove all other USB drives).
 * Power on and set up your Pi with WiFi and a better password.
 * Enable ssh on your Pi (https://www.raspberrypi.org/documentation/remote-access/ssh/).
 * Setup port forwarding for port 22 (https://en.wikipedia.org/wiki/Port_forwarding), if needed.
 * Setup dynamic DNS, if needed (https://wiki.archlinux.org/title/Dynamic_DNS).
+```bash
+sudo apt install ddclient
+```
+* Set up a new login account:
+```bash
+read -p 'Login: ' usr
+sudo adduser $usr
+sudo mkdir -o 0700 /mnt/usb/filetclouddata/&usr
+sudo chown $usr:$usr /mnt/usb/filetclouddata/&usr
+```
 * Prepare your usb storage:
 ```bash
 sudo mkdir /mnt/usb/
@@ -24,13 +34,7 @@ cd /mnt/usb
 sudo btrfs subvolume create filetclouddata
 sudo chmod a+w filetclouddata
 ```
-* Set up a new login account:
-```bash
-read -p 'Login: ' usr
-sudo adduser $usr
-sudo mkdir -o 0700 /mnt/usb/filetclouddata/&usr
-sudo chown $usr:$usr /mnt/usb/filetclouddata/&usr
-```
+
 
 TBC
 
