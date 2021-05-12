@@ -46,6 +46,7 @@ TBC
 ## Compatible Clients
 * Android filebrowser - Solid Explorer
 * Android filebrowser (opensource) - Ghost Commander (with SFTP plugin)
+* Android filesyncer - FolderSync
 
 ## Design and Engineering Philosophies
 
