@@ -16,13 +16,17 @@ It will target a single build running on a Raspberry Pi.
 * Setup port forwarding for port 22 (https://en.wikipedia.org/wiki/Port_forwarding), if needed.
 * Setup dynamic DNS, if needed (https://wiki.archlinux.org/title/Dynamic_DNS).
 ```bash
-sudo apt install ddclient
+sudo apt install -y ddclient
+```
+* Setup installs.
+```bash
+sudo apt install -y btrfs-tools
 ```
 * Set up a new login account:
 ```bash
 read -p 'Login: ' usr
 sudo adduser $usr
-sudo mkdir -o 0700 /mnt/usb/filetclouddata/&usr
+sudo mkdir -m 0700 /mnt/usb/filetclouddata/&usr
 sudo chown $usr:$usr /mnt/usb/filetclouddata/&usr
 ```
 * Prepare your usb storage:
@@ -30,9 +34,10 @@ sudo chown $usr:$usr /mnt/usb/filetclouddata/&usr
 sudo mkdir /mnt/usb/
 printf "$(blkid /dev/sda1 -o export | grep ^UUID=) /mnt/usb/ btrfs noatime 0 0\n" | sudo tee -a /etc/fstab
 sudo mount /mnt/usb
-cd /mnt/usb
-sudo btrfs subvolume create filetclouddata
-sudo chmod a+w filetclouddata
+sudo btrfs subvolume create /mnt/usb/filetclouddata
+sudo chmod a+w /mnt/usb/filetclouddata
+sudo mkdir /mnt/usb/.snapshots
+
 ```
 
 
