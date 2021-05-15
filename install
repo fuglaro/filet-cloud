@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# Install dependencies
+apt install -y ddclient btrfs-tools unattended-upgrades
+
+# Prepare USB (data) storage
+mkdir -p /mnt/usb/
+grep /mnt/usbd/ /etc/fstab || printf "$(blkid /dev/sda1 -o export | grep ^UUID=) /mnt/usb/ btrfs noatime 0 0\n" | sudo tee -a /etc/fstab
+mount /mnt/usb
+ls -ld /mnt/usb/filetclouddata || btrfs subvolume create /mnt/usb/filetclouddata
+chmod a+w /mnt/usb/filetclouddata
+mkdir -p /mnt/usb/.snapshots
+
+# Configure auto-update
+sed -i 's:Debian:Raspbian:g' /etc/apt/apt.conf.d/50unattended-upgrades
+
+# Install filet-cloud-tools
+make -C filet-cloud/filetcloudtools
+dpkg -i filet-cloud/filetcloudtools/filetcloudtools.deb
+sudo systemctl enable filet-cloud-actions
+sudo systemctl start filet-cloud-actions
+
+# Configure daily snapshots (4am)
+crontab -u pi -l | grep filet-cloud-snapshot || (crontab -u pi -l; echo '* 4 * * * filet-cloud-snapshot') | crontab -u pi -
+
+# Update the display
+filet-cloud-status

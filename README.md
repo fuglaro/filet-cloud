@@ -5,43 +5,37 @@ This project attempts to make a sofisticated personal cloud storage solution sim
 
 It will target a single build running on a Raspberry Pi.
 
+## Hardware
+The following hardware was used for this build:
+* Raspberry Pi 4B 4GB https://www.raspberrypi.org/products/raspberry-pi-4-model-b/
+* 32GB Transcend microSDXC/SDHC 300S https://www.transcend-info.com/Products/No-948
+* Seagate 5TB Basic Portable External Drive https://www.seagate.com/gb/en/products/external-hard-drives/basic-external-hard-drive/
+* 2.7inch Mono E-Ink display (with 4 buttons) https://www.waveshare.com/wiki/2.7inch_e-Paper_HAT
+
 ## Setup
-
+### Basic Host Setup
 * Install Raspberry Pi OS to a microSD card (https://www.raspberrypi.org/software/)
-* Place in the Pi.
-* Format an external USB drive (for the data) as btrfs (https://wiki.archlinux.org/title/Btrfs).
-* Connect the external USB storage to the Pi (and remove all other USB drives).
-* Power on and set up your Pi with WiFi and a better password.
-* Enable ssh on your Pi (https://www.raspberrypi.org/documentation/remote-access/ssh/).
-* Setup port forwarding for port 22 (https://en.wikipedia.org/wiki/Port_forwarding), if needed.
-* Setup dynamic DNS, if needed (https://wiki.archlinux.org/title/Dynamic_DNS).
-```bash
-sudo apt install -y ddclient
-```
-* Setup installs.
-```bash
-sudo apt install -y btrfs-tools
-```
-* Set up a new login account:
-```bash
-read -p 'Login: ' usr
-sudo adduser $usr
-sudo mkdir -m 0700 /mnt/usb/filetclouddata/&usr
-sudo chown $usr:$usr /mnt/usb/filetclouddata/&usr
-```
-* Prepare your usb storage:
-```bash
-sudo mkdir /mnt/usb/
-printf "$(blkid /dev/sda1 -o export | grep ^UUID=) /mnt/usb/ btrfs noatime 0 0\n" | sudo tee -a /etc/fstab
-sudo mount /mnt/usb
-sudo btrfs subvolume create /mnt/usb/filetclouddata
-sudo chmod a+w /mnt/usb/filetclouddata
-sudo mkdir /mnt/usb/.snapshots
+* Enable ssh on your Pi (https://www.raspberrypi.org/documentation/remote-access/ssh/)
+* Make a better password for the pi user (https://www.raspberrypi.org/documentation/configuration/security.md)
+* Set up WiFi if needed (https://www.raspberrypi.org/documentation/configuration/wireless/).
+* If you intend to connect from outside your local network, setup port forwarding for port 22 (https://en.wikipedia.org/wiki/Port_forwarding), static DHCP, and dynamic DNS, if needed (https://wiki.archlinux.org/title/Dynamic_DNS).
+* Ensure you have connected power, network, an empty USB drive to store the data, inserted the SD Card, and disconnected all other USB drives, then power on.
 
+### USB Drive Setup
+* Format the USB drive (for the data) as btrfs (https://wiki.archlinux.org/title/Btrfs).
+
+### Filet-Cloud Installation
+```bash
+ssh raspberrypi.local
+git clone https://github.com/fuglaro/filet-cloud.git
+sudo filet-cloud/install
+```
+### Create New Login Account:
+```bash
+filet-cloud-new-user
 ```
 
-
-TBC
+service for action buttons
 
 ## Compatible Clients
 * Android filebrowser - Solid Explorer

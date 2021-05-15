@@ -1,0 +1,10 @@
+#!/bin/bash
+
+shutdown='sudo shutdown now'
+reboot='sudo shutdown --reboot now'
+update='sudo apt -y update && sudo apt -y full-upgrade && sudo unattended-upgrades'
+
+ehatbuttons \
+5="filet-cloud-status && $shutdown" \
+6="filet-cloud-snapshot" \
+13="$update && filet-cloud-status && $reboot"

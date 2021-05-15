@@ -1,0 +1,44 @@
+#!/usr/bin/env python3
+
+"""Execute shell commands on the press of HAT (GPIO) buttons.
+Pass in arguments assigning button numbers to shell commands.
+
+e.g:
+    ehatbuttons 5='echo button five pressed' 6='echo button six pressed'
+"""
+
+import signal
+import subprocess
+import sys
+from gpiozero import Button
+
+def argparse():
+    try:
+        # Convert to a dictionary with button number as key,
+        # and the value being the command to run.
+        result = (dict(((int(v[0]), v[2]) for v in
+            (a.partition("=") for a in sys.argv[1:]))))
+    except:
+        result = None
+    if not result:
+        print(__doc__, file=sys.stderr)
+        sys.exit(-1)
+    return result
+
+def listen(actions):
+    ''' Take a dictionary of {button-number: command-to-run} pairs
+    and register handlers that will execute the appropriate command
+    when the relevant button is pressed.
+    '''
+    def pressed(btn):
+        subprocess.call(actions[btn.pin.number], shell=True)
+    for btn, cmd in actions.items():
+        Button(btn).when_pressed = pressed
+
+if __name__ == "__main__":
+    listen(argparse())
+    try:
+        signal.pause()
+    except KeyboardInterrupt:
+        # Expect a sigint as the only valid exit condition.
+        pass

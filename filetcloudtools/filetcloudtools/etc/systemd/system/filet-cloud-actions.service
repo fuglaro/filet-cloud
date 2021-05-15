@@ -1,0 +1,10 @@
+[Unit]
+Description=Button handler for Filet Cloud
+
+[Service]
+User=pi
+ExecStart=filet-cloud-actions
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

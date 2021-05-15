@@ -1,0 +1,5 @@
+#!/bin/bash
+
+sudo btrfs subvolume snapshot -r /mnt/usb/filetclouddata /mnt/usb/.snapshots/filetclouddata-$(date +%y%m%d-%H%M%S)
+filet-cloud-status
+

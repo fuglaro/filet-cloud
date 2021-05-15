@@ -1,0 +1,9 @@
+Package: filetcloudtools
+Version: 1.0
+Section: custom
+Priority: optional
+Architecture: all
+Essential: no
+Installed-Size: 1024
+Maintainer: https://github.com/fuglaro/filet-cloud
+Description: Tools for the Filet-Cloud project.

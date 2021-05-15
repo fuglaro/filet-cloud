@@ -1,0 +1,6 @@
+#!/bin/bash
+
+read -p 'Login name: ' usr
+sudo adduser $usr
+sudo mkdir -m 0700 /mnt/usb/filetclouddata/&usr
+sudo chown $usr:$usr /mnt/usb/filetclouddata/&usr
