@@ -35,12 +35,15 @@ sudo filet-cloud/install
 filet-cloud-new-user
 ```
 
-service for action buttons
-
 ## Compatible Clients
 * Android filebrowser - Solid Explorer
 * Android filebrowser (opensource) - Ghost Commander (with SFTP plugin)
 * Android filesyncer - FolderSync
+* Linux filebrowser client - Filezilla
+
+## TODO and Missing Features
+* Guide for interacting from Android, Windows, Linux etc.
+* Web Page server.
 
 ## Design and Engineering Philosophies
 
