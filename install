@@ -24,4 +24,5 @@ sudo systemctl start filet-cloud-actions
 crontab -u pi -l | grep filet-cloud-snapshot || (crontab -u pi -l; echo '* 4 * * * filet-cloud-snapshot') | crontab -u pi -
 
 # Update the display
+crontab -u pi -l | grep filet-cloud-status || (crontab -u pi -l; echo '*/5 * * * * filet-cloud-status') | crontab -u pi -
 filet-cloud-status
