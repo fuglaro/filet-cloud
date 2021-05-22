@@ -26,7 +26,7 @@ The following hardware was used for this build:
 
 ### Filet-Cloud Installation
 ```bash
-ssh raspberrypi.local
+ssh pi@raspberrypi.local
 git clone https://github.com/fuglaro/filet-cloud.git
 sudo filet-cloud/install
 ```
