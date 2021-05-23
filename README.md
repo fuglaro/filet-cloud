@@ -43,9 +43,10 @@ filet-cloud-new-user
 * Android filesyncer - FolderSync
 * Linux filebrowser client - Filezilla
 
-## TODO and Missing Features
-* Guide for interacting from Android, Windows, Linux etc.
-* Web Page server (finish integrating).
+## Future work
+* Guide for using client apps from Android, Windows, Linux etc.
+* Web Page server (finish integrating filet-cloud-web).
+* Convert Python to C or use lean Python compilers for reduced resouce usage to enable leaner hardware builds.
 
 ## Design and Engineering Philosophies
 
