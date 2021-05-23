@@ -5,7 +5,7 @@ This project attempts to make a sophisticated personal cloud storage solution si
 
 A core part of this project is the SFTP webserver from the filet project series (https://github.com/fuglaro/filet-cloud-web)
 
-It will target a single build running on a Raspberry Pi.
+It targets a build running on a Raspberry Pi.
 
 ## Hardware
 The following hardware was used for this build:
