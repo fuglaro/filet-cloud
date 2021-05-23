@@ -4,134 +4,143 @@
 <meta http-equiv="content-type" content="text/html; charset=utf-8">
 <title>Filet Cloud</title>
 <style>
-	body {
-		margin-top: 0px;
-		margin-bottom: 0px;
-		display: flex;
-		height: 100vh;
-		flex-direction: row;
-	}
-	div { word-break: break-all; }
-	#index { width: 50%; height: 100%; display: flex; flex-direction: column; }
-	#menu { display: flex; flex-direction: row; }
-	#dirs { overflow-y: auto; cursor: default; }
-	#data { width: 50%; height: 100%; }
+	body {margin: 0px; display: flex; flex-direction: row; height: 100vh;}
+	div {word-break: break-all;}
+	#data,#index {width: 50%; height: 100%;}
+	#index {display: flex; flex-direction: column;}
+	#menu {display: flex; flex-direction: row; font-size: 1.6vw;}
+	#dir,#data {overflow-y: auto; }
 	#data * {
-		display: block;
-		margin-left: auto;
-		margin-right: auto;
-		object-fit: contain;
-		max-width: 100%;
-		max-height: 100%;
-	}
-	.unicon {
-		margin-left: 2px;
-		margin-right: 2px;
-		margin-top: 0px;
-		margin-bottom: 0px;
-		cursor: default; }
-	#cartlen { margin: 0px; }
-	@media (hover: none) {
-		.direntry { font-size: 2.5em; }
-		.unicon { font-size: 3em; }
-		#cartlen { font-size: 2em; }
-	}
+		display: block; object-fit: contain;
+		margin: auto; width: 100%; max-height: 100%;}
+	h1,h2 {
+		font-weight: normal; cursor: default;
+		margin: 0px; margin-left: 0.1rem; margin-right: 0.1rem;}
+	@media (hover: none) {body {font-size: 1.5em;}}
 	@media (orientation: portrait) {
-		body { flex-direction: column-reverse; }
-		#index { width: 100%; height: 50%; }
-		#data { width: 100%; height: 50%; }
-	}
+		@media (hover: none) {body {font-size: 3em;}}
+		body {flex-direction: column-reverse;}
+		#menu {font-size: 3.2vw;}
+		#data,#index {width: 100%; height: 50%;}}
 </style>
 </head>
 <body>
 <div id=index>
-	<h1 class=unicon>&#9925 Filet Cloud</h1>
+	<h1>&#9925 Filet Cloud</h1>
 	<div id=menu>
-		<h2 onclick="dirs(cwdParent())" class=unicon>&#128281</h2>
-		<h2 onclick="makedir()" class=unicon>&#128193</h2>
-		<h2 onclick="uploadEl.click()" class=unicon>&#128228</h2>
-		<h2 onclick="rename()" class=unicon>&#128394</h2>
-		<h2 onclick="show()" class=unicon>&#128214</h2>
-		<h2 onclick="download()" class=unicon>&#128229</h2>
-		<h2 onclick="move()" class=unicon>&#128666</h2>
-		<h2 onclick="del()" class=unicon>&#128465</h2>
-		<h2 onclick="cart()" class=unicon>&#128722</h2>
-		<div><p id=cartlen>0</p></div>
+		<h1 onclick="nav(cwdParent(), 1)">&#128281</h1>
+		<h1 onclick="makedir()">&#128193</h1>
+		<h1 onclick="uploadEl.click()">&#128228</h1>
+		<h1 onclick="rename()">&#128394</h1>
+		<h1 onclick="tabopen()">&#128214</h1>
+		<h1 onclick="download()">&#128229</h1>
+		<h1 onclick="move()">&#128666</h1>
+		<h1 onclick="del()">&#128465</h1>
+		<h1 onclick="cartSel()" id="cart">&#128722</h1>
+		<div id=cartlen>0</div>
 	</div>
 	<div id=path></div>
-	<div id=dirs></div>
+	<div id=dir></div>
 </div>
 <div id=data></div>
 <input id="upload" type="file" multiple onchange="send()" style="display:none"/>
 <script>
-	let path = ()=>document.getElementById('path').innerText
-	let cwd = ()=>path().replace(/[^/]+$/g, '')
+	var cart = []
+	let curPath = ()=>document.getElementById('path').innerText
+	let cwd = ()=>curPath().replace(/[^/]+$/g, '')
 	let cwdParent = ()=>cwd().replace(/[^/]+\/$/g, '')
 	let dataEl = document.getElementById('data')
+	let sel = document.getElementById('cart').style
+
 	// Basic error handler for queries to the server.
 	let check = okayFn=> async r=> {
 		if (r.ok) r.json().then(j=> okayFn(j)).catch(e=> okayFn(null))
 		else dataEl.replaceChildren(document.createTextNode(await r.text())) }
 
-	/* Select the given path.
-	 * This keeps track of active paths for subsequent actions.
+	/**
+	 * Switches between cart and normal selection modes.
+	 * If the current path is a file, it will just add the,
+	 * file to the cart or switch to the cart, if the file is
+	 * already in the cart.
 	 */
-	function select(selectedPath) {
-		dataEl.replaceChildren()
-		document.getElementById('path').innerText = selectedPath
-	}
-
-	/* Set the current file.
-	 * Display the selected file in the data window using the relevant
-	 * rendering technique.
-	 */
-	function content(file) {
-		select(file)
-		/* Attempts to load content as a passed in html element.
-		   Intended for "img" and "video" */
-		function tryElement(element, fallback) {
-			nib = document.createElement(element)
-			nib.controls = "controls"
-			nib.onload = nib.oncanplay = ()=>dataEl.replaceChildren(nib)
-			nib.onerror = fallback
-			nib.src = `/file?path=${encodeURIComponent(file)}`
+	function cartSel() {
+		sel.filter = sel.filter ? '' : 'drop-shadow(0.2rem 0.2rem 0.2rem indigo)'
+		if (sel.filter && !curPath().endsWith('/') && cart.includes(curPath())) {
+			nav(curPath())
+			sel.filter = ''
 		}
-		// Hit the fallback approach attempting to load the content.
-		tryElement("img", ()=>tryElement("video", ()=>
-			dataEl.innerText = "Unknown format: " + file))
+		nav(curPath(), 1)
 	}
 
-	/* Set the current directory.
-	 * Updates the 'dirs' DOB object with interactive tree navigation.
-	 * This list all the contents of the current directory.
-	 * "path" should be terminated in a "/"
+	/**
+	 * Navigate to and show a file or directory, or,
+	 * if cart selection mode is active, show the cart and add and
+	 * remove from it instead of navigating.
+	 * For folders, path should be terminated in a "/"
+	 * Sets the current files or directories for future actions.
+	 * Updates the folder area with interactive tree navigation.
+	 * Displays file contents as best it can.
+	 * 
+	 * @param {bool} forceNav Ignore cart selection mode in navigating
 	 */
-	function dirs(dir) {
-		// Query the contents of the directory
-		fetch(`dir?path=${encodeURIComponent(dir)}`)
-		.then(check(r=> { r.sort()
-			select(dir)
-			document.getElementById('dirs').replaceChildren(...r.map(([f, name])=> {
-				nib = document.createElement("div")
-				nib.className = "direntry"
-				nib.onclick = ()=>(f?content:dirs)(dir + name + (f?"":"/"))
-				nib.innerText = `${f?'\u{1F4C4}':'\u{1F4C2}'} ${name}`
-				return nib
-			}))
-		}))
+	function nav(path, forceNav) {
+		// Function to generate directory entry selector elements.
+		dirSel = (isFile, name, path)=> {
+			nib = document.createElement("h2")
+			nib.onclick = ()=>nav(path)
+			nib.innerText = `${isFile?'\u{1F4C4}':'\u{1F4C2}'} ${name}`
+			return nib}
+
+		// Handle addition and removal from cart if in cart selection mode
+		if (sel.filter && !forceNav) {
+			index = cart.indexOf(path)
+			index < 0 ? cart.push(path) : cart.splice(index, 1)
+			document.getElementById('cartlen').innerText = cart.length.toString()
+		}
+		// Show the cart entries, if it's selected
+		dataEl.replaceChildren(...
+			sel.filter ? cart.map(c=> dirSel(!c.endsWith('/'), c, c)) : [])
+
+		// Handle directory navigation, or file content display
+		if (path.endsWith("/") && (!sel.filter || forceNav)) {
+			// Query the contents of the directory
+			fetch(`dir?path=${encodeURIComponent(path)}`)
+			.then(check(r=> { r.sort()
+				document.getElementById('path').innerText = path
+				document.getElementById('dir').replaceChildren(...r.map(([f, n])=>
+					dirSel(f, n, path + n + (f?"":"/"))))}))
+		} else if (!sel.filter) {
+			// Display file contents as best it can
+			document.getElementById('path').innerText = path
+			/* Attempts to load the selected file on a given html element.
+				Intended for "img" and "video" */
+			function tryElement(element, fallback) {
+				nib = document.createElement(element)
+				nib.controls = "controls"
+				nib.onload = nib.oncanplay = ()=>dataEl.replaceChildren(nib)
+				nib.onerror = fallback
+				nib.src = `/file?path=${encodeURIComponent(path)}`
+			}
+			// Hit the fallback approach attempting to load the content.
+			tryElement("img", ()=>tryElement("video", ()=>
+				dataEl.innerText = "Unknown format: " + path))
+		}
 	}
 
-	/* Make a directory on the server.
+	/**
+	 * Make a directory on the server.
 	 * The user is prompted for the name of the new directory and
 	 * it is made inside the current directory.
 	 */
 	function makedir() {
 		if (!(newDir = prompt("New Folder:", ""))) return
 		fetch(`newdir?path=${encodeURIComponent(cwd() + newDir)}`)
-		.then(check(r=> dirs(cwd())))
+		.then(check(r=> nav(cwd())))
 	}
 
-	/* Start uploading of files to the server.
+	/**
+	 * Start uploading of files to the server.
+	 * Files are uploaded into the current directory.
 	 * This is called after the file selection popup has been loaded
 	 * and files have been selected.
 	 */
@@ -142,17 +151,17 @@
 			uploadForm.append("files[]", uploadEl.files[i])
 		fetch(`upload?path=${encodeURIComponent(cwd())}`,
 			{method: 'POST', body: uploadForm})
-		.then(check(r=> dirs(cwd())))
+		.then(check(r=> nav(cwd())))
 	}
 
-	function show() {
-		if (path() == cwd()) return
-		// TODO expand
-		window.open(`/file?path=${encodeURIComponent(path())}`, "_blank")
+	function tabopen() { // TODO docs
+		// TODO expand to use "open" page.
+		if (curPath() == cwd()) return // ignore folders
+		window.open(`/file?path=${encodeURIComponent(curPath())}`, "_blank")
 	}
 
 	// Trigger the load of the page.
-	window.onload = ()=>dirs({{.P}})
+	window.onload = ()=>nav({{.P}})
 </script>
 </body>
 </html>

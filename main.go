@@ -12,7 +12,8 @@ import (
 	"time"
 )
 
-/* Estabilises, and returns a sftp connection.
+/**
+ * Estabilises, and returns a sftp connection.
  */
 func sftpConnect(r *http.Request) (*ssh.Client, *sftp.Client, error) {
 	user, pass, _ := r.BasicAuth()
@@ -31,7 +32,8 @@ func sftpConnect(r *http.Request) (*ssh.Client, *sftp.Client, error) {
 	return sshConn, sftp, nil
 }
 
-/* Checks if the passesd in error has a value and, if it does,
+/**
+ * Checks if the passesd in error has a value and, if it does,
  * an StatusForbidden error is returned.
  * For the purposes of this webserver, where we are exposing
  * files via SFTP, assuming any error relates to a permission
@@ -43,7 +45,8 @@ func resError(w http.ResponseWriter, e error) (bool) {
 	return e != nil
 }
 
-/* Resonds to the Http query by performing actions related to the
+/**
+ * Resonds to the Http query by performing actions related to the
  * path provided by the 'path' query option.
 */
 func urlHandler(w http.ResponseWriter, r *http.Request) {
