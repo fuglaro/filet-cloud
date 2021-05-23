@@ -47,6 +47,7 @@ filet-cloud-new-user
 * Guide for using client apps from Android, Windows, Linux etc.
 * Web Page server (finish integrating filet-cloud-web).
 * Convert Python to C or use lean Python compilers for reduced resouce usage to enable leaner hardware builds.
+* Write up on security.
 
 ## Design and Engineering Philosophies
 
