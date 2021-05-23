@@ -1,7 +1,7 @@
 # filet-cloud-web
 Web portal for Filet-Cloud
 
-## Desireded Features (Still TODO)
+## Desired Features (Still TODO)
 * More content viewers:
 	* md files
 	* text and md file editor
