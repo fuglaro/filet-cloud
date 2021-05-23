@@ -3,6 +3,8 @@ A lean slice of Cloud Storage
 
 This project attempts to make a sophisticated personal cloud storage solution similar to the google-drive ecosystem, using the design philosophies of the filet project series. This project, like others in the series, aggressively pushes for code minimalism and the essence of simplicity.
 
+A core part of this project is the SFTP webserver from the filet project series (https://github.com/fuglaro/filet-cloud-web)
+
 It will target a single build running on a Raspberry Pi.
 
 ## Hardware
@@ -43,7 +45,7 @@ filet-cloud-new-user
 
 ## TODO and Missing Features
 * Guide for interacting from Android, Windows, Linux etc.
-* Web Page server.
+* Web Page server (finish integrating).
 
 ## Design and Engineering Philosophies
 
@@ -58,3 +60,11 @@ This project explores how far a software product can be pushed in terms of simpl
 * Allow other tools to thrive - e.g: terminals don't need tabs or scrollback, that's what tmux is for.
 * Fix where fixes belong - don't work around bugs in other applications, contribute to them, or make something better.
 * Improvement via reduction is sometimes what a project desperately needs, because we do so tend to just add. (https://www.theregister.com/2021/04/09/people_complicate_things/)
+
+# Thanks to, grateful forks, and contributions
+
+We stand on the shoulders of giants. They own this, far more than I do.
+
+* https://github.com/fuglaro/filet-cloud-web
+* https://www.python.org/
+* https://www.gnu.org/software/bash/
