@@ -15,6 +15,8 @@ Web portal for Filet-Cloud
 * download items http://www.zuga.net/articles/unicode/character/1F4E5/
 * rename item http://www.zuga.net/articles/unicode/character/1F589/
 * Share files via secure link (via making public to the pi user and thus the webserver in a PUBLIC folder). Ensure directory above is not readable but is executable. Check that is actually secure.
+* Change SFTP host to localhost (for security).
+* Reject HTTP connections (for security).
 * Write up about security.
 	* Disclaimer: written when tired, nothing is secure until it is audited.
 	* Uses Basic Auth to proxy ssh credentials so it is essential to use HTTPS if exposed to an untrusted network.
