@@ -59,12 +59,20 @@ This project explores how far a software product can be pushed in terms of simpl
 * Steep learning curves are dangerous, but don't just push a vertical wall deeper; learning is good, so make the incline gradual for as long as possible.
 * Allow other tools to thrive - e.g: terminals don't need tabs or scrollback, that's what tmux is for.
 * Fix where fixes belong - don't work around bugs in other applications, contribute to them, or make something better.
-* Improvement via reduction is sometimes what a project desperately needs, because we do so tend to just add. (https://www.theregister.com/2021/04/09/people_complicate_things/)
+* Improvement via reduction is sometimes what a project desperately needs, because we do so tend to just add. (https://www.theregister.com/2021/04/09/people_complicate_things/, https://www.nature.com/articles/s41586-021-03380-y)
 
 # Thanks to, grateful forks, and contributions
 
 We stand on the shoulders of giants. They own this, far more than I do.
 
 * https://github.com/fuglaro/filet-cloud-web
+* https://www.raspberrypi.org
 * https://www.python.org/
 * https://www.gnu.org/software/bash/
+* https://www.transcend-info.com
+* https://www.seagate.com
+* https://www.waveshare.com
+* https://wiki.archlinux.org
+* https://en.wikipedia.org
+* https://www.theregister.com
+* https://www.nature.com/articles/s41586-021-03380-y
