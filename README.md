@@ -2,9 +2,12 @@
 Web portal for Filet-Cloud
 
 ## Future Work
-* More content viewers:
-	* md files
-	* text and md file editor
+* More content viewers (with editors):
+	* md and other text files
+	* spreadsheet
+	* diagrams
+	* slideshow
+	* docs
 	* pdf
 * content editors
 * Ffmpeg based transcoder
