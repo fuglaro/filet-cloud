@@ -1,11 +1,12 @@
 # filet-cloud-web
 Web portal for Filet-Cloud
 
-## Desired Features (Still TODO)
+## Future Work
 * More content viewers:
 	* md files
 	* text and md file editor
 	* pdf
+* content editors
 * open content in new tab (without index) http://www.zuga.net/articles/unicode/character/1F4D6/
 * select items (cart) http://www.zuga.net/articles/unicode/character/1F5C3/
 	* selecting items shows a fading highlight color
