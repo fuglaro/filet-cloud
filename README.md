@@ -1,6 +1,8 @@
 # filet-cloud-web
 Web portal for Filet-Cloud
 
+This is a simple webpage exposing a cloud storage solution, which sits on top of an SFTP server.
+
 ## Future Work
 * More content viewers (with editors):
 	* md and other text files
