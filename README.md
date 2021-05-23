@@ -1,7 +1,7 @@
 # filet-cloud
 A lean slice of Cloud Storage
 
-This project attempts to make a sophisticated personal cloud storage solution similar to the google-drive ecosystem, using the design philosophies of the filet project series. This project will contain tbe very minimalist of code and be the essence of simplicity.
+This project attempts to make a sophisticated personal cloud storage solution similar to the google-drive ecosystem, using the design philosophies of the filet project series. This project, like others in the series, aggressively pushes for code minimalism and the essence of simplicity.
 
 It will target a single build running on a Raspberry Pi.
 
