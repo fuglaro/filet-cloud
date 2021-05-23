@@ -66,7 +66,7 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 		user, _, _ := r.BasicAuth()
 		page, err := template.ParseFiles("default.html")
 		if resError(w, err) { return }
-		page.Execute(w, struct{P string}{P:"/mnt/usb/filetclouddata/"+user})
+		page.Execute(w, struct{P string}{P:"/mnt/usb/filetclouddata/"+user+"/"})
 
 		/*
 		 * Return the contents of the directory identified by the 'path'

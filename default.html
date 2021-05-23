@@ -47,7 +47,7 @@
 <div id=index>
 	<h1 class=unicon>&#9925 Filet Cloud</h1>
 	<div id=menu>
-		<h2 onclick="dirs(cwd.replace(/[/][^/]+$/g, ''))" class=unicon>&#128281</h2>
+		<h2 onclick="dirs(cwdParent())" class=unicon>&#128281</h2>
 		<h2 onclick="makedir()" class=unicon>&#128193</h2>
 		<h2 onclick="uploadEl.click()" class=unicon>&#128228</h2>
 		<h2 onclick="rename()" class=unicon>&#128394</h2>
@@ -58,60 +58,66 @@
 		<h2 onclick="cart()" class=unicon>&#128722</h2>
 		<div><p id=cartlen>0</p></div>
 	</div>
-	<div id=info></div>
+	<div id=path></div>
 	<div id=dirs></div>
 </div>
 <div id=data></div>
 <input id="upload" type="file" multiple onchange="send()" style="display:none"/>
 <script>
-	var cwd
-	var currentFile // TODO change to cart
-	let info = i=> document.getElementById('info').innerText = i
+	let path = ()=>document.getElementById('path').innerText
+	let cwd = ()=>path().replace(/[^/]+$/g, '')
+	let cwdParent = ()=>cwd().replace(/[^/]+\/$/g, '')
 	let dataEl = document.getElementById('data')
-	let uploadEl = document.getElementById('upload')
 	// Basic error handler for queries to the server.
 	let check = okayFn=> async r=> {
 		if (r.ok) r.json().then(j=> okayFn(j)).catch(e=> okayFn(null))
 		else dataEl.replaceChildren(document.createTextNode(await r.text())) }
 
+	/* Select the given path.
+	 * This keeps track of active paths for subsequent actions.
+	 */
+	function select(selectedPath) {
+		dataEl.replaceChildren()
+		document.getElementById('path').innerText = selectedPath
+	}
+
 	/* Set the current file.
 	 * Display the selected file in the data window using the relevant
 	 * rendering technique.
 	 */
-	function content(path) {
-		currentFile = path
+	function content(file) {
+		select(file)
 		/* Attempts to load content as a passed in html element.
 		   Intended for "img" and "video" */
 		function tryElement(element, fallback) {
 			nib = document.createElement(element)
-			nib.centrols = "centrols"
-			nib.onload = nib.oncanplay = ()=>{dataEl.replaceChildren(nib); info(path)}
+			nib.controls = "controls"
+			nib.onload = nib.oncanplay = ()=>dataEl.replaceChildren(nib)
 			nib.onerror = fallback
-			nib.src = `/file?path=${encodeURIComponent(path)}`
+			nib.src = `/file?path=${encodeURIComponent(file)}`
 		}
 		// Hit the fallback approach attempting to load the content.
-		tryElement("img", ()=>tryElement("video", ()=>{
-			dataEl.innerText = "Format unknown: " + path; info(path)}))
+		tryElement("img", ()=>tryElement("video", ()=>
+			dataEl.innerText = "Unknown format: " + file))
 	}
 
 	/* Set the current directory.
 	 * Updates the 'dirs' DOB object with interactive tree navigation.
 	 * This list all the contents of the current directory.
+	 * "path" should be terminated in a "/"
 	 */
-	function dirs(path) {
-		cwd = path // update the current directory for all the actions.
+	function dirs(dir) {
 		// Query the contents of the directory
-		fetch(`dir?path=${encodeURIComponent(path)||'/'}`)
+		fetch(`dir?path=${encodeURIComponent(dir)}`)
 		.then(check(r=> { r.sort()
-			dataEl.replaceChildren()
+			select(dir)
 			document.getElementById('dirs').replaceChildren(...r.map(([f, name])=> {
 				nib = document.createElement("div")
 				nib.className = "direntry"
-				nib.onclick = ()=>(f?content:dirs)(path+'/'+name)
+				nib.onclick = ()=>(f?content:dirs)(dir + name + (f?"":"/"))
 				nib.innerText = `${f?'\u{1F4C4}':'\u{1F4C2}'} ${name}`
 				return nib
 			}))
-			info(path)
 		}))
 	}
 
@@ -121,8 +127,8 @@
 	 */
 	function makedir() {
 		if (!(newDir = prompt("New Folder:", ""))) return
-		fetch(`newdir?path=${encodeURIComponent(cwd+'/'+newDir)}`)
-		.then(check(r=> dirs(cwd)))
+		fetch(`newdir?path=${encodeURIComponent(cwd() + newDir)}`)
+		.then(check(r=> dirs(cwd())))
 	}
 
 	/* Start uploading of files to the server.
@@ -130,23 +136,23 @@
 	 * and files have been selected.
 	 */
 	function send() {
+		uploadEl = document.getElementById('upload')
 		uploadForm = new FormData()
 		for (i = 0; i < uploadEl.files.length; i++)
 			uploadForm.append("files[]", uploadEl.files[i])
-		fetch(`upload?path=${encodeURIComponent(cwd)}`,
+		fetch(`upload?path=${encodeURIComponent(cwd())}`,
 			{method: 'POST', body: uploadForm})
-		.then(check(r=> dirs(cwd)))
+		.then(check(r=> dirs(cwd())))
 	}
 
 	function show() {
-		if (!currentFile) return
+		if (path() == cwd()) return
 		// TODO expand
-		window.open(`/file?path=${encodeURIComponent(currentFile)}`, "_blank")
+		window.open(`/file?path=${encodeURIComponent(path())}`, "_blank")
 	}
 
 	// Trigger the load of the page.
 	window.onload = ()=>dirs({{.P}})
 </script>
-
 </body>
 </html>
