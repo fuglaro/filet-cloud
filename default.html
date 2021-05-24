@@ -112,6 +112,7 @@
 				// Update the location to this directory if we aren't just refreshing
 				if (path.endsWith("/"))
 					document.getElementById('path').innerText = path
+				// Display the directory contents
 				document.getElementById('dir').replaceChildren(...r.map(([f, n])=>
 					dirSel(f, n, dir + n + (f?"":"/"))))}))
 		}
