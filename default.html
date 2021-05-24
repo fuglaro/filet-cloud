@@ -153,10 +153,6 @@
 		folder = curPath().replace(/[^/]+\/?$/g, '')
 		oldName = curPath().replace(/\/?$/g, '').split('/').pop()
 		if (!(newName = prompt("Rename:", oldName)) || newName == oldName) return
-
-
-		console.log(folder + newName + curPath().endsWith('/')?'/':'')
-
 		fetch(`rename?path=${encodeURIComponent(folder + oldName)}&` +
 			`to=${encodeURIComponent(folder + newName)}`)
 		.then(check(r=> nav(folder + newName + (folder==cwd()?'':'/'), 0, 1)))
