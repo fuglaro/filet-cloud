@@ -103,8 +103,17 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 		 * The 'path' query parameter identifies the directory to make.
 		 */
 		case "/newdir":
-			// stream the file contents
 			err = sftp.Mkdir(r.URL.Query().Get("path"))
+			if resError(w, err) { return }
+
+		/*
+		 * Move or rename a file or directory on the server.
+		 * The 'path' query parameter identifies what to change.
+		 * The 'to' query parameter identifies the new name or location.
+		 * Both parameters should be full paths.
+		 */
+		case "/rename":
+			err = sftp.Rename(r.URL.Query().Get("path"), r.URL.Query().Get("to"))
 			if resError(w, err) { return }
 
 		/*
@@ -126,6 +135,8 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 				_, err = io.Copy(dest, source)
 				if resError(w, err) { return }
 			}
+		default:
+			http.Error(w, "bad endpoint", http.StatusForbidden)
 	}
 }
 
