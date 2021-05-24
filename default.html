@@ -55,7 +55,7 @@
 	// Basic error handler for queries to the server.
 	let check = okayFn=> async r=> {
 		if (r.ok) r.json().then(j=> okayFn(j)).catch(e=> okayFn(null))
-		else dataEl.replaceChildren(document.createTextNode(await r.text())) }
+		else alert('Error: ' + await r.text()) }
 
 	/**
 	 * Switches between cart and normal selection modes.
@@ -97,8 +97,8 @@
 		if (sel.filter && !forceNav) {
 			index = cart.indexOf(path)
 			index < 0 ? cart.push(path) : cart.splice(index, 1)
-			document.getElementById('cartlen').innerText = cart.length.toString()
 		}
+		document.getElementById('cartlen').innerText = cart.length.toString()
 		// Show the cart entries, if it's selected
 		dataEl.replaceChildren(...
 			sel.filter ? cart.map(c=> dirSel(!c.endsWith('/'), c, c)) : [])
@@ -149,13 +149,33 @@
 	 * Rename a file or directory on the server.
 	 * The user is prompted for the new name.
 	 */
-	 function rename() {
+	function rename() {
 		folder = curPath().replace(/[^/]+\/?$/g, '')
 		oldName = curPath().replace(/\/?$/g, '').split('/').pop()
 		if (!(newName = prompt("Rename:", oldName)) || newName == oldName) return
 		fetch(`rename?path=${encodeURIComponent(folder + oldName)}&` +
 			`to=${encodeURIComponent(folder + newName)}`)
 		.then(check(r=> nav(folder + newName + (folder==cwd()?'':'/'), 0, 1)))
+	}
+
+	/**
+	 * Moves everything in the cart to the current folder.
+	 */
+	function move() {
+		if (!cart.length) return alert('Please select items with the cart.')
+		confirmMsg = `Move ${cart.length} item${cart.length>1?'s':''} to ${cwd()} ?`
+		if (!confirm(confirmMsg)) return
+		/* Loop through the paths in the cart sorted backwards so sub-items
+		   are moved before parent items */
+		cart.sort().reverse().forEach(item => {
+			dest = cwd() + item.replace(/\/?$/g, '').split('/').pop()
+			fetch(`rename?path=${encodeURIComponent(item)}&` +
+				`to=${encodeURIComponent(dest)}`)
+			.then(check(r=> {
+				cart.splice(cart.indexOf(item), 1)
+				nav(cwd(), 1, 1)
+			}))
+		})
 	}
 
 	/**
