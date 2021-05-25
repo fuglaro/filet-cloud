@@ -48,6 +48,7 @@ filet-cloud-new-user
 * Web Page server (finish integrating filet-cloud-web).
 * Convert Python to C or use lean Python compilers for reduced resouce usage to enable leaner hardware builds.
 * Write up on security.
+* Guide for lets encrypt or self signed certificate.
 
 ## Design and Engineering Philosophies
 
