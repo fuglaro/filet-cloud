@@ -1,6 +1,7 @@
 package main
 
 import (
+	"archive/zip"
 	"encoding/json"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
@@ -9,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -40,7 +42,7 @@ func sftpConnect(r *http.Request) (*ssh.Client, *sftp.Client, error) {
  * issue, is sufficient.
  * Returns whether the error had a value.
  */
-func resError(w http.ResponseWriter, e error) (bool) {
+func check(w http.ResponseWriter, e error) (bool) {
 	if e != nil { http.Error(w, e.Error(), http.StatusForbidden) }
 	return e != nil
 }
@@ -57,7 +59,7 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusUnauthorized)
 		return;
 	}
-	if resError(w, err) { return }
+	if check(w, err) { return }
 	defer sftp.Close()
 	defer sshConn.Close()
 
@@ -68,7 +70,7 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 		case "/":
 		user, _, _ := r.BasicAuth()
 		page, err := template.ParseFiles("default.html")
-		if resError(w, err) { return }
+		if check(w, err) { return }
 		page.Execute(w, struct{P string}{P:"/mnt/usb/filetclouddata/"+user+"/"})
 
 		/*
@@ -78,33 +80,34 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 		 * ?path=/foo -> [[true, "file1"], [false, "dir1"]]
 		 */
 		case "/dir":
-			// find contents of the directory
-			contents, err := sftp.ReadDir(r.URL.Query().Get("path"))
-			if resError(w, err) { return }
-			entries := make([][2]interface{}, len(contents))
-			for i, c := range contents {
-				entries[i] = [2]interface{}{!c.IsDir(), c.Name()}
-			}
-			json.NewEncoder(w).Encode(entries)
+		// find contents of the directory
+		contents, err := sftp.ReadDir(r.URL.Query().Get("path"))
+		if check(w, err) { return }
+		// build json export
+		entries := make([][2]interface{}, len(contents))
+		for i, c := range contents {
+			entries[i] = [2]interface{}{!c.IsDir(), c.Name()}
+		}
+		json.NewEncoder(w).Encode(entries)
 
 		/*
 		 * Retrieves a file and sends it to the client.
 		 * The 'path' query parameter identifies the file to send.
 		 */
 		case "/file":
-			// stream the file contents
-			path := r.URL.Query().Get("path")
-			contents, err := sftp.OpenFile(path, os.O_RDONLY)
-			if resError(w, err) { return }
-			http.ServeContent(w, r, path, time.Time{}, contents)
+		// stream the file contents
+		path := r.URL.Query().Get("path")
+		contents, err := sftp.OpenFile(path, os.O_RDONLY)
+		if check(w, err) { return }
+		http.ServeContent(w, r, path, time.Time{}, contents)
 
 		/*
 		 * Creates a new directory on the server.
 		 * The 'path' query parameter identifies the directory to make.
 		 */
 		case "/newdir":
-			err = sftp.Mkdir(r.URL.Query().Get("path"))
-			if resError(w, err) { return }
+		err = sftp.Mkdir(r.URL.Query().Get("path"))
+		if check(w, err) { return }
 
 		/*
 		 * Move or rename a file or directory on the server.
@@ -113,8 +116,8 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 		 * Both parameters should be full paths.
 		 */
 		case "/rename":
-			err = sftp.Rename(r.URL.Query().Get("path"), r.URL.Query().Get("to"))
-			if resError(w, err) { return }
+		err = sftp.Rename(r.URL.Query().Get("path"), r.URL.Query().Get("to"))
+		if check(w, err) { return }
 
 		/*
 		 * Upload files to the server.
@@ -123,20 +126,78 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 		 * sent in the body of the request.
 		 */
 		case "/upload":
-			err := r.ParseMultipartForm(100 << 20) // 100MB in memory
-			if resError(w, err) { return }
-			for _, file := range r.MultipartForm.File["files[]"] {
-				source, err := file.Open()
-				if resError(w, err) { return }
-				defer source.Close()
-				dest, err := sftp.Create(r.URL.Query().Get("path")+"/"+file.Filename)
-				if resError(w, err) { return }
-				defer dest.Close()
-				_, err = io.Copy(dest, source)
-				if resError(w, err) { return }
+		err := r.ParseMultipartForm(100 << 20) // 100MB in memory
+		if check(w, err) { return }
+		for _, file := range r.MultipartForm.File["files[]"] {
+			// upack uploaded file
+			source, err := file.Open()
+			if check(w, err) { return }
+			defer source.Close()
+			// create new file on server
+			dest, err := sftp.Create(r.URL.Query().Get("path")+"/"+file.Filename)
+			if check(w, err) { return }
+			defer dest.Close()
+			// copy contents of uploaded file to the server
+			_, err = io.Copy(dest, source)
+			if check(w, err) { return }
+		}
+
+		/*
+		 * Generate a zip file from a list of files and directories
+		 * for downloading.
+		 * Files and directories are specified by multiple "path"
+		 * query parameters.
+		 * Streams the file contents into a zip stream and to the client.
+		 *   - SFTPfiles }=> zipper -> http
+		 * Note: paths are assumed to be absolute.
+		 */
+		case "/zip":
+		var files []string
+		// walk the paths expanding to the list of files inside
+		for _, path := range r.URL.Query()["path"] {
+			if path[len(path)-1:] != "/" {
+				// include files
+				files = append(files, path)
+				continue
 			}
+			// expand directories to the files inside
+			walk := sftp.Walk(path)
+			for walk.Step() {
+				if check(w, walk.Err()) { return }
+				if walk.Stat().IsDir() { continue }
+				files = append(files, walk.Path())
+			}
+		}
+		// find the common prefix of all paths
+		prefix := ""
+		if len(files)>0 { prefix = filepath.Dir(files[0]) }
+		for _, file := range files {
+			for prefix != file[:len(prefix)] {
+				prefix = filepath.Dir(prefix)
+			}
+		}
+		// prepare the response as a zip file
+		w.Header().Set("Content-Type", "application/zip")
+		w.Header().Set("Content-Disposition", "attachment; filename=\"down.zip\"")
+		// start making the zip file
+		zipper := zip.NewWriter(w)
+		defer zipper.Close()
+		for _, path := range files {
+			// get the contents of the file from the server
+			contents, err := sftp.OpenFile(path, os.O_RDONLY)
+			if check(w, err) { return }
+			defer contents.Close()
+			// add the file to the zip with the relative subpath
+			filein, err := zipper.Create(path[len(prefix)+1:])
+			if check(w, err) { return }
+			// copy the contents of the file into the zip
+			_, err = io.Copy(filein, contents)
+			if check(w, err) { return }
+		}
+
+		// Bad endpoint error handling.
 		default:
-			http.Error(w, "bad endpoint", http.StatusForbidden)
+		http.Error(w, "bad endpoint", http.StatusForbidden)
 	}
 }
 

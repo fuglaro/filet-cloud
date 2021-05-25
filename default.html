@@ -44,6 +44,7 @@
 </div>
 <div id=data></div>
 <input id="upload" type="file" multiple onchange="send()" style="display:none"/>
+<a id="download" download></a>
 <script>
 	var cart = []
 	let curPath = ()=>document.getElementById('path').innerText
@@ -51,7 +52,7 @@
 	let cwdParent = ()=>cwd().replace(/[^/]+\/$/g, '')
 	let dataEl = document.getElementById('data')
 	let sel = document.getElementById('cart').style
-
+	let enc = encodeURIComponent
 	// Basic error handler for queries to the server.
 	let check = okayFn=> async r=> {
 		if (r.ok) r.json().then(j=> okayFn(j)).catch(e=> okayFn(null))
@@ -107,7 +108,7 @@
 		if ((refresh || path.endsWith("/")) && (!sel.filter || forceNav)) {
 			dir = path.replace(/[^/]+$/g, '')
 			// Query the contents of the directory
-			fetch(`dir?path=${encodeURIComponent(dir)}`)
+			fetch(`dir?path=${enc(dir)}`)
 			.then(check(r=> { r.sort()
 				// Update the location to this directory if we aren't just refreshing
 				if (path.endsWith("/"))
@@ -126,7 +127,7 @@
 				doc.controls = "controls"
 				doc.onload = doc.oncanplay = ()=>dataEl.replaceChildren(doc)
 				doc.onerror = fallback
-				doc.src = `/file?path=${encodeURIComponent(path)}`
+				doc.src = `/file?path=${enc(path)}`
 			}
 			// Hit the fallback approach attempting to load the content.
 			tryElement("img", ()=>tryElement("video", ()=>
@@ -141,7 +142,22 @@
 	 */
 	function makedir() {
 		if (!(newDir = prompt("New Folder:", ""))) return
-		fetch(`newdir?path=${encodeURIComponent(cwd() + newDir)}`)
+		fetch(`newdir?path=${enc(cwd() + newDir)}`)
+		.then(check(r=> nav(cwd())))
+	}
+
+	/**
+	 * Start uploading of files to the server.
+	 * Files are uploaded into the current directory.
+	 * This is called after the file selection popup has been loaded
+	 * and files have been selected.
+	 */
+	 function send() {
+		uploadEl = document.getElementById('upload')
+		uploadForm = new FormData()
+		for (i = 0; i < uploadEl.files.length; i++)
+			uploadForm.append("files[]", uploadEl.files[i])
+		fetch(`upload?path=${enc(cwd())}`, {method: 'POST', body: uploadForm})
 		.then(check(r=> nav(cwd())))
 	}
 
@@ -153,9 +169,31 @@
 		folder = curPath().replace(/[^/]+\/?$/g, '')
 		oldName = curPath().replace(/\/?$/g, '').split('/').pop()
 		if (!(newName = prompt("Rename:", oldName)) || newName == oldName) return
-		fetch(`rename?path=${encodeURIComponent(folder + oldName)}&` +
-			`to=${encodeURIComponent(folder + newName)}`)
+		fetch(`rename?path=${enc(folder + oldName)}&to=${enc(folder + newName)}`)
 		.then(check(r=> nav(folder + newName + (folder==cwd()?'':'/'), 0, 1)))
+	}
+
+
+
+	function tabopen() { // TODO docs
+		// TODO expand to use "open" page.
+		if (curPath() == cwd()) return // ignore folders
+		window.open(`/file?path=${enc(curPath())}`, "_blank")
+	}
+
+	/**
+	 * Download a file or a zip of multiple items.
+	 * Supports downloading the selected file (if a file),
+	 * a single file from the cart, or zipping multiple files
+	 * and folders in the cart.
+	 */
+	function download() {
+		if (cart.length) paths = cart
+		else if (!curPath().endsWith('/')) paths = [curPath()]
+		else return alert('Please select a file, or items with the cart.')
+		downloadEl = document.getElementById('download')
+		downloadEl.href = 'zip?' + paths.map(p=> `path=${enc(p)}`).join('&')
+		downloadEl.click()
 	}
 
 	/**
@@ -169,8 +207,7 @@
 		   are moved before parent items */
 		cart.sort().reverse().forEach(item => {
 			dest = cwd() + item.replace(/\/?$/g, '').split('/').pop()
-			fetch(`rename?path=${encodeURIComponent(item)}&` +
-				`to=${encodeURIComponent(dest)}`)
+			fetch(`rename?path=${enc(item)}&to=${enc(dest)}`)
 			.then(check(r=> {
 				cart.splice(cart.indexOf(item), 1)
 				nav(cwd(), 1, 1)
@@ -178,27 +215,6 @@
 		})
 	}
 
-	/**
-	 * Start uploading of files to the server.
-	 * Files are uploaded into the current directory.
-	 * This is called after the file selection popup has been loaded
-	 * and files have been selected.
-	 */
-	function send() {
-		uploadEl = document.getElementById('upload')
-		uploadForm = new FormData()
-		for (i = 0; i < uploadEl.files.length; i++)
-			uploadForm.append("files[]", uploadEl.files[i])
-		fetch(`upload?path=${encodeURIComponent(cwd())}`,
-			{method: 'POST', body: uploadForm})
-		.then(check(r=> nav(cwd())))
-	}
-
-	function tabopen() { // TODO docs
-		// TODO expand to use "open" page.
-		if (curPath() == cwd()) return // ignore folders
-		window.open(`/file?path=${encodeURIComponent(curPath())}`, "_blank")
-	}
 
 	// Trigger the load of the page.
 	window.onload = ()=>nav({{.P}})
