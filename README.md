@@ -51,6 +51,7 @@ filet-cloud-new-user
 * Guide for lets encrypt or self signed certificate.
 * Number of snapshots on ehat ink.
 * Snapshot clean function on ehat button.
+* Full feature list.
 
 ## Design and Engineering Philosophies
 
