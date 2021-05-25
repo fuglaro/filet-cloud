@@ -49,6 +49,8 @@ filet-cloud-new-user
 * Convert Python to C or use lean Python compilers for reduced resouce usage to enable leaner hardware builds.
 * Write up on security.
 * Guide for lets encrypt or self signed certificate.
+* Number of snapshots on ehat ink.
+* Snapshot clean function on ehat button.
 
 ## Design and Engineering Philosophies
 
