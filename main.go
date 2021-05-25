@@ -69,7 +69,7 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 		 */
 		case "/":
 		user, _, _ := r.BasicAuth()
-		page, err := template.ParseFiles("main.html")
+		page, err := template.ParseFiles("template/main.html")
 		if check(w, err) { return }
 		page.Execute(w, struct{P string}{P:"/mnt/usb/filetclouddata/"+user+"/"})
 
@@ -203,5 +203,7 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	http.HandleFunc("/", urlHandler)
+	http.Handle("/static/",
+		http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }

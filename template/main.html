@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>Filet Cloud</title>
+<style>
+	body {margin: 0px; display: flex; flex-direction: row; height: 100vh;}
+	div {word-break: break-all;}
+	#data,#index {width: 50%; height: 100%;}
+	#index {display: flex; flex-direction: column;}
+	#menu {display: flex; flex-direction: row; font-size: 1.6vw;}
+	#dir,#data {overflow-y: auto; }
+	#data * {
+		display: block; object-fit: contain;
+		margin: auto; width: 100%; max-height: 100%;}
+	h1,h2 {
+		font-weight: normal; cursor: default;
+		margin: 0px; margin-left: 0.1rem; margin-right: 0.1rem;}
+	@media (hover: none) {body {font-size: 1.5em;}}
+	@media (orientation: portrait) {
+		@media (hover: none) {body {font-size: 3em;}}
+		body {flex-direction: column-reverse;}
+		#menu {font-size: 3.2vw;}
+		#data,#index {width: 100%; height: 50%;}}
+</style>
+</head>
+<body>
+<div id=index>
+	<h1>&#9925 Filet Cloud</h1>
+	<div id=menu>
+		<h1 onclick="nav(cwdParent(), 1)">&#128281</h1>
+		<h1 onclick="makedir()">&#128193</h1>
+		<h1 onclick="uploadEl.click()">&#128228</h1>
+		<h1 onclick="rename()">&#128394</h1>
+		<h1 onclick="tabopen()">&#128214</h1>
+		<h1 onclick="download()">&#128229</h1>
+		<h1 onclick="move()">&#128666</h1>
+		<h1 onclick="del()">&#128465</h1>
+		<h1 onclick="cartSel()" id="cart">&#128722</h1>
+		<div id=cartlen>0</div>
+	</div>
+	<div id=path></div>
+	<div id=dir></div>
+</div>
+<div id=data></div>
+<input id="upload" type="file" multiple onchange="send()" style="display:none"/>
+<a id="download" download></a>
+<script src="static/main.js"></script>
+<script type="text/javascript">window.onload = ()=>nav({{.P}})</script>
+</body>
+</html>
