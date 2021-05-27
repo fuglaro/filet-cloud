@@ -69,21 +69,14 @@ function nav(path, forceNav, refresh) {
 			document.getElementById('dir').replaceChildren(...r.map(([f, n])=>
 				dirSel(f, n, dir + n + (f?"":"/"))))}))
 	}
+
+	// Open any file contents in the data pane
 	if (!path.endsWith("/") && !sel.filter) {
-		// Display file contents as best it can
 		document.getElementById('path').innerText = path
-		/* Attempts to load the selected file on a given html element.
-			Intended for "img" and "video" */
-		function tryElement(element, fallback) {
-			doc = document.createElement(element)
-			doc.controls = "controls"
-			doc.onload = doc.oncanplay = ()=>dataEl.replaceChildren(doc)
-			doc.onerror = fallback
-			doc.src = `/file?path=${enc(path)}`
-		}
-		// Hit the fallback approach attempting to load the content.
-		tryElement("img", ()=>tryElement("video", ()=>
-			dataEl.innerText = "Unknown format: " + path))
+		doc = document.createElement("iframe")
+		doc.frameBorder = "0"
+		doc.src = `open?path=${enc(path)}`
+		dataEl.replaceChildren(doc)
 	}
 }
 
@@ -125,10 +118,10 @@ function rename() {
 	.then(check(r=> nav(folder + newName + (folder==cwd()?'':'/'), 0, 1)))
 }
 
-
-
-function tabopen() { // TODO docs
-	// TODO expand to use "open" page.
+/**
+ * Open a file in a new window for viewing.
+ */
+function tabopen() {
 	if (curPath() == cwd()) return // ignore folders
 	window.open(`/open?path=${enc(curPath())}`, "_blank")
 }
@@ -144,7 +137,8 @@ function download() {
 	else if (!curPath().endsWith('/')) paths = [curPath()]
 	else return alert('Please select a file, or items with the cart.')
 	downloadEl = document.getElementById('download')
-	downloadEl.href = 'zip?' + paths.map(p=> `path=${enc(p)}`).join('&')
+	endpoint = (cart.length == 1)?'file':'zip'
+	downloadEl.href = endpoint+'?'+paths.map(p=> `path=${enc(p)}`).join('&')
 	downloadEl.click()
 }
 

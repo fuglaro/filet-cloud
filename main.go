@@ -99,7 +99,9 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.Query().Get("path")
 		contents, err := sftp.OpenFile(path, os.O_RDONLY)
 		if check(w, err) { return }
-		http.ServeContent(w, r, path, time.Time{}, contents)
+		w.Header().Set(
+			"Content-Disposition", "attachment; filename="+filepath.Base(path))
+		http.ServeContent(w, r, filepath.Base(path), time.Time{}, contents)
 
 		/*
 		 * Creates a new directory on the server.
@@ -108,6 +110,31 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 		case "/newdir":
 		err = sftp.Mkdir(r.URL.Query().Get("path"))
 		if check(w, err) { return }
+
+		/*
+		 * Serve a web viewer (and editor if supported)
+		 * for the path provided.
+		 * @param path The path of the content to display.
+		 */
+		case "/open":
+		path := r.URL.Query().Get("path")
+		// detect the mime type of the file to determine the best viewer
+		contents, err := sftp.OpenFile(path, os.O_RDONLY)
+		if check(w, err) { return }
+		defer contents.Close()
+		buffer := make([]byte, 512) /* 512 bytes is enough to catch headers */
+		_, err = contents.Read(buffer)
+		mime := http.DetectContentType(buffer)
+		// attempt to load a mime viewer
+		page, err := template.ParseFiles("template/open/"+mime+".html")
+		if err == nil {
+			page.Execute(w, struct{P string}{P:path})
+		} else {
+			// fallback to generic viewer
+			page, err = template.ParseFiles("template/open/fallback.html")
+			if check(w, err) { return }
+			page.Execute(w, struct{P string; M string}{P:path, M:mime})
+		}
 
 		/*
 		 * Move or rename a file or directory on the server.
