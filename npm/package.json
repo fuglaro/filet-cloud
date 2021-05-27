@@ -1,0 +1,7 @@
+{
+  "name": "filet-cloud-web-plugins",
+  "description": "Frontend dependencies for filet-cloud-web",
+  "dependencies": {
+    "pdfjs-dist": "^2.7.570"
+  }
+}
