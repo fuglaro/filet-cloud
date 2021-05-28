@@ -1,9 +1,11 @@
 # filet-cloud
 A lean slice of Cloud Storage
 
-This project attempts to make a sofisticated personal cloud storage solution similar to the google-drive ecosystem, using the design philosophies of the filet project series. This project will hopefully contain little code, and rather bring together existing technologies into a simple project.
+This project attempts to make a sophisticated personal cloud storage solution similar to the google-drive ecosystem, using the design philosophies of the filet project series. This project, like others in the series, aggressively pushes for code minimalism and the essence of simplicity.
 
-It will target a single build running on a Raspberry Pi.
+This main interface to the data is via an SFTP server over a standard SSH connection. A surprising number of clients support this interface and its a big productivity win to be able to use things like rsync and ssh. Account management is as simple as using Linux user accounts and ssh authentication. A core part of this project is the SFTP webserver from the filet project series (https://github.com/fuglaro/filet-cloud-web) which gives access via a webpage.
+
+It targets a build running on a Raspberry Pi.
 
 ## Hardware
 The following hardware was used for this build:
@@ -26,7 +28,7 @@ The following hardware was used for this build:
 
 ### Filet-Cloud Installation
 ```bash
-ssh raspberrypi.local
+ssh pi@raspberrypi.local
 git clone https://github.com/fuglaro/filet-cloud.git
 sudo filet-cloud/install
 ```
@@ -34,23 +36,25 @@ sudo filet-cloud/install
 ```bash
 filet-cloud-new-user
 ```
-
 ## Compatible Clients
 * Android filebrowser - Solid Explorer
 * Android filebrowser (opensource) - Ghost Commander (with SFTP plugin)
 * Android filesyncer - FolderSync
 * Linux filebrowser client - Filezilla
 
-## TODO and Missing Features
-* Guide for interacting from Android, Windows, Linux etc.
-* Web Page server.
-* Snapshot count indicator on hat.
-* Replace python code with C code (to work better on lower spec machines like the PiZero W)
-
+## Future work
+* Guide for using client apps from Android, Windows, Linux etc.
+* Web Page server (finish integrating filet-cloud-web).
+* Convert Python to C or use lean Python compilers for reduced resouce usage to enable leaner hardware builds.
+* Write up on security.
+* Guide for lets encrypt or self signed certificate.
+* Number of snapshots on ehat ink.
+* Snapshot clean function on ehat button.
+* Full feature list.
 
 ## Design and Engineering Philosophies
 
-This project explores how far a software product can be pushed in terms of simplicity and minimalism, both inside and out, without losing powerful features. Window Managers are often a source of bloat, as all software tends to be. *filetwm* pushes a Window Manager to its leanest essence. It is a joy to use because it does what it needs to, and then gets out of the way. The opinions that drove the project are:
+This project explores how far a software product can be pushed in terms of simplicity and minimalism, both inside and out, without losing powerful features. Web programs and cloud tools tends to be bloated and buggy, as all software tends to be. *filetcloud* pushes a personal cloud solution to its leanest essence. It is a joy to use because it does what it needs to, reliably and quickly, and tries to do nothing else. The opinions that drove the project are:
 
 * **Complexity must justify itself**.
 * Lightweight is better than heavyweight.
@@ -60,4 +64,20 @@ This project explores how far a software product can be pushed in terms of simpl
 * Steep learning curves are dangerous, but don't just push a vertical wall deeper; learning is good, so make the incline gradual for as long as possible.
 * Allow other tools to thrive - e.g: terminals don't need tabs or scrollback, that's what tmux is for.
 * Fix where fixes belong - don't work around bugs in other applications, contribute to them, or make something better.
-* Improvement via reduction is sometimes what a project desperately needs, because we do so tend to just add. (https://www.theregister.com/2021/04/09/people_complicate_things/)
+* Improvement via reduction is sometimes what a project desperately needs, because we do so tend to just add. (https://www.theregister.com/2021/04/09/people_complicate_things/, https://www.nature.com/articles/s41586-021-03380-y)
+
+# Thanks to, grateful forks, and contributions
+
+We stand on the shoulders of giants. They own this, far more than I do.
+
+* https://github.com/fuglaro/filet-cloud-web
+* https://www.raspberrypi.org
+* https://www.python.org/
+* https://www.gnu.org/software/bash/
+* https://www.transcend-info.com
+* https://www.seagate.com
+* https://www.waveshare.com
+* https://wiki.archlinux.org
+* https://en.wikipedia.org
+* https://www.theregister.com
+* https://www.nature.com/articles/s41586-021-03380-y
