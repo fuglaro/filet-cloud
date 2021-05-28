@@ -10,11 +10,9 @@ This is a simple webpage exposing a cloud storage solution, which sits on top of
 	* diagrams
 	* slideshow
 	* docs
-	* pdf
 * content editors
 * Ffmpeg based transcoder
 * Media playlist viewer (play cart)
-* open content in new tab (without index) http://www.zuga.net/articles/unicode/character/1F4D6/
 * delete items (with confirmation) http://www.zuga.net/articles/unicode/character/1F5D1/
 * Share files via secure link (via making public to the pi user and thus the webserver in a PUBLIC folder). Ensure directory above is not readable but is executable. Check that is actually secure.
 * Change SFTP host to localhost (for security).
