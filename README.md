@@ -5,12 +5,11 @@ This is a simple webpage exposing a cloud storage solution, which sits on top of
 
 ## Future Work
 * More content viewers (with editors):
-	* md and other text files
+	* json
 	* spreadsheet
 	* diagrams
 	* slideshow
 	* docs
-* content editors
 * Ffmpeg based transcoder
 * Media playlist viewer (play cart)
 * Share files via secure link (via making public to the pi user and thus the webserver in a PUBLIC folder). Ensure directory above is not readable but is executable. Check that is actually secure.

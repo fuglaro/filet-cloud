@@ -1,15 +1,14 @@
 <!doctype html>
 <meta charset=utf-8>
 <title>FiletCloud:{{.P}}</title>
-<link rel=stylesheet href="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.css">
-<script src="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.js"></script>
 <style>
-	#md {display: none}
+	#text {width: 100%; height: 100%; border: 0;
+		resize: none; padding: 0; margin: 0}
 	#upload {font-size: 2em; display: none; z-index: 9;
 		border: none; background: none; position: fixed; right: 0}
 </style>
 <p id=wait>&#x23f3;</p>
 <button id="upload">&#x1f4be;</button>
-<textarea id=md></textarea>
-<script src="static/open/ext.md.js"></script>
+<textarea id=text></textarea>
+<script src="static/open/text/plain.js"></script>
 <script type="text/javascript">window.onload = ()=>load({{.P}})</script>
