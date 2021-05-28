@@ -11,14 +11,19 @@ function load(path, mime) {
 	function tryElement(element, fallback) {
 		doc = document.createElement(element)
 		doc.controls = "controls"
-		doc.onload = doc.oncanplay = ()=>document.body.replaceChildren(doc)
+		doc.onload = doc.oncanplay = ()=>{
+			document.body.style.margin = 0
+			document.body.replaceChildren(doc)
+		}
 		doc.onerror = fallback
 		doc.src = `/file?path=${enc(path)}`
 	}
 	// Hit the fallback approach attempting to load the content.
 	tryElement("img", ()=>tryElement("video", ()=> {
 		document.getElementById("download").href = `/file?path=${enc(path)}`
-		document.getElementById("fail").style.visibility = "visible"
+		document.getElementById("download").download = path.split('/').pop()
 		document.getElementById("details").innerText = `${path}\n(${mime})`
+		document.body.replaceChildren(document.getElementById("fail"))
+		document.getElementById("fail").style.visibility = "visible"
 	}))
 }

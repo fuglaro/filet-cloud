@@ -56,7 +56,6 @@ function cartButton() {
  */
 function nav(path) {
 	document.getElementById('path').innerText = path
-	document.getElementById('dir').replaceChildren()
 	document.getElementById('data').replaceChildren()
 	// turn off cart selection mode
 	document.getElementById('cart').style.filter = ''
@@ -65,11 +64,12 @@ function nav(path) {
 		// Display the directory contents
 		document.getElementById('dir').replaceChildren(...r.map(([f, n])=> {
 			nib = document.createElement("h2")
-			nib.onclick = ()=>{
+			nib.onclick = ((i)=>(()=>{
+				i.innerText = `\u{23F3} ${n}` // loading icon
 				p = cwd() + n + (f?"":"/")
 				cartMode()?cartSel(p):(f?load(p):nav(p))
-			}
-			nib.innerText = `${f?'\u{1F4C4}':'\u{1F4C2}'} ${n}`
+			}))(nib)
+			nib.id = nib.innerText = `${f?'\u{1F4C4}':'\u{1F4C2}'} ${n}`
 			return nib
 		}))
 	}))
@@ -83,10 +83,14 @@ function nav(path) {
  */
  function load(path) {
 	document.getElementById('path').innerText = path
-	doc = document.createElement("iframe")
-	doc.frameBorder = "0"
-	doc.src = `open?path=${enc(path)}`
-	document.getElementById('data').replaceChildren(doc)
+	nib = document.createElement("iframe")
+	nib.frameBorder = "0"
+	// clear loading icon
+	id = `\u{1F4C4} ${path.split('/').pop()}`
+	nib.onload = ()=>	document.getElementById(id).innerText = id
+	// set the iframe to view the contents of the file
+	nib.src = `open?path=${enc(path)}`
+	document.getElementById('data').replaceChildren(nib)
 }
 
 /**
