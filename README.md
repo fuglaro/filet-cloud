@@ -44,6 +44,9 @@ filet-cloud-new-user
 ## TODO and Missing Features
 * Guide for interacting from Android, Windows, Linux etc.
 * Web Page server.
+* Snapshot count indicator on hat.
+* Replace python code with C code (to work better on lower spec machines like the PiZero W)
+
 
 ## Design and Engineering Philosophies
 
