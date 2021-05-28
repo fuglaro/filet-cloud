@@ -176,3 +176,20 @@ function move() {
 		.then(check(r=> {cartSel(item); nav(cwd())}))
 	})
 }
+
+/**
+ * Deletes everything in the cart,
+ * after confirmation.
+ */
+function del() {
+	if (!cart.length) return alert('Please select items with the cart.')
+	confirmMsg = `Delete ${cart.length} cart item${cart.length>1?'s':''}?`
+	if (!confirm(confirmMsg)) return
+	/* Loop through the paths in the cart sorted backwards so sub-items
+		are removed before parent items */
+		cart.sort().reverse().forEach(item => {
+			fetch(`remove?path=${enc(item)}`)
+			// clear items from the cart and refresh directory
+			.then(check(r=> {cartSel(item); nav(cwd())}))
+		})
+}

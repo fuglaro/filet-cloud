@@ -135,6 +135,39 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		/*
+		 * Deletes a file or a folder including all contents.
+		 * The 'path' query parameter identifies what to delete.
+		 * Folders should be terminated with a '/'
+		 * On any error, it will stop the deletion process and bail.
+		 */
+		case "/remove":
+		path := r.URL.Query().Get("path")
+		if path[len(path)-1:] != "/" {
+			// Delete the file
+			err = sftp.Remove(path)
+			if check(w, err) { return }
+			break
+		}
+		// Handle folder deletion
+		walk := sftp.Walk(path)
+		// First delete all files and collect directories
+		var dirs []string
+		for walk.Step() {
+			if check(w, walk.Err()) { return }
+			if walk.Stat().IsDir() {
+				dirs = append(dirs, walk.Path())
+				continue
+			}
+			err = sftp.Remove(walk.Path())
+			if check(w, err) { return }
+		}
+		// Then delete all the dirs (in reverse order)
+		for i := range dirs {
+			err = sftp.Remove(dirs[len(dirs)-1-i])
+			if check(w, err) { return }
+		}
+
+		/*
 		 * Move or rename a file or directory on the server.
 		 * The 'path' query parameter identifies what to change.
 		 * The 'to' query parameter identifies the new name or location.
