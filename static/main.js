@@ -65,7 +65,7 @@ function nav(path) {
 		document.getElementById('dir').replaceChildren(...r.map(([f, n])=> {
 			nib = document.createElement("h2")
 			nib.onclick = ((i)=>(()=>{
-				if (!cartMode) i.innerText = `\u{23F3} ${n}` // loading icon
+				if (!cartMode()) i.innerText = `\u{23F3} ${n}` // loading icon
 				p = cwd() + n + (f?"":"/")
 				cartMode()?cartSel(p):(f?load(p):nav(p))
 			}))(nib)
