@@ -1,24 +1,47 @@
 # filet-cloud-web
 Web portal for Filet-Cloud
 
-This is a simple webpage exposing a cloud storage solution, which sits on top of an SFTP server.
+This is a simple webpage exposing a cloud storage solution sitting on top of an SFTP server. It is intended to run on the same host as the SFTP server, using the SFTP server for authentication and maintaing filesystem ownership integrity consistent with local access. It indends to be elegant, simple, featureful, and a joy to use.
+
+Please see it's parent project (https://github.com/fuglaro/filet-cloud) from which it was born.
+
+## Supported formats
+* images (browser native)
+* videos (browser native)
+* audio (browser native)
+* pdf documents (browser native)
+### Editable formats
+* markdown (.md)
+* text (mime text/plain)
+
+## Features
+* Authentication via local user account ssh credentials.
+* Browse folder structure.
+* View and edit supported files.
+* Create new folders.
+* Upload files.
+* Rename files and folders.
+* Open file in a new tab.
+* Download a file.
+* Download multiple files or folders in a zip.
+* Move multiple files and folders.
+* Delete files and folders.
 
 ## Future Work
-* More content viewers (with editors):
-	* spreadsheet
-	* diagrams
-	* slideshow
-	* docs
 * Ffmpeg based transcoder
 * Media playlist viewer (play cart)
 * View folder's thumbnails
-* Share files via secure link (via making public to the pi user and thus the webserver in a PUBLIC folder). Ensure directory above is not readable but is executable. Check that is actually secure.
 * Change SFTP host to localhost (for security).
 * Reject HTTP connections (for security).
 * Write up about security.
 	* Disclaimer: written when tired, nothing is secure until it is audited.
 	* Uses Basic Auth to proxy ssh credentials so it is essential to use HTTPS if exposed to an untrusted network.
 	* The webserver connects to the SFTP server without verifying the ssh host key, so, if running across an untrusted nwtwork, the SFTP server must be on the webserver localhost.
+	* Just a proxy to POSIX through ssh. Check your default umask. The default path is /mnt/usb/filetclouddata/<username>/. It is recommended that this have permissions of "rwx------".
+* File sharing: this is something not yet needed, but I'm very interested in supporting. Due to the engineering philosophy of "Complexity must justify itself", I can't add it until someone wants it. Please contact me if you would like these features. They could be something along the lines of the following:
+	* Public link sharing: Creates a hard link completely open to read and/or write with a randomised name with high entropy and places it within an admin-owned folder with permissions rwx-wx-wx.
+	* User sharing: Similar to public link sharing but with access fully locked except for specifically granted users given read and/or write access via ACLs (support will need to be upstreamed https://github.com/pkg/sftp).
+* Office document support (spreadsheet, diagrams, slideshow, docs): This is intended but will wait and hope for the results of the recent work into getting LibreOffice supported in browsers via WebAssembly. This could result in an ideal solution compatible with this project.
 
 ## Design and Engineering Philosophies
 
