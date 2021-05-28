@@ -65,7 +65,7 @@ function nav(path) {
 		document.getElementById('dir').replaceChildren(...r.map(([f, n])=> {
 			nib = document.createElement("h2")
 			nib.onclick = ((i)=>(()=>{
-				i.innerText = `\u{23F3} ${n}` // loading icon
+				if (!cartMode) i.innerText = `\u{23F3} ${n}` // loading icon
 				p = cwd() + n + (f?"":"/")
 				cartMode()?cartSel(p):(f?load(p):nav(p))
 			}))(nib)
@@ -116,7 +116,7 @@ function makedir() {
 	for (i = 0; i < uploadEl.files.length; i++)
 		uploadForm.append("files[]", uploadEl.files[i])
 	fetch(`upload?path=${enc(cwd())}`, {method: 'POST', body: uploadForm})
-	.then(check(r=> {}))
+	.then(check(r=> nav(cwd())))
 }
 
 /**
@@ -161,7 +161,8 @@ function download() {
 }
 
 /**
- * Moves everything in the cart to the current folder.
+ * Moves everything in the cart to the current folder,
+ * after confirmation.
  */
 function move() {
 	if (!cart.length) return alert('Please select items with the cart.')
