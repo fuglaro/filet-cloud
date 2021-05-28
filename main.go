@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -121,8 +122,9 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 		if check(w, err) { return }
 		defer contents.Close()
 		buffer := make([]byte, 512) /* 512 bytes is enough to catch headers */
-		_, err = contents.Read(buffer)
-		mime := http.DetectContentType(buffer)
+		n, err := contents.Read(buffer)
+		mime := http.DetectContentType(buffer[:n])
+		mime = strings.Split(mime, ";")[0]
 		// attempt to load a mime viewer
 		page, err := template.ParseFiles("template/open/"+mime+".html")
 		if err == nil {
