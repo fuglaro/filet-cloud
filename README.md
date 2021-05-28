@@ -5,13 +5,13 @@ This is a simple webpage exposing a cloud storage solution, which sits on top of
 
 ## Future Work
 * More content viewers (with editors):
-	* json
 	* spreadsheet
 	* diagrams
 	* slideshow
 	* docs
 * Ffmpeg based transcoder
 * Media playlist viewer (play cart)
+* View folder's thumbnails
 * Share files via secure link (via making public to the pi user and thus the webserver in a PUBLIC folder). Ensure directory above is not readable but is executable. Check that is actually secure.
 * Change SFTP host to localhost (for security).
 * Reject HTTP connections (for security).
