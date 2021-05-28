@@ -1,10 +1,7 @@
-
 var cart = []
 let curPath = ()=>document.getElementById('path').innerText
 let cwd = ()=>curPath().replace(/[^/]+$/g, '')
-let cwdParent = ()=>cwd().replace(/[^/]+\/$/g, '')
-let dataEl = document.getElementById('data')
-let sel = document.getElementById('cart').style
+let cartMode = ()=>document.getElementById('cart').style.filter
 let enc = encodeURIComponent
 // Basic error handler for queries to the server.
 let check = okayFn=> async r=> {
@@ -13,71 +10,83 @@ let check = okayFn=> async r=> {
 
 /**
  * Switches between cart and normal selection modes.
- * If the current path is a file, it will just add the,
- * file to the cart or switch to the cart, if the file is
- * already in the cart.
+ * If the current path is a file and not yet in the cart,
+ * it will just add the file to the cart.
  */
-function cartSel() {
-	sel.filter = sel.filter ? '' : 'drop-shadow(0.2rem 0.2rem 0.2rem indigo)'
-	if (sel.filter && !curPath().endsWith('/') && !cart.includes(curPath())) {
+function cartButton() {
+	if (!cartMode() && !curPath().endsWith('/') && !cart.includes(curPath())) {
 		// If a file is selected, add to the cart without switching to cart mode.
-		nav(curPath())
-		sel.filter = ''
+		cartSel(curPath())
+	} else {
+		document.getElementById('cart').style.filter =
+			cartMode()?'':'drop-shadow(0.2rem 0.2rem 0.2rem indigo)'
+		// redraw the cart or contents depending on the resulting cart mode.
+		cartMode() ? cartSel() : (!curPath().endsWith("/")?load(curPath()):0)
 	}
-	nav(curPath(), 1)
 }
 
 /**
- * Navigate to and show a file or directory, or,
- * if cart selection mode is active, show the cart and add and
- * remove from it instead of navigating.
- * For folders, path should be terminated in a "/"
- * Sets the current files or directories for future actions.
+ * Toggle the presence of the given path in the cart, if provided.
+ * Refresh the display of the cart, updating the size,
+ * and listing the contents if the cart mode is active.
+ */
+ function cartSel(path) {
+	if (path) {
+		if (cart.indexOf(path) < 0) cart.push(path)
+		else cart.splice(cart.indexOf(path), 1)
+	}
+	// Update the cart size display
+	document.getElementById('cartlen').innerText = cart.length.toString()
+	// Show the cart entries, if in cart mode
+	if (cartMode())
+		document.getElementById('data').replaceChildren(...cart.map(c=> {
+			nib = document.createElement("h2")
+			nib.onclick = ()=>cartSel(c) // remove the cart item if clicked
+			nib.innerText = `${!c.endsWith('/')?'\u{1F4C4}':'\u{1F4C2}'} ${c}`
+			return nib
+		}))
+}
+
+/**
+ * Navigate to, and show, a file or directory.
+ * For folders, path should be terminated in a "/".
+ * Also sets the current files or directories for future actions.
  * Updates the folder area with interactive tree navigation.
  * Displays file contents as best it can.
- * @param {bool} forceNav Ignore cart selection mode in navigating
- * @param {bool} refresh Force redraw the working dir contents
  */
-function nav(path, forceNav, refresh) {
-	// Function to generate directory entry selector elements.
-	dirSel = (isFile, name, path)=> {
-		nib = document.createElement("h2")
-		nib.onclick = ()=>nav(path)
-		nib.innerText = `${isFile?'\u{1F4C4}':'\u{1F4C2}'} ${name}`
-		return nib}
-
-	// Handle addition and removal from cart if in cart selection mode
-	if (sel.filter && !forceNav) {
-		index = cart.indexOf(path)
-		index < 0 ? cart.push(path) : cart.splice(index, 1)
-	}
-	document.getElementById('cartlen').innerText = cart.length.toString()
-	// Show the cart entries, if it's selected
-	dataEl.replaceChildren(...
-		sel.filter ? cart.map(c=> dirSel(!c.endsWith('/'), c, c)) : [])
-
-	// Handle directory navigation, or file content display
-	if ((refresh || path.endsWith("/")) && (!sel.filter || forceNav)) {
-		dir = path.replace(/[^/]+$/g, '')
-		// Query the contents of the directory
-		fetch(`dir?path=${enc(dir)}`)
-		.then(check(r=> { r.sort()
-			// Update the location to this directory if we aren't just refreshing
-			if (path.endsWith("/"))
-				document.getElementById('path').innerText = path
-			// Display the directory contents
-			document.getElementById('dir').replaceChildren(...r.map(([f, n])=>
-				dirSel(f, n, dir + n + (f?"":"/"))))}))
-	}
-
+function nav(path) {
+	document.getElementById('path').innerText = path
+	document.getElementById('dir').replaceChildren()
+	document.getElementById('data').replaceChildren()
+	// turn off cart selection mode
+	document.getElementById('cart').style.filter = ''
+	// Refresh the contents of the directory by querying the server
+	fetch(`dir?path=${enc(cwd())}`).then(check(r=> {r.sort()
+		// Display the directory contents
+		document.getElementById('dir').replaceChildren(...r.map(([f, n])=> {
+			nib = document.createElement("h2")
+			nib.onclick = ()=>{
+				p = cwd() + n + (f?"":"/")
+				cartMode()?cartSel(p):(f?load(p):nav(p))
+			}
+			nib.innerText = `${f?'\u{1F4C4}':'\u{1F4C2}'} ${n}`
+			return nib
+		}))
+	}))
 	// Open any file contents in the data pane
-	if (!path.endsWith("/") && !sel.filter) {
-		document.getElementById('path').innerText = path
-		doc = document.createElement("iframe")
-		doc.frameBorder = "0"
-		doc.src = `open?path=${enc(path)}`
-		dataEl.replaceChildren(doc)
-	}
+	if (!path.endsWith("/")) load(path)
+}
+
+/**
+ * Open file contents in the data pane.
+ * Also sets the current file for future actions.
+ */
+ function load(path) {
+	document.getElementById('path').innerText = path
+	doc = document.createElement("iframe")
+	doc.frameBorder = "0"
+	doc.src = `open?path=${enc(path)}`
+	document.getElementById('data').replaceChildren(doc)
 }
 
 /**
@@ -88,7 +97,7 @@ function nav(path, forceNav, refresh) {
 function makedir() {
 	if (!(newDir = prompt("New Folder:", ""))) return
 	fetch(`newdir?path=${enc(cwd() + newDir)}`)
-	.then(check(r=> nav(cwd())))
+	.then(check(r=> nav(cwd()))) // refresh directory
 }
 
 /**
@@ -103,7 +112,7 @@ function makedir() {
 	for (i = 0; i < uploadEl.files.length; i++)
 		uploadForm.append("files[]", uploadEl.files[i])
 	fetch(`upload?path=${enc(cwd())}`, {method: 'POST', body: uploadForm})
-	.then(check(r=> nav(cwd())))
+	.then(check(r=> {}))
 }
 
 /**
@@ -111,11 +120,12 @@ function makedir() {
  * The user is prompted for the new name.
  */
 function rename() {
+	suffix = curPath().endsWith('/')?'/':''
 	folder = curPath().replace(/[^/]+\/?$/g, '')
 	oldName = curPath().replace(/\/?$/g, '').split('/').pop()
 	if (!(newName = prompt("Rename:", oldName)) || newName == oldName) return
 	fetch(`rename?path=${enc(folder + oldName)}&to=${enc(folder + newName)}`)
-	.then(check(r=> nav(folder + newName + (folder==cwd()?'':'/'), 0, 1)))
+	.then(check(r=> nav(folder + newName + suffix)))
 }
 
 /**
@@ -154,9 +164,7 @@ function move() {
 	cart.sort().reverse().forEach(item => {
 		dest = cwd() + item.replace(/\/?$/g, '').split('/').pop()
 		fetch(`rename?path=${enc(item)}&to=${enc(dest)}`)
-		.then(check(r=> {
-			cart.splice(cart.indexOf(item), 1)
-			nav(cwd(), 1, 1)
-		}))
+		// remove moved items from the cart and refresh directory
+		.then(check(r=> {cartSel(item); nav(cwd())}))
 	})
 }

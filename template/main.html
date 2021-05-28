@@ -26,7 +26,7 @@
 <div id=index>
 	<h1>&#9925 Filet Cloud</h1>
 	<div id=menu>
-		<h1 onclick="nav(cwdParent(), 1)">&#128281</h1>
+		<h1 onclick="nav(cwd().replace(/[^/]+\/$/g, ''))">&#128281</h1>
 		<h1 onclick="makedir()">&#128193</h1>
 		<h1 onclick="uploadEl.click()">&#128228</h1>
 		<h1 onclick="rename()">&#128394</h1>
@@ -34,7 +34,7 @@
 		<h1 onclick="download()">&#128229</h1>
 		<h1 onclick="move()">&#128666</h1>
 		<h1 onclick="del()">&#128465</h1>
-		<h1 onclick="cartSel()" id="cart">&#128722</h1>
+		<h1 onclick="cartButton()" id="cart">&#128722</h1>
 		<div id=cartlen>0</div>
 	</div>
 	<div id=path></div>
