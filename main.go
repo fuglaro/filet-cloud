@@ -117,24 +117,30 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 		 */
 		case "/open":
 		path := r.URL.Query().Get("path")
-		// detect the mime type of the file to determine the best viewer
+		// attempt to load file extension based viewer
+		page, err := template.ParseFiles(
+			"template/open/ext"+filepath.Ext(path)+".html")
+		if err == nil {
+			page.Execute(w, struct{P string}{P:path})
+			break
+		}
+		// detect the mime type of the file to find a viewer
 		contents, err := sftp.OpenFile(path, os.O_RDONLY)
 		if check(w, err) { return }
 		defer contents.Close()
 		buffer := make([]byte, 512) /* 512 bytes is enough to catch headers */
 		n, err := contents.Read(buffer)
-		mime := http.DetectContentType(buffer[:n])
-		mime = strings.Split(mime, ";")[0]
+		mime := strings.Split(http.DetectContentType(buffer[:n]), ";")[0]
 		// attempt to load a mime viewer
-		page, err := template.ParseFiles("template/open/"+mime+".html")
+		page, err = template.ParseFiles("template/open/"+mime+".html")
 		if err == nil {
 			page.Execute(w, struct{P string}{P:path})
-		} else {
-			// fallback to generic viewer
-			page, err = template.ParseFiles("template/open/fallback.html")
-			if check(w, err) { return }
-			page.Execute(w, struct{P string; M string}{P:path, M:mime})
+			break
 		}
+		// fallback to generic viewer
+		page, err = template.ParseFiles("template/open/fallback.html")
+		if check(w, err) { return }
+		page.Execute(w, struct{P string; M string}{P:path, M:mime})
 
 		/*
 		 * Deletes a file or a folder including all contents.
