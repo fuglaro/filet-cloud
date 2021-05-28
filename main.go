@@ -99,8 +99,6 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.Query().Get("path")
 		contents, err := sftp.OpenFile(path, os.O_RDONLY)
 		if check(w, err) { return }
-		w.Header().Set(
-			"Content-Disposition", "attachment; filename="+filepath.Base(path))
 		http.ServeContent(w, r, filepath.Base(path), time.Time{}, contents)
 
 		/*
@@ -203,9 +201,6 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 				prefix = filepath.Dir(prefix)
 			}
 		}
-		// prepare the response as a zip file
-		w.Header().Set("Content-Type", "application/zip")
-		w.Header().Set("Content-Disposition", "attachment; filename=\"down.zip\"")
 		// start making the zip file
 		zipper := zip.NewWriter(w)
 		defer zipper.Close()

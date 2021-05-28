@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<title>FiletCloud:{{.P}}</title>
+<style>
+	body {margin: 0; height: 100vh}
+	iframe {display: block; margin: auto; width: 100%; height: 100%}
+</style>
+</head>
+<body>
+<iframe id="doc" frameBorder="0"></iframe>
+<script type="text/javascript">window.onload = ()=>
+	document.getElementById('doc').src = `file?path=${encodeURIComponent({{.P}})}`
+</script>
+</body>
+</html>

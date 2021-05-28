@@ -147,8 +147,12 @@ function download() {
 	else if (!curPath().endsWith('/')) paths = [curPath()]
 	else return alert('Please select a file, or items with the cart.')
 	downloadEl = document.getElementById('download')
-	endpoint = (cart.length == 1)?'file':'zip'
-	downloadEl.href = endpoint+'?'+paths.map(p=> `path=${enc(p)}`).join('&')
+	downloadEl.download = 'download.zip'
+	downloadEl.href = 'zip?'+paths.map(p=> `path=${enc(p)}`).join('&')
+	if (paths.length == 1 && !paths[0].endsWith('/')) {
+		downloadEl.download = paths[0].split('/').pop()
+		downloadEl.href = 'file?path='+paths[0]
+	}
 	downloadEl.click()
 }
 

@@ -47,4 +47,3 @@ We stand on the shoulders of giants. They own this, far more than I do.
 * https://github.com/
 * https://www.theregister.com
 * https://www.nature.com/articles/s41586-021-03380-y
-* https://mozilla.github.io/pdf.js/ // TODO remove in favor of browser
