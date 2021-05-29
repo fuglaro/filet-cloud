@@ -1,7 +1,7 @@
 # filet-cloud-web
 Web portal for Filet-Cloud
 
-This is a simple webpage exposing a cloud storage solution sitting on top of an SFTP server. It is intended to run on the same host as the SFTP server, using the SFTP server for authentication and maintaing filesystem ownership integrity consistent with local access. It indends to be elegant, simple, featureful, and a joy to use.
+This is a simple webpage exposing a cloud storage solution sitting on top of an SFTP server. It indends to be elegant, simple, featureful, and a joy to use. Breathtaking simplicity is one of the core driving principles.
 
 Please see it's parent project (https://github.com/fuglaro/filet-cloud) from which it was born.
 
@@ -14,7 +14,9 @@ Please see it's parent project (https://github.com/fuglaro/filet-cloud) from whi
 * markdown (.md)
 * text (mime text/plain)
 
-Please get in touch if you would like any further formats supported.
+Please get in touch if you would like any further formats supported. Frontend viewers and editors can easily be added via a plugin system registered by file extension or content-type:
+* File extension registered plugins: template/open/ext.<extension>.html
+* Content-type registered plugins: template/open/<content-type>/<sub-type>.html
 
 ## Features
 * Authentication via local user account ssh credentials.
@@ -28,6 +30,7 @@ Please get in touch if you would like any further formats supported.
 * Download multiple files or folders in a zip.
 * Move multiple files and folders.
 * Delete files and folders.
+* Maintains filesystem ownership integrity consistent with local access.
 
 ### Rationale for Omissions
 * Video transcoding for playback in modern browsers - I threw this together with ffmpeg and a simple streaming approach and it was slow and didn't allow seeking. Fixing those issues would mean buffering large amounts of memory or transcoding the entire video to disk ahead of serving. A simpler and cleaner approach is just to expect users to keep video files up to date with modern codecs. This is better in the long run. Leaving the poorly supported or old video formats around will just make them age harder, better to rip from VHS than to keep a VHS player around forever.
