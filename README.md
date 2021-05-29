@@ -10,9 +10,8 @@ Please see it's parent project (https://github.com/fuglaro/filet-cloud) from whi
 * videos (browser native)
 * audio (browser native)
 * pdf documents (browser native)
-### Editable formats
-* markdown (.md)
-* text (mime text/plain)
+* markdown (.md - editable)
+* text (mime text/plain - editable)
 
 Please get in touch if you would like any further formats supported. Frontend viewers and editors can easily be added via a plugin system registered by file extension or content-type:
 * File extension registered plugins: template/open/ext.<extension>.html
