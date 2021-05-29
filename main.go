@@ -37,10 +37,10 @@ func sftpConnect(r *http.Request) (*ssh.Client, *sftp.Client, error) {
 
 /**
  * Checks if the passed in error has a value and, if it does,
- * an StatusForbidden error is returned.
+ * a StatusForbidden error is provided to the response.
  * For the purposes of this webserver, where we are exposing
  * files via SFTP, assuming any error relates to a permission
- * issue, is sufficient.
+ * issue, is sufficient. Breaks some HTTP rules but its nice and simple.
  * Returns whether the error had a value.
  */
 func check(w http.ResponseWriter, e error) (bool) {
