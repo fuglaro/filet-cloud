@@ -22,7 +22,8 @@ function cartButton() {
 		document.getElementById('cart').style.filter =
 			cartMode()?'':'drop-shadow(0.2rem 0.2rem 0.2rem indigo)'
 		// redraw the cart or contents depending on the resulting cart mode.
-		cartMode() ? cartSel() : (!curPath().endsWith("/")?load(curPath()):0)
+		cartMode() ? cartSel() : (!curPath().endsWith("/") ?
+			load(curPath()) : document.getElementById('data').replaceChildren())
 	}
 }
 
