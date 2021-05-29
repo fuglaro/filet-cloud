@@ -10,7 +10,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -18,6 +17,8 @@ import (
 
 /**
  * Estabilises, and returns a sftp connection.
+ * Caller is expected to close both,
+ * unless an error is returned.
  */
 func sftpConnect(r *http.Request) (*ssh.Client, *sftp.Client, error) {
 	user, pass, _ := r.BasicAuth()
@@ -32,7 +33,7 @@ func sftpConnect(r *http.Request) (*ssh.Client, *sftp.Client, error) {
 	if err != nil { return nil, nil, err }
 	// create new SFTP sftp
 	sftp, err := sftp.NewClient(sshConn)
-	if err != nil { return nil, nil, err }
+	if err != nil { sshConn.Close(); return nil, nil, err }
 	return sshConn, sftp, nil
 }
 
@@ -61,7 +62,6 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusUnauthorized)
 		return;
 	}
-	if check(w, err) { return }
 	defer sftp.Close()
 	defer sshConn.Close()
 
@@ -99,8 +99,9 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 		 */
 		case "/file":
 		// stream the file contents
-		contents, err := sftp.OpenFile(path, os.O_RDONLY)
+		contents, err := sftp.Open(path)
 		if check(w, err) { return }
+		defer contents.Close()
 		http.ServeContent(w, r, filepath.Base(path), time.Time{}, contents)
 
 		/*
@@ -125,7 +126,7 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 		// detect the mime type of the file to find a viewer
-		contents, err := sftp.OpenFile(path, os.O_RDONLY)
+		contents, err := sftp.Open(path)
 		if check(w, err) { return }
 		defer contents.Close()
 		buffer := make([]byte, 512) /* 512 bytes is enough to catch headers */
@@ -189,9 +190,9 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 		 * This does not support all formats.
 		 */
 		case "/thumb":
-		contents, err := sftp.OpenFile(path, os.O_RDONLY)
-		defer contents.Close()
+		contents, err := sftp.Open(path)
 		if check(w, err) { return }
+		defer contents.Close()
 		cmd := exec.Command("ffmpeg", "-i", "-", "-vframes", "1", "-f", "image2",
 			"-vf", "scale=-1:240", "pipe:1")
 		cmd.Stdin = contents
@@ -260,7 +261,7 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 		defer zipper.Close()
 		for _, path := range files {
 			// get the contents of the file from the server
-			contents, err := sftp.OpenFile(path, os.O_RDONLY)
+			contents, err := sftp.Open(path)
 			if check(w, err) { return }
 			defer contents.Close()
 			// add the file to the zip with the relative subpath
