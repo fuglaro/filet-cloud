@@ -3,6 +3,7 @@ package main
 import (
 	"archive/zip"
 	"encoding/json"
+	"os/exec"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 	"html/template"
@@ -64,6 +65,7 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 	defer sftp.Close()
 	defer sshConn.Close()
 
+	path := r.URL.Query().Get("path")
 	switch r.URL.Path {
 		/*
 		 * Serve the main page
@@ -82,7 +84,7 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 		 */
 		case "/dir":
 		// find contents of the directory
-		contents, err := sftp.ReadDir(r.URL.Query().Get("path"))
+		contents, err := sftp.ReadDir(path)
 		if check(w, err) { return }
 		// build json export
 		entries := make([][2]interface{}, len(contents))
@@ -97,7 +99,6 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 		 */
 		case "/file":
 		// stream the file contents
-		path := r.URL.Query().Get("path")
 		contents, err := sftp.OpenFile(path, os.O_RDONLY)
 		if check(w, err) { return }
 		http.ServeContent(w, r, filepath.Base(path), time.Time{}, contents)
@@ -116,7 +117,6 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 		 * @param path The path of the content to display.
 		 */
 		case "/open":
-		path := r.URL.Query().Get("path")
 		// attempt to load file extension based viewer
 		page, err := template.ParseFiles(
 			"template/open/ext"+filepath.Ext(path)+".html")
@@ -149,7 +149,6 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 		 * On any error, it will stop the deletion process and bail.
 		 */
 		case "/remove":
-		path := r.URL.Query().Get("path")
 		if path[len(path)-1:] != "/" {
 			// Delete the file
 			err = sftp.Remove(path)
@@ -182,8 +181,22 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 		 * Both parameters should be full paths.
 		 */
 		case "/rename":
-		err = sftp.Rename(r.URL.Query().Get("path"), r.URL.Query().Get("to"))
+		err = sftp.Rename(path, r.URL.Query().Get("to"))
 		if check(w, err) { return }
+
+		/*
+		 * Serve a thumbnail image of the file.
+		 * This does not support all formats.
+		 */
+		case "/thumb":
+		contents, err := sftp.OpenFile(path, os.O_RDONLY)
+		defer contents.Close()
+		if check(w, err) { return }
+		cmd := exec.Command("ffmpeg", "-i", "-", "-vframes", "1", "-f", "image2",
+			"-vf", "scale=-1:240", "pipe:1")
+		cmd.Stdin = contents
+		cmd.Stdout = w // browsers rock at detecting its a jpeg
+		_ = cmd.Run()
 
 		/*
 		 * Upload files to the server.
@@ -200,7 +213,7 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 			if check(w, err) { return }
 			defer source.Close()
 			// create new file on server
-			dest, err := sftp.Create(r.URL.Query().Get("path")+"/"+file.Filename)
+			dest, err := sftp.Create(path+"/"+file.Filename)
 			if check(w, err) { return }
 			defer dest.Close()
 			// copy contents of uploaded file to the server

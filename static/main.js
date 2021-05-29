@@ -133,11 +133,21 @@ function rename() {
 }
 
 /**
- * Open a file in a new window for viewing.
+ * Open a file in a new window for viewing,
+ * or, if a folder is selected, expand the entries
+ * to thumbnails.
  */
 function tabopen() {
-	if (curPath() == cwd()) return // ignore folders
-	window.open(`/open?path=${enc(curPath())}`, "_blank")
+	if (curPath() == cwd()) // for folders, expand to thumbnails
+		document.getElementById('dir').childNodes.forEach(c=>{
+			if (c.innerText.startsWith('\u{1F4C2}')) return // folder
+			thumb = cwd() + c.innerText.slice(3)
+			c.style.backgroundImage = `url("thumb?path=${enc(thumb)}")`
+			c.style.minHeight = "240px"
+			c.style.textShadow = "1px 1px white"
+		})
+	else // files open into a new tab
+		window.open(`/open?path=${enc(curPath())}`, "_blank")
 }
 
 /**
