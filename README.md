@@ -14,8 +14,8 @@ Please see it's parent project (https://github.com/fuglaro/filet-cloud) from whi
 * text (mime text/plain - editable)
 
 Please get in touch if you would like any further formats supported. Frontend viewers and editors can easily be added via a plugin system registered by file extension or content-type:
-* File extension registered plugins: template/open/ext.<extension>.html
-* Content-type registered plugins: template/open/<content-type>/<sub-type>.html
+* File extension registered plugins: template/open/ext.EXTENSION.html
+* Content-type registered plugins: template/open/CONTENTTYPE/SUBTYPE.html
 
 ## Features
 * Authentication via local user account ssh credentials.
