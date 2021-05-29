@@ -36,7 +36,7 @@ func sftpConnect(r *http.Request) (*ssh.Client, *sftp.Client, error) {
 }
 
 /**
- * Checks if the passesd in error has a value and, if it does,
+ * Checks if the passed in error has a value and, if it does,
  * an StatusForbidden error is returned.
  * For the purposes of this webserver, where we are exposing
  * files via SFTP, assuming any error relates to a permission
