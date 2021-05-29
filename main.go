@@ -27,9 +27,7 @@ func sftpConnect(r *http.Request) (*ssh.Client, *sftp.Client, error) {
 		Auth: []ssh.AuthMethod { ssh.Password(pass), },
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
-	// estabish ssh connection
-	                         //TODO "localhost:22"
-	sshConn, err := ssh.Dial("tcp", "192.168.0.13:22", config)
+	sshConn, err := ssh.Dial("tcp", "localhost:22", config)
 	if err != nil { return nil, nil, err }
 	// create new SFTP sftp
 	sftp, err := sftp.NewClient(sshConn)
