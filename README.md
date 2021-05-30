@@ -77,4 +77,5 @@ We stand on the shoulders of giants. They own this, far more than I do.
 * https://www.theregister.com
 * https://www.nature.com/articles/s41586-021-03380-y
 * https://github.com/sparksuite/simplemde-markdown-editor
+* https://www.jsdelivr.com/
 * a world of countless open source contributors.
