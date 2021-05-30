@@ -39,10 +39,10 @@ Please get in touch if you would like any further formats supported. Frontend vi
 ## Security
 Note: This was put together by someone who was usually pretty tired while coding, things will have been missed. The codebase is strikingly small and the dependencies few, so the aim is that a security audit, for whosoever whishes to do it, should be as easy as possible. Nothing is secure until it is audited and reviewed by peers.
 
-The authentication mechanism this uses is passing ssh user and password credentials through Http Basic Auth on to the SFTP server. It tries not to store passwords and instead relies on browser support for storing passwords to make it friendly to use.
+The authentication mechanism this uses is passing ssh user and password credentials through HTTP Basic Auth on to the SFTP server. It tries to not store passwords and instead relies on browser support for storing passwords to make it friendly to use.
 
 There are some critical things to consider when making your own deployment:
-* Since this uses Basic Auth to proxy ssh credentials, it is critically essential to use HTTPS if exposed to an untrusted network. HTTPS is not blocked so that a deployment can sit behind a reverse proxy which manages TLS.
+* Since this uses Basic Auth to proxy ssh credentials, it is critically essential to use HTTPS if exposed to an untrusted network. HTTP is not blocked to allow for a deployment to sit behind a reverse proxy which manages TLS.
 * The webserver connects to the SFTP server without verifying the ssh host key so this connection cannot run across an untrusted network. This project intends for the SFTP server to be on the webserver localhost itself. Connecting to localhost is hardcoded to ensure this is the case. If you change this, ensure the HostKeyCallback is change to use something secure.
 * This just acts as a proxy to a POSIX filesystem through ssh. Check your default umask. The default path is /mnt/usb/filetclouddata/<username>/. It is recommended that this have permissions of "rwx------". Users should not store data outside this folder unless their umask is suitably restrictive.
 
@@ -77,5 +77,4 @@ We stand on the shoulders of giants. They own this, far more than I do.
 * https://www.theregister.com
 * https://www.nature.com/articles/s41586-021-03380-y
 * https://github.com/sparksuite/simplemde-markdown-editor
-* https://cdn.jsdelivr.net
 * a world of coutless open source contributors.
