@@ -51,6 +51,7 @@ filet-cloud-new-user
 * Number of snapshots on ehat ink.
 * Snapshot clean function on ehat button.
 * Full feature list.
+* Set decent umasks for new users.
 
 ## Design and Engineering Philosophies
 
