@@ -184,7 +184,7 @@ function move() {
 	let checkMsg = `Move ${cart.length} item${cart.length>1?'s':''} to ${cwd()} ?`
 	if (!confirm(checkMsg)) return
 	/* Loop through the paths in the cart sorted backwards so sub-items
-		 are moved before parent items */
+	   are moved before parent items */
 	cart.sort().reverse().forEach(item => {
 		let dest = cwd() + item.replace(/\/?$/g, '').split('/').pop()
 		fetch(`rename?path=${enc(item)}&to=${enc(dest)}`)
@@ -202,10 +202,10 @@ function del() {
 	let checkMsg = `Delete ${cart.length} cart item${cart.length>1?'s':''}?`
 	if (!confirm(checkMsg)) return
 	/* Loop through the paths in the cart sorted backwards so sub-items
-		are removed before parent items */
-		cart.sort().reverse().forEach(item => {
-			fetch(`remove?path=${enc(item)}`)
-			// clear items from the cart and refresh directory
-			.then(check(r=> {cartSel(item); nav(cwd())}))
-		})
+	   are removed before parent items */
+	cart.sort().reverse().forEach(item => {
+		fetch(`remove?path=${enc(item)}`)
+		// clear items from the cart and refresh directory
+		.then(check(r=> {cartSel(item); nav(cwd())}))
+	})
 }
