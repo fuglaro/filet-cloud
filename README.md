@@ -9,15 +9,15 @@ It targets a build running on a Raspberry Pi.
 
 ## Features
 * Device e-ink display:
- * Last snapshot time.
- * Last update time.
- * Disk usage and free space.
+  * Last snapshot time.
+  * Last update time.
+  * Disk usage and free space.
 * Device controls (buttons):
- * Safe shutdown.
- * Create snaphot.
- * Trigger update and restart.
+  * Safe shutdown.
+  * Create snaphot.
+  * Trigger update and restart.
 * Web interface:
- * See https://github.com/fuglaro/filet-cloud-web.
+  * See https://github.com/fuglaro/filet-cloud-web.
 * Daily snapshots.
 * SFTP access.
 * No data backup redundancy - please set up a strategy for resiliency against hardware failure, that suits your needs.
