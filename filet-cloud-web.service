@@ -1,0 +1,11 @@
+[Unit]
+Description=Filet Cloud WebUI
+
+[Service]
+User=pi
+ExecStart=/home/pi/filet-cloud/filet-cloud-web/filet-cloud-web
+WorkingDirectory=/home/pi/filet-cloud/filet-cloud-web
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

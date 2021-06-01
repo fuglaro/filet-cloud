@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # Install dependencies
+apt update
 apt install -y ddclient btrfs-tools unattended-upgrades
 
 # Prepare USB (data) storage
@@ -17,8 +18,25 @@ sed -i 's:Debian:Raspbian:g' /etc/apt/apt.conf.d/50unattended-upgrades
 # Install filet-cloud-tools
 make -C filet-cloud/filetcloudtools
 dpkg -i filet-cloud/filetcloudtools/filetcloudtools.deb
-sudo systemctl enable filet-cloud-actions
-sudo systemctl start filet-cloud-actions
+systemctl enable filet-cloud-actions
+systemctl restart filet-cloud-actions
+
+# Install filet-cloud-web
+# Need newer golang
+if [ ! -e filet-cloud/go ]; then
+	cd filet-cloud
+	wget https://golang.org/dl/$(curl https://golang.org/dl/ | grep armv6l | grep -v beta | head -n 1 | awk -F'[<>]' {'print $5'}) -O golang.tar.gz
+	tar zxf golang.tar.gz
+	cd -
+fi
+# Now get and build filet-cloud-web
+ls -1d filet-cloud/filet-cloud-web || git clone https://github.com/fuglaro/filet-cloud-web.git filet-cloud/filet-cloud-web
+git -C filet-cloud/filet-cloud-web/ pull
+cd filet-cloud/filet-cloud-web; ../go/bin/go build; cd -
+# Register and enable the service
+cp filet-cloud/filet-cloud-web.service /etc/systemd/system/
+systemctl enable filet-cloud-web
+systemctl restart filet-cloud-web
 
 # Configure daily snapshots (4am)
 crontab -u pi -l | grep filet-cloud-snapshot || (crontab -u pi -l; echo '5 4 * * * filet-cloud-snapshot') | crontab -u pi -
