@@ -54,7 +54,6 @@ filet-cloud-new-user
 
 ## Future work
 * Full feature list.
-* Set decent umasks for new users.
 
 ## Design and Engineering Philosophies
 
