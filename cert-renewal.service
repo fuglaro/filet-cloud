@@ -1,0 +1,9 @@
+[Unit]
+Description=Renew certbot certificates on startup
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/certbot renew --quiet
+
+[Install]
+WantedBy=multi-user.target

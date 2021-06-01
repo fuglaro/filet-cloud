@@ -2,7 +2,7 @@
 
 # Install dependencies
 apt update
-apt install -y ddclient btrfs-tools unattended-upgrades
+apt install -y ddclient btrfs-tools unattended-upgrades certbot python-certbot-nginx
 
 # Prepare USB (data) storage
 mkdir -p /mnt/usb/

@@ -34,6 +34,14 @@ ssh pi@raspberrypi.local
 git clone https://github.com/fuglaro/filet-cloud.git
 sudo filet-cloud/install
 ```
+Stay logged in for the remaining setup.
+
+### Encrypted Connections - TLS (HTTPS) Setup
+If you intend to connect from outside a trusted network including through port forwarding, you will need to set up digital certificates for HTTPS connections.
+```bash
+sudo filet-cloud/install_certs
+```
+
 ### Create New Login Account:
 ```bash
 filet-cloud-new-user
@@ -46,12 +54,8 @@ filet-cloud-new-user
 
 ## Future work
 * Guide for using client apps from Android, Windows, Linux etc.
-* Web Page server (finish integrating filet-cloud-web).
-* Convert Python to C or use lean Python compilers for reduced resouce usage to enable leaner hardware builds.
 * Write up on security.
-* Guide for lets encrypt or self signed certificate.
 * Number of snapshots on ehat ink.
-* Snapshot clean function on ehat button.
 * Full feature list.
 * Set decent umasks for new users.
 
