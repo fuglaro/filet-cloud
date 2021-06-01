@@ -15,8 +15,8 @@ async function load(path) {
 	// Prepare the saving mechanism
 	let upload = document.getElementById('upload')
 	upload.onclick = ()=> {
-		uploadForm = new FormData()
-		filename = path.split('/').pop()
+		let uploadForm = new FormData()
+		let filename = path.split('/').pop()
 		uploadForm.append("files[]", new File([new Blob([md.value])], filename))
 		let dir = path.replace(/[^/]+$/g, '')
 		fetch(`upload?path=${encodeURIComponent(dir)}`,

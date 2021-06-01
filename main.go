@@ -120,7 +120,7 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 		page, err := template.ParseFiles(
 			"template/open/ext"+filepath.Ext(path)+".html")
 		if err == nil {
-			page.Execute(w, struct{P string}{P:path})
+			page.Execute(w, struct{P string; M string}{P:path, M:filepath.Ext(path)})
 			break
 		}
 		// detect the mime type of the file to find a viewer
@@ -133,7 +133,7 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 		// attempt to load a mime viewer
 		page, err = template.ParseFiles("template/open/"+mime+".html")
 		if err == nil {
-			page.Execute(w, struct{P string}{P:path})
+			page.Execute(w, struct{P string; M string}{P:path, M:mime})
 			break
 		}
 		// fallback to generic viewer
