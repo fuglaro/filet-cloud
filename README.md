@@ -21,7 +21,7 @@ The following hardware was used for this build:
 * Make a better password for the pi user (https://www.raspberrypi.org/documentation/configuration/security.md)
 * Set up WiFi if needed (https://www.raspberrypi.org/documentation/configuration/wireless/).
 * If you intend to connect from outside your local network, setup port forwarding for resired ports (https://en.wikipedia.org/wiki/Port_forwarding), static DHCP, and dynamic DNS, if needed (https://wiki.archlinux.org/title/Dynamic_DNS).
-  * Port 22: SFTP and full SSH access - if you wan't to only allow SFTP, then configure OpenSSH (https://wiki.archlinux.org/title/SFTP_chroot)
+  * Port 22: SFTP and full SSH access - it is possible to restrict to just SFTP this is not covered in this guide (https://wiki.archlinux.org/title/SFTP_chroot)
   * Port 80 and 443: Web UI access via TLS - Port 80 is only open for TLS certificate renewal.
 * Ensure you have connected power, network, an empty USB drive to store the data, inserted the SD Card, and disconnected all other USB drives, then power on.
 
