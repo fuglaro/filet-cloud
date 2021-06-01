@@ -7,6 +7,21 @@ This main interface to the data is via an SFTP server over a standard SSH connec
 
 It targets a build running on a Raspberry Pi.
 
+## Features
+* Device e-ink display:
+ * Last snapshot time.
+ * Last update time.
+ * Disk usage and free space.
+* Device controls (buttons):
+ * Safe shutdown.
+ * Create snaphot.
+ * Trigger update and restart.
+* Web interface:
+ * See https://github.com/fuglaro/filet-cloud-web.
+* Daily snapshots.
+* SFTP access.
+* No data backup redundancy - please set up a strategy for resiliency against hardware failure, that suits your needs.
+
 ## Hardware
 The following hardware was used for this build:
 * Raspberry Pi 4B 4GB https://www.raspberrypi.org/products/raspberry-pi-4-model-b/
@@ -21,7 +36,7 @@ The following hardware was used for this build:
 * Make a better password for the pi user (https://www.raspberrypi.org/documentation/configuration/security.md)
 * Set up WiFi if needed (https://www.raspberrypi.org/documentation/configuration/wireless/).
 * If you intend to connect from outside your local network, setup port forwarding for resired ports (https://en.wikipedia.org/wiki/Port_forwarding), static DHCP, and dynamic DNS, if needed (https://wiki.archlinux.org/title/Dynamic_DNS).
-  * Port 22: SFTP and full SSH access - it is possible to restrict to just SFTP this is not covered in this guide (https://wiki.archlinux.org/title/SFTP_chroot)
+  * Port 22: SFTP and full SSH access - it is possible to restrict to just SFTP but this is not covered in this guide (https://wiki.archlinux.org/title/SFTP_chroot)
   * Port 80 and 443: Web UI access via TLS - Port 80 is only open for TLS certificate renewal.
 * Ensure you have connected power, network, an empty USB drive to store the data, inserted the SD Card, and disconnected all other USB drives, then power on.
 
@@ -51,9 +66,6 @@ filet-cloud-new-user
 * Android filebrowser (opensource) - Ghost Commander (with SFTP plugin)
 * Android filesyncer - FolderSync
 * Linux filebrowser client - Filezilla
-
-## Future work
-* Full feature list.
 
 ## Design and Engineering Philosophies
 
