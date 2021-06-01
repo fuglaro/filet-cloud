@@ -53,9 +53,6 @@ filet-cloud-new-user
 * Linux filebrowser client - Filezilla
 
 ## Future work
-* Guide for using client apps from Android, Windows, Linux etc.
-* Write up on security.
-* Number of snapshots on ehat ink.
 * Full feature list.
 * Set decent umasks for new users.
 
