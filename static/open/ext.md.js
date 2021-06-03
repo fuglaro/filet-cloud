@@ -28,5 +28,6 @@ async function load(path) {
 	// Show SimpleMDE in preview mode and attach the save callback.
 	let simplemde = new SimpleMDE({forceSync: true, status: false})
 	simplemde.togglePreview()
+	simplemde.toggleFullScreen()
 	simplemde.codemirror.on("change", ()=>upload.style.display = "inline")
 }
