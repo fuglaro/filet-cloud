@@ -1,17 +1,19 @@
 # filet-cloud-web
 Web portal for Filet-Cloud
 
-This is a simple webpage exposing a cloud storage solution sitting on top of an SFTP server. It indends to be elegant, simple, featureful, and a joy to use. Breathtaking simplicity is one of the core driving principles.
+![](filet-cloud-demo.gif)
+
+This is a simple webpage exposing a cloud storage solution sitting on top of an SFTP server. It intends to be elegant, simple, featureful, and a joy to use. Breathtaking simplicity is one of the core driving principles.
 
 Please see it's parent project (https://github.com/fuglaro/filet-cloud) from which it was born.
 
 ## Supported formats
-* images (browser native)
-* videos (browser native)
-* audio (browser native)
-* pdf documents (pdfjs)
-* markdown (\*.md simpleMDE - editable)
-* text (mime text/plain - editable)
+* Images (browser native)
+* Videos (browser native)
+* Audio (browser native)
+* PDF documents (pdfjs)
+* Markdown (\*.md simpleMDE - editable)
+* Text (mime text/plain - editable)
 
 Please get in touch if you would like any further formats supported. Frontend viewers and editors can easily be added via a plugin system registered by file extension or content-type:
 * File extension registered plugins: template/open/ext.EXTENSION.html
@@ -30,6 +32,19 @@ Please get in touch if you would like any further formats supported. Frontend vi
 * Move multiple files and folders.
 * Delete files and folders.
 * Maintains filesystem ownership integrity consistent with local access.
+
+## Code Layout
+
+Cloc'ing in at under 500 lines of code, and a lean count of dependencies, there is not much to this. The code is separated into the following areas:
+* [main.go](https://github.com/fuglaro/filet-cloud-web/blob/main/main.go) - the primary server dishing out frontend html and Javascript and fielding WebAPI requests to interact with the SFTP server.
+* [template/main.html](https://github.com/fuglaro/filet-cloud-web/blob/main/template/main.html) - the HTML for the main frontend browser page.
+* [static/main.js](https://github.com/fuglaro/filet-cloud-web/blob/main/static/main.js) - the Javascript for the main frontend browser page.
+* [template/open/\*](https://github.com/fuglaro/filet-cloud-web/tree/main/template/open) - the HTML for plugin viewers and editors for different file types. First looks for file extension matches with `template/open/ext.<file-extension>.html`, then looks for mime type matches with `template/open/<mime-type>/<sub-type>.html`, then falls back to `fallback.html`. Templates are all resolved with `{{.P}}` as the path of the file to open, and `{{.M}}` as the detected MIME type.
+* [static/open/\*](https://github.com/fuglaro/filet-cloud-web/tree/main/static/open) - the Javascript and other static files for the plugin viewers and editors.
+
+### FAQ and Rationales
+
+Why no fancy frontend framework? - The design of the code and tool is too simple to justify any need. Frameworks should facilitate simplification, and this is already simple.
 
 ### Rationale for Omissions
 * Video transcoding for playback in modern browsers - I threw this together with ffmpeg and a simple streaming approach and it was slow and didn't allow seeking. Fixing those issues would mean buffering large amounts of memory or transcoding the entire video to disk ahead of serving. A simpler and cleaner approach is just to expect users to keep video files up to date with modern codecs. This is better in the long run. Leaving the poorly supported or old video formats around will just make them age harder, better to rip from VHS than to keep a VHS player around forever.
@@ -71,7 +86,9 @@ This project explores how far a software product can be pushed in terms of simpl
 # Thanks to, grateful forks, and contributions
 We stand on the shoulders of giants. They own this, far more than I do.
 
+* https://github.com/pkg/sftp
 * https://golang.org/
+* https://github.com/golang/crypto
 * https://developer.mozilla.org/en-US/
 * https://github.com/
 * https://www.theregister.com
@@ -79,4 +96,5 @@ We stand on the shoulders of giants. They own this, far more than I do.
 * https://github.com/sparksuite/simplemde-markdown-editor
 * https://mozilla.github.io/pdf.js/
 * https://www.jsdelivr.com/
+* github.com/AlDanial/cloc
 * a world of countless open source contributors.
