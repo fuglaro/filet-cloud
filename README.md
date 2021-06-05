@@ -9,8 +9,8 @@ Please see it's parent project (https://github.com/fuglaro/filet-cloud) from whi
 * images (browser native)
 * videos (browser native)
 * audio (browser native)
-* pdf documents (browser native)
-* markdown (.md - editable)
+* pdf documents (pdfjs)
+* markdown (\*.md simpleMDE - editable)
 * text (mime text/plain - editable)
 
 Please get in touch if you would like any further formats supported. Frontend viewers and editors can easily be added via a plugin system registered by file extension or content-type:
@@ -77,5 +77,6 @@ We stand on the shoulders of giants. They own this, far more than I do.
 * https://www.theregister.com
 * https://www.nature.com/articles/s41586-021-03380-y
 * https://github.com/sparksuite/simplemde-markdown-editor
+* https://mozilla.github.io/pdf.js/
 * https://www.jsdelivr.com/
 * a world of countless open source contributors.
