@@ -65,22 +65,22 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 
 	path := r.URL.Query().Get("path")
 	switch r.URL.Path {
-		/*
-		 * Serve the main page
-		 */
-		case "/":
+	/*
+	 * Serve the main page
+	 */
+	case "/":
 		user, _, _ := r.BasicAuth()
 		page, err := template.ParseFiles("template/main.html")
 		if check(w, err) { return }
 		page.Execute(w, struct{P string}{P:"/mnt/usb/filetclouddata/"+user+"/"})
 
-		/*
-		 * Return the contents of the directory identified by the 'path'
-		 * query parameter.
-		 * Entries include whether it is a file, and the name. E.g:
-		 * ?path=/foo -> [[true, "file1"], [false, "dir1"]]
-		 */
-		case "/dir":
+	/*
+	 * Return the contents of the directory identified by the 'path'
+	 * query parameter.
+	 * Entries include whether it is a file, and the name. E.g:
+	 * ?path=/foo -> [[true, "file1"], [false, "dir1"]]
+	 */
+	case "/dir":
 		// find contents of the directory
 		contents, err := sftp.ReadDir(path)
 		if check(w, err) { return }
@@ -91,31 +91,31 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		json.NewEncoder(w).Encode(entries)
 
-		/*
-		 * Retrieves a file and sends it to the client.
-		 * The 'path' query parameter identifies the file to send.
-		 */
-		case "/file":
+	/*
+	 * Retrieves a file and sends it to the client.
+	 * The 'path' query parameter identifies the file to send.
+	 */
+	case "/file":
 		// stream the file contents
 		contents, err := sftp.Open(path)
 		if check(w, err) { return }
 		defer contents.Close()
 		http.ServeContent(w, r, filepath.Base(path), time.Time{}, contents)
 
-		/*
-		 * Creates a new directory on the server.
-		 * The 'path' query parameter identifies the directory to make.
-		 */
-		case "/newdir":
+	/*
+	 * Creates a new directory on the server.
+	 * The 'path' query parameter identifies the directory to make.
+	 */
+	case "/newdir":
 		err = sftp.Mkdir(r.URL.Query().Get("path"))
 		if check(w, err) { return }
 
-		/*
-		 * Serve a web viewer (and editor if supported)
-		 * for the path provided.
-		 * @param path The path of the content to display.
-		 */
-		case "/open":
+	/*
+	 * Serve a web viewer (and editor if supported)
+	 * for the path provided.
+	 * @param path The path of the content to display.
+	 */
+	case "/open":
 		// attempt to load file extension based viewer
 		page, err := template.ParseFiles(
 			"template/open/ext"+filepath.Ext(path)+".html")
@@ -141,13 +141,13 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 		if check(w, err) { return }
 		page.Execute(w, struct{P string; M string}{P:path, M:mime})
 
-		/*
-		 * Deletes a file or a folder including all contents.
-		 * The 'path' query parameter identifies what to delete.
-		 * Folders should be terminated with a '/'
-		 * On any error, it will stop the deletion process and bail.
-		 */
-		case "/remove":
+	/*
+	 * Deletes a file or a folder including all contents.
+	 * The 'path' query parameter identifies what to delete.
+	 * Folders should be terminated with a '/'
+	 * On any error, it will stop the deletion process and bail.
+	 */
+	case "/remove":
 		if path[len(path)-1:] != "/" {
 			// Delete the file
 			err = sftp.Remove(path)
@@ -173,21 +173,21 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 			if check(w, err) { return }
 		}
 
-		/*
-		 * Move or rename a file or directory on the server.
-		 * The 'path' query parameter identifies what to change.
-		 * The 'to' query parameter identifies the new name or location.
-		 * Both parameters should be full paths.
-		 */
-		case "/rename":
+	/*
+	 * Move or rename a file or directory on the server.
+	 * The 'path' query parameter identifies what to change.
+	 * The 'to' query parameter identifies the new name or location.
+	 * Both parameters should be full paths.
+	 */
+	case "/rename":
 		err = sftp.Rename(path, r.URL.Query().Get("to"))
 		if check(w, err) { return }
 
-		/*
-		 * Serve a thumbnail image of the file.
-		 * This does not support all formats.
-		 */
-		case "/thumb":
+	/*
+	 * Serve a thumbnail image of the file.
+	 * This does not support all formats.
+	 */
+	case "/thumb":
 		contents, err := sftp.Open(path)
 		if check(w, err) { return }
 		defer contents.Close()
@@ -197,13 +197,13 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 		cmd.Stdout = w // browsers rock at detecting its a jpeg
 		_ = cmd.Run()
 
-		/*
-		 * Upload files to the server.
-		 * The path specified is the directory to upload to.
-		 * Files are recieved from a 'files[]' form parameter
-		 * sent in the body of the request.
-		 */
-		case "/upload":
+	/*
+	 * Upload files to the server.
+	 * The path specified is the directory to upload to.
+	 * Files are recieved from a 'files[]' form parameter
+	 * sent in the body of the request.
+	 */
+	case "/upload":
 		err := r.ParseMultipartForm(100 << 20) // 100MB in memory
 		if check(w, err) { return }
 		for _, file := range r.MultipartForm.File["files[]"] {
@@ -220,16 +220,16 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 			if check(w, err) { return }
 		}
 
-		/*
-		 * Generate a zip file from a list of files and directories
-		 * for downloading.
-		 * Files and directories are specified by multiple "path"
-		 * query parameters.
-		 * Streams the file contents into a zip stream and to the client.
-		 *   - SFTPfiles }=> zipper -> http
-		 * Note: paths are assumed to be absolute.
-		 */
-		case "/zip":
+	/*
+	 * Generate a zip file from a list of files and directories
+	 * for downloading.
+	 * Files and directories are specified by multiple "path"
+	 * query parameters.
+	 * Streams the file contents into a zip stream and to the client.
+	 *   - SFTPfiles }=> zipper -> http
+	 * Note: paths are assumed to be absolute.
+	 */
+	case "/zip":
 		var files []string
 		// walk the paths expanding to the list of files inside
 		for _, path := range r.URL.Query()["path"] {
@@ -270,8 +270,8 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 			if check(w, err) { return }
 		}
 
-		// Bad endpoint error handling.
-		default:
+	// Bad endpoint error handling.
+	default:
 		http.Error(w, "bad endpoint", http.StatusForbidden)
 	}
 }
