@@ -28,6 +28,11 @@ async function load(path) {
 	// Show SimpleMDE in preview mode and attach the save callback.
 	let simplemde = new SimpleMDE({forceSync: true, status: false})
 	simplemde.togglePreview()
-	simplemde.toggleFullScreen()
+	// mobiles don't love fullscreening here.
+	try {simplemde.toggleFullScreen()} catch(e){}
 	simplemde.codemirror.on("change", ()=>upload.style.display = "inline")
+
+	// Move upload into SimpleMDE's toolbar.
+	let firstButton = document.querySelector('.fa')
+	firstButton.parentNode.insertBefore(upload, firstButton)
 }
