@@ -71,7 +71,7 @@ If any of this isn't clear, please do not use this if you have any data or crede
 * Office document support (spreadsheet, diagrams, slideshow, docs): This is intended but will wait and hope for the results of the recent work into getting LibreOffice supported in browsers via WebAssembly. This could result in an ideal solution compatible with this project. I look forward to supporting this in the future.
 
 ## Design and Engineering Philosophies
-This project explores how far a software product can be pushed in terms of simplicity and minimalism, both inside and out, without losing powerful features. Web programs and cloud tools tends to be bloated and buggy, as all software tends to be. *filetcloud* pushes a personal cloud solution to its leanest essence. It is a joy to use because it does what it needs to, reliably and quickly, and tries to do nothing else. The opinions that drove the project are:
+This project explores how far a software product can be pushed in terms of simplicity and minimalism, both inside and out, without losing powerful features. Web programs and cloud tools tend to be bloated and buggy, as all software tends to be. *filetcloud* pushes a personal cloud solution to its leanest essence. It is a joy to use because it does what it needs to, reliably and quickly, and tries to do nothing else. The opinions that drove the project are:
 
 * **Complexity must justify itself**.
 * Lightweight is better than heavyweight.
