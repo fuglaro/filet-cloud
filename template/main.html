@@ -40,4 +40,7 @@
 <input id="upload" type="file" multiple onchange="send()" style="display:none"/>
 <a id="download" download></a>
 <script src="static/main.js"></script>
-<script type="text/javascript">window.onload = ()=>nav({{.P}})</script>
+<script type="text/javascript">
+	window.onload = window.onpopstate = ()=>nav(
+			(new URLSearchParams(window.location.search)).get("P") || {{.P}}, 1)
+</script>

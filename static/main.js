@@ -55,12 +55,15 @@ function cartButton() {
  * Also sets the current files or directories for future actions.
  * Updates the folder area with interactive tree navigation.
  * Displays file contents as best it can.
+ * @param {bool} b Indicate not to update browser history.
  */
-function nav(path) {
+function nav(path, b) {
 	document.getElementById('path').innerText = path
 	document.getElementById('data').replaceChildren()
 	// turn off cart selection mode
 	document.getElementById('cart').style.filter = ''
+	// support browser back/forwards navigation
+	if (!b) window.history.pushState(null,null,`?P=${encodeURIComponent(cwd())}`)
 	// Refresh the contents of the directory by querying the server
 	fetch(`dir?path=${enc(cwd())}`).then(check(r=> {r.sort()
 		// Display the directory contents
