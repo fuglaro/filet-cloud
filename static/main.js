@@ -66,9 +66,9 @@ function nav(path) {
 		// Display the directory contents
 		document.getElementById('dir').replaceChildren(...r.map(([f, n])=> {
 			let nib = document.createElement("h2")
+			let p = cwd() + n + (f?"":"/")
 			nib.onclick = (i=>(()=>{
 				if (!cartMode()) i.innerText = `\u{23F3} ${n}` // loading icon
-				let p = cwd() + n + (f?"":"/")
 				cartMode()?cartSel(p):(f?load(p):nav(p))
 			}))(nib)
 			nib.id = nib.innerText = `${f?'\u{1F4C4}':'\u{1F4C2}'} ${n}`
