@@ -9,18 +9,18 @@
 	#index {display: flex; flex-direction: column}
 	#menu {display: flex; flex-direction: row; font-size: min(1.8vw, 1.2em)}
 	#dir,#data {overflow-y: auto}
-	h1,h2 {background-repeat: no-repeat; background-position: right;
+	h1,h2,h4 {background-repeat: no-repeat; background-position: right;
 		font-weight: normal; cursor: default;
 		margin: 0; margin-left: 0.1rem; margin-right: 0.1rem}
 	@media (hover: none) {body {font-size: 1.5em}}
 	@media (orientation: portrait) {
-		@media (hover: none) {body {font-size: 3em}}
+		@media (hover: none) {body {font-size: 2.2em}}
 		body {flex-direction: column-reverse}
 		#menu {font-size: min(3.4vw, 1.4em)}
 		#data,#index {width: 100%; height: 50%}}
 </style>
 <div id=index>
-	<h1>&#9925 Filet Cloud</h1>
+	<h4>&#9925 Filet Cloud</h4>
 	<div id=menu>
 		<h1 onclick="nav(curPath().replace(/[^/]+\/?$/g, ''))">&#128281</h1>
 		<h1 onclick="makedir()">&#128193</h1>
