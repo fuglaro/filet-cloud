@@ -25,7 +25,7 @@ systemctl restart filet-cloud-actions
 # Need newer golang
 if [ ! -e filet-cloud/go ]; then
 	cd filet-cloud
-	wget https://golang.org/dl/$(curl https://golang.org/dl/ | grep armv6l | grep -v beta | head -n 1 | awk -F'[<>]' {'print $5'}) -O golang.tar.gz
+	wget https://go.dev/dl/$(curl https://go.dev/dl/ | grep armv6l | grep -v beta | head -n 1 | awk -F'[<>]' {'print $5'}) -O golang.tar.gz
 	tar zxf golang.tar.gz
 	cd -
 fi
