@@ -49,7 +49,7 @@ func check(w http.ResponseWriter, e error) (bool) {
 }
 
 /**
- * Resonds to the Http query by performing actions related to the
+ * Responds to the Http query by performing actions related to the
  * path provided by the 'path' query option.
 */
 func urlHandler(w http.ResponseWriter, r *http.Request) {
