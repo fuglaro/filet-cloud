@@ -16,7 +16,7 @@ import (
 )
 
 /**
- * Estabilises, and returns a sftp connection.
+ * Estabilishes, and returns a sftp connection.
  * Caller is expected to close both,
  * unless an error is returned.
  */
