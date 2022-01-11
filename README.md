@@ -109,5 +109,5 @@ We stand on the shoulders of giants. They own this, far more than I do.
 * https://github.com/sparksuite/simplemde-markdown-editor
 * https://mozilla.github.io/pdf.js/
 * https://www.jsdelivr.com/
-* github.com/AlDanial/cloc
+* https://github.com/AlDanial/cloc
 * a world of countless open source contributors.
