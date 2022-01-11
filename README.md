@@ -5,10 +5,12 @@ A lean slice of Cloud Storage
 
 This project attempts to make a sophisticated personal cloud storage solution similar to the google-drive ecosystem, using the design philosophies of the filet project series. This project, like others in the series, aggressively pushes for code minimalism and the essence of simplicity.
 
-Why should this exist?
-* Take control of your own personal data with your own personal cloud storage solution.
-* An opensource solution that favours breathtaking and rock-solid simplicity.
-* Supports multiple accounts within an organisation without the complexity of web-admin interfaces. 
+How is this different to existing services like Google Drive or solutions like NextCloud?
+* Take control of your privacy.
+* Storage sizes are only limitted by your hardware.
+* Solution that favours reliability and simplicity over feature-creep.
+* Slick web interface that runs over a standard filesystem and never gets out of sync.
+* Supports multiple accounts within an organisation without the complexity of web-admin interfaces.
 
 This main interface to the data is via an SFTP server over a standard SSH connection. A surprising number of clients support this interface and it's a big productivity win to be able to use things like rsync and ssh. Account management is as simple as using Linux user accounts and SSH authentication. A core part of this project is the SFTP webserver also from the filet project series (https://github.com/fuglaro/filet-cloud-web) which gives access via a webpage.
 
