@@ -53,7 +53,7 @@ func check(w http.ResponseWriter, e error) (bool) {
  * path provided by the 'path' query option.
 */
 func urlHandler(w http.ResponseWriter, r *http.Request) {
-	/* Ensure authentiction is successfull and get connection */
+	/* Ensure authentiction is successfull and get storage connection */
 	sshConn, sftp, err := sftpConnect(r)
 	if err != nil {
 		w.Header().Add("WWW-Authenticate", `Basic realm="Filet Cloud Login"`)
