@@ -41,7 +41,7 @@ Please get in touch if you would like any further formats supported. Frontend vi
 ## Security
 Note: This was put together by someone who was usually pretty tired while coding, things will have been missed. The codebase is strikingly small and the dependencies few, so the aim is that a security audit, for whosoever whishes to do it, should be as easy as possible. Nothing is secure until it is audited and reviewed by peers.
 
-The authentication mechanism this uses is passing ssh user and password credentials through HTTP Basic Auth to the filet-cloud-web server which uses them in access the SFTP server. It is therefore critical that the filet-cloud-web server is only exposed via HTTPS. It tries to not store passwords and instead relies on browser support for storing passwords to make it friendly to use.
+The authentication mechanism this uses is passing ssh user and password credentials through HTTP Basic Auth to the filet-cloud-web server which uses them in accessing the SFTP server. It is therefore critical that the filet-cloud-web server is only exposed via HTTPS. It tries to not store passwords and instead relies on browser support for storing passwords to make it friendly to use.
 
 There are some critical things to consider when making your own deployment:
 * Since this uses Basic Auth to proxy ssh credentials, it is critically essential to use HTTPS if exposed to an untrusted network. HTTP is not blocked to allow for a deployment to sit behind a reverse proxy which manages TLS.
