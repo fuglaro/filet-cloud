@@ -46,7 +46,7 @@ The authentication mechanism this uses is passing ssh user and password credenti
 There are some critical things to consider when making your own deployment:
 * Since this uses Basic Auth to proxy ssh credentials, it is critically essential to use HTTPS if exposed to an untrusted network. HTTP is not blocked to allow for a deployment to sit behind a reverse proxy which manages TLS.
 * The webserver connects to the SFTP server without verifying the ssh host key so the connection between the filet-cloud-web server and the SFTP server cannot run across an untrusted network. This project intends for the SFTP server to be on the webserver localhost itself. Connecting to localhost is hardcoded to ensure this is the case. If you change this, ensure the HostKeyCallback is changed to use something secure.
-* This just acts as a proxy to a POSIX filesystem through ssh. Check your default umask. The default path is /mnt/usb/filetclouddata/<username>/. It is recommended that this have permissions of "rwx------". Users should not store data outside this folder unless their umask is suitably restrictive.
+* This just acts as a proxy to a POSIX filesystem through ssh. Check your default umask. The default path is /mnt/usb/filetclouddata/-username-/. It is recommended that this have permissions of "rwx------". Users should not store data outside this folder unless their umask is suitably restrictive.
 
 If any of this isn't clear, please do not use this if you have any data security or credential security concerns.
 
