@@ -1,9 +1,20 @@
 # filet-cloud
 A lean slice of Cloud Storage
 
+![](filet-cloud-pic.jpg)
+
 This project attempts to make a sophisticated personal cloud storage solution similar to the google-drive ecosystem, using the design philosophies of the filet project series. This project, like others in the series, aggressively pushes for code minimalism and the essence of simplicity.
 
-This main interface to the data is via an SFTP server over a standard SSH connection. A surprising number of clients support this interface and it's a big productivity win to be able to use things like rsync and ssh. Account management is as simple as using Linux user accounts and ssh authentication. A core part of this project is the SFTP webserver also from the filet project series (https://github.com/fuglaro/filet-cloud-web) which gives access via a webpage.
+How is this different to existing services like Google Drive or solutions like NextCloud?
+* Take control of your privacy.
+* Storage sizes are only limitted by your hardware.
+* Solution that favours reliability and simplicity over feature-creep.
+* Slick web interface that runs over a standard filesystem and never gets out of sync.
+* Supports multiple accounts within an organisation without the complexity of web-admin interfaces.
+
+This main interface to the data is via an SFTP server over a standard SSH connection. A surprising number of clients support this interface and it's a big productivity win to be able to use things like rsync and ssh. Account management is as simple as using Linux user accounts and SSH authentication. A core part of this project is the SFTP webserver also from the filet project series (https://github.com/fuglaro/filet-cloud-web) which gives access via a webpage.
+
+![](https://github.com/fuglaro/filet-cloud-web/blob/main/filet-cloud-demo.gif?raw=true)
 
 It targets a build running on a Raspberry Pi.
 
