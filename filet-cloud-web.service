@@ -3,6 +3,7 @@ Description=Filet Cloud WebUI
 
 [Service]
 User=pi
+Environment="FILETCLOUDDIR=/mnt/usb/filetclouddata"
 ExecStart=/home/pi/filet-cloud/filet-cloud-web/filet-cloud-web
 WorkingDirectory=/home/pi/filet-cloud/filet-cloud-web
 Restart=always
