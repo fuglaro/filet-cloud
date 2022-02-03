@@ -90,6 +90,13 @@ Note!: Do not use this in a production or in any untrusted environment as this s
 ```bash
 go build
 ```
+* Download dependencies:
+```bash
+wget https://cdn.jsdelivr.net/npm/pdfjs-dist@latest/build/pdf.min.js -O static/pdf.min.js
+wget https://cdn.jsdelivr.net/npm/pdfjs-dist@latest/build/pdf.worker.min.js -O static/pdf.worker.min.js
+wget https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.css -O static/simplemde.min.css
+wget https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.js -O static/simplemde.min.js
+```
 * Start server:
 ```bash
 ./filet-cloud-web
