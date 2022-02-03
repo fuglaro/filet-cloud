@@ -59,7 +59,7 @@ If any of this isn't clear, please do not use this if you have any data security
 
 ## Code Layout
 
-Cloc'ing in at under 500 lines of code, and a lean count of dependencies, there is not much to this. The code is separated into the following areas:
+Cloc'ing in at under 500 lines of code, plus a lean count of dependencies, there is not much to this. The code is separated into the following areas:
 * [main.go](https://github.com/fuglaro/filet-cloud-web/blob/main/main.go) - the primary server dishing out frontend html and Javascript and fielding WebAPI requests to interact with the SFTP server.
 * [template/main.html](https://github.com/fuglaro/filet-cloud-web/blob/main/template/main.html) - the HTML for the main frontend browser page.
 * [static/main.js](https://github.com/fuglaro/filet-cloud-web/blob/main/static/main.js) - the Javascript for the main frontend browser page.
@@ -99,7 +99,7 @@ wget https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.js -O static/simple
 ```
 * Start server:
 ```bash
-./filet-cloud-web
+FILETCLOUDDIR=/home ./filet-cloud-web
 ```
 * Open in browser (insecurely): `http://127.0.0.1:8080/?P=/`
 

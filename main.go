@@ -10,6 +10,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -72,8 +73,7 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 		user, _, _ := r.BasicAuth()
 		page, err := template.ParseFiles("template/main.html")
 		if check(w, err) { return }
-		page.Execute(w, struct{P string}{P:"/mnt/usb/filetclouddata/"+user+"/"})
-
+		page.Execute(w, struct{P string}{P:os.Getenv("FILETCLOUDDIR")+"/"+user+"/"})
 	/*
 	 * Return the contents of the directory identified by the 'path'
 	 * query parameter.
