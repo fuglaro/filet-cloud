@@ -32,7 +32,10 @@ fi
 # Now get and build filet-cloud-web
 ls -1d filet-cloud/filet-cloud-web || git clone https://github.com/fuglaro/filet-cloud-web.git filet-cloud/filet-cloud-web
 git -C filet-cloud/filet-cloud-web/ pull
-cd filet-cloud/filet-cloud-web; ../go/bin/go build; cd -
+cd filet-cloud/filet-cloud-web
+../go/bin/go build
+grep 'wget https://' README.md | sh # grab dependencies
+cd -
 # Register and enable the service
 cp filet-cloud/filet-cloud-web.service /etc/systemd/system/
 systemctl enable filet-cloud-web
