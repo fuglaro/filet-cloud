@@ -19,6 +19,12 @@ This main interface to the data is via an SFTP server over a standard SSH connec
 It targets a build running on a Raspberry Pi.
 
 ## Features
+* Web interface:
+  * See https://github.com/fuglaro/filet-cloud-web.
+* SFTP compatibility.
+  * Compatibility with many phone syncronisation apps which support SFTP.
+  * NAS via SFTP.
+* Supports multiple users.
 * Device e-ink display:
   * Last snapshot time.
   * Last update time.
@@ -27,11 +33,8 @@ It targets a build running on a Raspberry Pi.
   * Safe shutdown.
   * Create snaphot.
   * Trigger update and restart.
-* Web interface:
-  * See https://github.com/fuglaro/filet-cloud-web.
 * Daily snapshots.
-* SFTP access.
-* No data backup redundancy - please set up a strategy for resiliency against hardware failure, that suits your needs.
+* No hardware resiliant backup redundancy - please set up a strategy for resiliency against hardware failure, that suits your needs.
 
 ## Hardware
 The following hardware was used for this build:
