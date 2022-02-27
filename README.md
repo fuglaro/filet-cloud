@@ -39,7 +39,7 @@ It targets a build running on a Raspberry Pi.
   * Safe shutdown.
   * Create snaphot.
   * Trigger update and restart.
-* Daily snapshots.
+* Daily snapshots (with Btrfs).
 * No hardware resiliant backup redundancy - please set up a strategy for resiliency against hardware failure which suits your needs.
 
 ## Hardware
