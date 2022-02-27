@@ -19,8 +19,14 @@ This main interface to the data is via an SFTP server over a standard SSH connec
 It targets a build running on a Raspberry Pi.
 
 ## Features
-* Web interface:
-  * See https://github.com/fuglaro/filet-cloud-web.
+* Web interface (see https://github.com/fuglaro/filet-cloud-web):
+  * Authentication.
+  * Browse, view, and, edit many supported file formats.
+  * Browse images and stream video and audio.
+  * Create new folders, upload files, rename entries.
+  * Download files (or multiple in a zip file).
+  * Move or delete multiple files and folders.
+* Maintains filesystem ownership integrity consistent with local access.
 * SFTP compatibility.
   * Compatibility with many phone syncronisation apps which support SFTP.
   * NAS via SFTP.
