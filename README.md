@@ -23,6 +23,7 @@ Please get in touch if you would like any further formats supported. Frontend vi
 * Authentication via local user account ssh credentials.
 * Browse folder structure.
 * View and edit supported files.
+* Stream video and audio.
 * Create new folders.
 * Upload files.
 * Rename files and folders.
@@ -34,7 +35,7 @@ Please get in touch if you would like any further formats supported. Frontend vi
 * Maintains filesystem ownership integrity consistent with local access.
 
 ## Rationale for Omissions
-* Video transcoding for playback in modern browsers - I threw this together with ffmpeg and a simple streaming approach and it was slow and didn't allow seeking. Fixing those issues would mean buffering large amounts of memory or transcoding the entire video to disk ahead of serving. A simpler and cleaner approach is just to expect users to keep video files up to date with modern codecs. This is better in the long run. Leaving the poorly supported or old video formats around will just make them age harder, better to rip from VHS than to keep a VHS player around forever.
+* Video transcoding for playback of old codecs in modern browsers - I threw this together with ffmpeg and a simple streaming approach and it was slow and didn't allow seeking. Fixing those issues would mean buffering large amounts of memory or transcoding the entire video to disk ahead of serving. A simpler and cleaner approach is just to expect users to keep video files up to date with modern codecs. This is better in the long run. Leaving the poorly supported or old video formats around will just make them age harder, better to rip from VHS than to keep a VHS player around forever.
 * WebDAV support - This, I must admit, is enticing. Especially when a meaty portion of this codebase is essentially exposing a filesystem through HTTP. It has not been pursued because it would add significant levels of complexity to support the specification fully, and goes against the original aims of the project - to expose a webUI to an SFTP connection. If we have chosen SFTP, we already have an API interface to the cloud storage, and supporting multiple interfaces is just complexity. Anything else can be a fork, which I welcome.
 * Office document support - This is planned. See Future Work.
 
