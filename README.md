@@ -113,6 +113,8 @@ We stand on the shoulders of giants. They own this, far more than I do.
 * https://www.seagate.com
 * https://www.waveshare.com
 * https://wiki.archlinux.org
+* https://certbot.eff.org/
+* https://letsencrypt.org/
 * https://en.wikipedia.org
 * https://www.theregister.com
 * https://www.nature.com/articles/s41586-021-03380-y
