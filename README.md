@@ -40,7 +40,7 @@ It targets a build running on a Raspberry Pi.
   * Create snaphot.
   * Trigger update and restart.
 * Daily snapshots.
-* No hardware resiliant backup redundancy - please set up a strategy for resiliency against hardware failure, that suits your needs.
+* No hardware resiliant backup redundancy - please set up a strategy for resiliency against hardware failure which suits your needs.
 
 ## Hardware
 The following hardware was used for this build:
