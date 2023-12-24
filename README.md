@@ -16,8 +16,8 @@ Please see it's parent project (https://github.com/fuglaro/filet-cloud) from whi
 * Text (mime text/plain - editable)
 
 Please get in touch if you would like any further formats supported. Frontend viewers and editors can easily be added via a plugin system registered by file extension or content-type:
-* File extension registered plugins: template/open/ext.EXTENSION.html
-* Content-type registered plugins: template/open/CONTENTTYPE/SUBTYPE.html
+* File extension registered plugins: static/open/ext.EXTENSION.html
+* Content-type registered plugins: static/open/CONTENTTYPE/SUBTYPE.html
 
 ## Features
 * Authentication via local user account ssh credentials.
@@ -62,9 +62,10 @@ If any of this isn't clear, please do not use this if you have any data security
 
 Cloc'ing in at under 500 lines of code, plus a lean count of dependencies, there is not much to this. The code is separated into the following areas:
 * [main.go](https://github.com/fuglaro/filet-cloud-web/blob/main/main.go) - the primary server dishing out frontend html and Javascript and fielding WebAPI requests to interact with the SFTP server.
-* [template/main.html](https://github.com/fuglaro/filet-cloud-web/blob/main/template/main.html) - the HTML for the main frontend browser page.
+* [static/storage.js](https://github.com/fuglaro/filet-cloud-web/blob/main/static/storagge.js) - the interface for interacting with the storage.
+* [static/browse.html](https://github.com/fuglaro/filet-cloud-web/blob/main/static/browse.html) - the HTML for the main frontend browser page.
 * [static/main.js](https://github.com/fuglaro/filet-cloud-web/blob/main/static/main.js) - the Javascript for the main frontend browser page.
-* [template/open/\*](https://github.com/fuglaro/filet-cloud-web/tree/main/template/open) - the HTML for plugin viewers and editors for different file types. First looks for file extension matches with `template/open/ext.<file-extension>.html`, then looks for mime type matches with `template/open/<mime-type>/<sub-type>.html`, then falls back to `fallback.html`. Templates are all resolved with `{{.P}}` as the path of the file to open, and `{{.M}}` as the detected MIME type.
+* [static/open/\*](https://github.com/fuglaro/filet-cloud-web/tree/main/static/open) - the HTML for plugin viewers and editors for different file types. First looks for file extension matches with `static/open/ext.<file-extension>.html`, then looks for mime type matches with `static/open/<mime-type>/<sub-type>.html`, then falls back to `fallback.html`.
 * [static/open/\*](https://github.com/fuglaro/filet-cloud-web/tree/main/static/open) - the Javascript and other static files for the plugin viewers and editors.
 
 Why no fancy frontend framework? - The design of the code and tool is too simple to justify any need. Frameworks should facilitate simplification, and this is already simple.
@@ -100,7 +101,7 @@ wget https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.js -O static/simple
 ```
 * Start server:
 ```bash
-FILETCLOUDDIR=/home ./filet-cloud-web
+./filet-cloud-web
 ```
 * Open in browser (insecurely): `http://127.0.0.1:8080/?P=/`
 

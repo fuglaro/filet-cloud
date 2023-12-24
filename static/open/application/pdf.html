@@ -1,0 +1,44 @@
+<!doctype html>
+<!----
+	-- Creates a canvas in the body for each page of the
+	-- pdf and renders all pages onto them.
+	-- Uses pdfjs for the rendering. PDF.js is mighty.
+	-->
+<meta charset=utf-8>
+<title>FiletCloud</title>
+<style>
+	body {
+		margin: 0
+	}
+
+	canvas {
+		width: 100%;
+		height: 100%
+	}
+</style>
+
+<body>
+	<h1 id=wait>&#x23f3;</h1>
+</body>
+<script src="/deps/pdf.min.js"></script>
+<script src="/storage.js"></script>
+<script>
+	"use strict"
+	let path = storage.path()
+	let link = storage.fileLink(path)
+	pdfjsLib.getDocument(link).promise
+		.then(pdf => {
+			for (var i = 0; i < pdf.numPages; i++) {
+				pdf.getPage(i + 1).then(page => {
+					let nib = document.createElement('canvas')
+					let ctx = nib.getContext("2d");
+					let vp = page.getViewport({scale: 1});
+					nib.height = vp.height;
+					nib.width = vp.width;
+					page.render({canvasContext: ctx, viewport: vp})
+					document.getElementById("wait").style.display = "none"
+					document.body.appendChild(nib)
+				})
+			}
+		})
+</script>

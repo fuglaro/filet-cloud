@@ -3,10 +3,8 @@ package main
 import (
 	"archive/zip"
 	"encoding/json"
-	"os/exec"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
-	"html/template"
 	"io"
 	"log"
 	"net/http"
@@ -23,16 +21,21 @@ import (
  */
 func sftpConnect(r *http.Request) (*ssh.Client, *sftp.Client, error) {
 	user, pass, _ := r.BasicAuth()
-	config := &ssh.ClientConfig {
-		User: user,
-		Auth: []ssh.AuthMethod { ssh.Password(pass), },
+	config := &ssh.ClientConfig{
+		User:            user,
+		Auth:            []ssh.AuthMethod{ssh.Password(pass)},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 	sshConn, err := ssh.Dial("tcp", "localhost:22", config)
-	if err != nil { return nil, nil, err }
+	if err != nil {
+		return nil, nil, err
+	}
 	// create new SFTP sftp
 	sftp, err := sftp.NewClient(sshConn)
-	if err != nil { sshConn.Close(); return nil, nil, err }
+	if err != nil {
+		sshConn.Close()
+		return nil, nil, err
+	}
 	return sshConn, sftp, nil
 }
 
@@ -44,50 +47,80 @@ func sftpConnect(r *http.Request) (*ssh.Client, *sftp.Client, error) {
  * issue, is sufficient. Breaks some HTTP rules but its nice and simple.
  * Returns whether the error had a value.
  */
-func check(w http.ResponseWriter, e error) (bool) {
-	if e != nil { http.Error(w, e.Error(), http.StatusForbidden) }
+func check(w http.ResponseWriter, e error) bool {
+	if e != nil {
+		http.Error(w, e.Error(), http.StatusForbidden)
+	}
 	return e != nil
 }
 
 /**
  * Responds to the Http query by performing actions related to the
  * path provided by the 'path' query option.
-*/
+ */
 func urlHandler(w http.ResponseWriter, r *http.Request) {
 	/* Ensure authentiction is successfull and get storage connection */
 	sshConn, sftp, err := sftpConnect(r)
 	if err != nil {
 		w.Header().Add("WWW-Authenticate", `Basic realm="Filet Cloud Login"`)
 		http.Error(w, "", http.StatusUnauthorized)
-		return;
+		return
 	}
 	defer sftp.Close()
 	defer sshConn.Close()
 
 	path := r.URL.Query().Get("path")
-	switch r.URL.Path {
+	switch url := r.URL.Path; {
+
 	/*
-	 * Serve the main page
+	 * Serve a web viewer or editor for the subsequent path.
 	 */
-	case "/":
-		user, _, _ := r.BasicAuth()
-		page, err := template.ParseFiles("template/main.html")
-		if check(w, err) { return }
-		page.Execute(w, struct{P string}{P:os.Getenv("FILETCLOUDDIR")+"/"+user+"/"})
+	case strings.HasPrefix(url, "/open:") || strings.HasPrefix(url, "/preview:"):
+		path = strings.TrimPrefix(url, "/open:")
+		path = strings.TrimPrefix(path, "/preview:")
+		// attempt to load file extension based viewer
+		loader := "static/open/ext" + filepath.Ext(path) + ".html"
+		_, err := os.Stat(loader)
+		if err == nil {
+			http.ServeFile(w, r, loader)
+			break
+		}
+		// detect the mime type of the file to find a viewer
+		contents, err := sftp.Open(path)
+		if check(w, err) {
+			return
+		}
+		defer contents.Close()
+		buffer := make([]byte, 512) /* 512 bytes is enough to catch headers */
+		n, err := contents.Read(buffer)
+		mime := strings.Split(http.DetectContentType(buffer[:n]), ";")[0]
+		// attempt to load a mime viewer
+		loader = "static/open/" + mime + ".html"
+		_, err = os.Stat(loader)
+		if err == nil {
+			http.ServeFile(w, r, loader)
+			break
+		}
+		// fallback to generic viewer
+		http.ServeFile(w, r, "static/open/fallback.html")
+
 	/*
 	 * Return the contents of the directory identified by the 'path'
 	 * query parameter.
 	 * Entries include whether it is a file, and the name. E.g:
 	 * ?path=/foo -> [[true, "file1"], [false, "dir1"]]
 	 */
-	case "/dir":
+	case url == "/dir":
 		// find contents of the directory
 		contents, err := sftp.ReadDir(path)
-		if check(w, err) { return }
+		if check(w, err) {
+			return
+		}
 		// build json export
-		entries := make([][2]interface{}, len(contents))
+		entries := make([][2]interface{}, len(contents)+1)
+		entries[0] = [2]interface{}{false, ".."}
 		for i, c := range contents {
-			entries[i] = [2]interface{}{!c.IsDir(), c.Name()}
+			entries[i+1] = [2]interface{}{!c.IsDir(), c.Name()}
 		}
 		json.NewEncoder(w).Encode(entries)
 
@@ -95,10 +128,12 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 	 * Retrieves a file and sends it to the client.
 	 * The 'path' query parameter identifies the file to send.
 	 */
-	case "/file":
+	case url == "/file":
 		// stream the file contents
 		contents, err := sftp.Open(path)
-		if check(w, err) { return }
+		if check(w, err) {
+			return
+		}
 		defer contents.Close()
 		http.ServeContent(w, r, filepath.Base(path), time.Time{}, contents)
 
@@ -106,40 +141,22 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 	 * Creates a new directory on the server.
 	 * The 'path' query parameter identifies the directory to make.
 	 */
-	case "/newdir":
+	case url == "/newdir":
 		err = sftp.Mkdir(r.URL.Query().Get("path"))
-		if check(w, err) { return }
+		if check(w, err) {
+			return
+		}
 
 	/*
-	 * Serve a web viewer (and editor if supported)
-	 * for the path provided.
-	 * @param path The path of the content to display.
+	 * Creates a new file on the server.
+	 * The 'path' query parameter identifies the file name to make.
 	 */
-	case "/open":
-		// attempt to load file extension based viewer
-		page, err := template.ParseFiles(
-			"template/open/ext"+filepath.Ext(path)+".html")
-		if err == nil {
-			page.Execute(w, struct{P string; M string}{P:path, M:filepath.Ext(path)})
-			break
+	case url == "/newfile":
+		dest, err := sftp.Create(r.URL.Query().Get("path"))
+		if check(w, err) {
+			return
 		}
-		// detect the mime type of the file to find a viewer
-		contents, err := sftp.Open(path)
-		if check(w, err) { return }
-		defer contents.Close()
-		buffer := make([]byte, 512) /* 512 bytes is enough to catch headers */
-		n, err := contents.Read(buffer)
-		mime := strings.Split(http.DetectContentType(buffer[:n]), ";")[0]
-		// attempt to load a mime viewer
-		page, err = template.ParseFiles("template/open/"+mime+".html")
-		if err == nil {
-			page.Execute(w, struct{P string; M string}{P:path, M:mime})
-			break
-		}
-		// fallback to generic viewer
-		page, err = template.ParseFiles("template/open/fallback.html")
-		if check(w, err) { return }
-		page.Execute(w, struct{P string; M string}{P:path, M:mime})
+		defer dest.Close()
 
 	/*
 	 * Deletes a file or a folder including all contents.
@@ -147,11 +164,13 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 	 * Folders should be terminated with a '/'
 	 * On any error, it will stop the deletion process and bail.
 	 */
-	case "/remove":
+	case url == "/remove":
 		if path[len(path)-1:] != "/" {
 			// Delete the file
 			err = sftp.Remove(path)
-			if check(w, err) { return }
+			if check(w, err) {
+				return
+			}
 			break
 		}
 		// Handle folder deletion
@@ -159,18 +178,24 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 		// First delete all files and collect directories
 		var dirs []string
 		for walk.Step() {
-			if check(w, walk.Err()) { return }
+			if check(w, walk.Err()) {
+				return
+			}
 			if walk.Stat().IsDir() {
 				dirs = append(dirs, walk.Path())
 				continue
 			}
 			err = sftp.Remove(walk.Path())
-			if check(w, err) { return }
+			if check(w, err) {
+				return
+			}
 		}
 		// Then delete all the dirs (in reverse order)
 		for i := range dirs {
 			err = sftp.Remove(dirs[len(dirs)-1-i])
-			if check(w, err) { return }
+			if check(w, err) {
+				return
+			}
 		}
 
 	/*
@@ -179,23 +204,26 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 	 * The 'to' query parameter identifies the new name or location.
 	 * Both parameters should be full paths.
 	 */
-	case "/rename":
+	case url == "/rename":
 		err = sftp.Rename(path, r.URL.Query().Get("to"))
-		if check(w, err) { return }
+		if check(w, err) {
+			return
+		}
 
 	/*
 	 * Serve a thumbnail image of the file.
 	 * This does not support all formats.
 	 */
-	case "/thumb":
-		contents, err := sftp.Open(path)
-		if check(w, err) { return }
-		defer contents.Close()
-		cmd := exec.Command("ffmpeg", "-i", "-", "-vframes", "1", "-f", "image2",
-			"-vf", "scale=-1:240", "pipe:1")
-		cmd.Stdin = contents
-		cmd.Stdout = w // browsers rock at detecting its a jpeg
-		_ = cmd.Run()
+	case url == "/thumb":
+		ppath := strings.Replace(path, "'", "\\'", -1)
+		cmd := "ffmpeg -i '" + ppath + "' -q:v 16 -vf scale=240:-1 -update 1 -f image2 -"
+		session, err := sshConn.NewSession()
+		if err != nil {
+			return
+		}
+		defer session.Close()
+		session.Stdout = w
+		_ = session.Run(cmd)
 
 	/*
 	 * Upload files to the server.
@@ -203,21 +231,29 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 	 * Files are recieved from a 'files[]' form parameter
 	 * sent in the body of the request.
 	 */
-	case "/upload":
+	case url == "/upload":
 		err := r.ParseMultipartForm(100 << 20) // 100MB in memory
-		if check(w, err) { return }
+		if check(w, err) {
+			return
+		}
 		for _, file := range r.MultipartForm.File["files[]"] {
 			// upack uploaded file
 			source, err := file.Open()
-			if check(w, err) { return }
+			if check(w, err) {
+				return
+			}
 			defer source.Close()
 			// create new file on server
-			dest, err := sftp.Create(path+"/"+file.Filename)
-			if check(w, err) { return }
+			dest, err := sftp.Create(path + "/" + file.Filename)
+			if check(w, err) {
+				return
+			}
 			defer dest.Close()
 			// copy contents of uploaded file to the server
 			_, err = io.Copy(dest, source)
-			if check(w, err) { return }
+			if check(w, err) {
+				return
+			}
 		}
 
 	/*
@@ -229,7 +265,7 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 	 *   - SFTPfiles }=> zipper -> http
 	 * Note: paths are assumed to be absolute.
 	 */
-	case "/zip":
+	case url == "/zip":
 		var files []string
 		// walk the paths expanding to the list of files inside
 		for _, path := range r.URL.Query()["path"] {
@@ -241,14 +277,20 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 			// expand directories to the files inside
 			walk := sftp.Walk(path)
 			for walk.Step() {
-				if check(w, walk.Err()) { return }
-				if walk.Stat().IsDir() { continue }
+				if check(w, walk.Err()) {
+					return
+				}
+				if walk.Stat().IsDir() {
+					continue
+				}
 				files = append(files, walk.Path())
 			}
 		}
 		// find the common prefix of all paths
 		prefix := ""
-		if len(files)>0 { prefix = filepath.Dir(files[0]) }
+		if len(files) > 0 {
+			prefix = filepath.Dir(files[0])
+		}
 		for _, file := range files {
 			for prefix != file[:len(prefix)] {
 				prefix = filepath.Dir(prefix)
@@ -260,14 +302,20 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 		for _, path := range files {
 			// get the contents of the file from the server
 			contents, err := sftp.Open(path)
-			if check(w, err) { return }
+			if check(w, err) {
+				return
+			}
 			defer contents.Close()
 			// add the file to the zip with the relative subpath
 			filein, err := zipper.Create(path[len(prefix)+1:])
-			if check(w, err) { return }
+			if check(w, err) {
+				return
+			}
 			// copy the contents of the file into the zip
 			_, err = io.Copy(filein, contents)
-			if check(w, err) { return }
+			if check(w, err) {
+				return
+			}
 		}
 
 	// Bad endpoint error handling.
@@ -277,8 +325,20 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	http.HandleFunc("/", urlHandler)
-	http.Handle("/static/",
-		http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	http.HandleFunc("/browse:/", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "static/browse.html")
+	})
+	http.HandleFunc("/open:/", urlHandler)
+	http.HandleFunc("/preview:/", urlHandler)
+	http.HandleFunc("/dir", urlHandler)
+	http.HandleFunc("/file", urlHandler)
+	http.HandleFunc("/thumb", urlHandler)
+	http.HandleFunc("/newdir", urlHandler)
+	http.HandleFunc("/newfile", urlHandler)
+	http.HandleFunc("/remove", urlHandler)
+	http.HandleFunc("/rename", urlHandler)
+	http.HandleFunc("/upload", urlHandler)
+	http.HandleFunc("/zip", urlHandler)
+	http.Handle("/", http.FileServer(http.Dir("static")))
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }

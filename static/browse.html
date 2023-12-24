@@ -1,0 +1,398 @@
+<!doctype html>
+<meta charset=utf-8>
+<title>Filet Cloud</title>
+<style>
+	html * {
+		font-family: sans-serif;
+	}
+
+	body {
+		display: flex;
+		flex-direction: row;
+		margin: 0;
+		width: 100%;
+		height: 100vh;
+	}
+
+	iframe {
+		display: block;
+		width: 100%;
+		height: 100%;
+	}
+
+	p,
+	h1 {
+		cursor: default;
+		margin: 2px;
+	}
+
+	h1.status {
+		position: absolute;
+		margin: 24px;
+		right: 0px;
+	}
+
+	div.tight>div>h1,
+	div.tight>div>p {
+		margin-top: 0px;
+		margin-bottom: 0px;
+		text-align: center;
+	}
+
+	div.tight>div>p {
+		font-size: 0.7em;
+	}
+
+	.on {
+		filter: drop-shadow(0 0 0.3rem rgb(0, 0, 128));
+	}
+
+	#menu {
+		display: flex;
+		flex-direction: row;
+		flex-wrap: wrap;
+		justify-content: center;
+		margin-bottom: 24px;
+		width: 100% - 48px;
+	}
+
+	#dir {
+		width: 100%;
+		height: 100%;
+		overflow-y: auto;
+	}
+
+	#data {
+		width: calc(100% - 48px);
+		height: calc(100% - 48px);
+		margin: 24px;
+		overflow-y: auto;
+	}
+
+	#data>div,
+	#dir>div {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		word-break: break-all;
+		background: rgba(0, 0, 128, 0.04);
+	}
+
+	#data>div:nth-child(odd),
+	#dir>div:nth-child(odd) {
+		background: rgba(0, 0, 128, 0.02);
+	}
+
+	#dirPane {
+		display: flex;
+		flex-direction: column;
+		margin: 24px;
+		margin-right: 0px;
+		width: calc(45% - 24px);
+		height: calc(100% - 48px);
+	}
+
+	#dataPane {
+		width: 55%;
+		height: 100%;
+		display: flex;
+		flex-direction: column;
+	}
+
+	@media (orientation: portrait) {
+		@media (hover: none) {
+			body {
+				font-size: 2.2em;
+			}
+		}
+
+		#menu {
+			margin-bottom: 0px;
+		}
+
+		#dirPane {
+			margin-top: 0px;
+		}
+
+		body {
+			flex-direction: column-reverse;
+		}
+
+		#dirPane {
+			width: calc(100% - 48px);
+			height: calc(50% - 24px);
+			margin-right: 28px;
+		}
+
+		#dataPane {
+			width: 100%;
+			height: 50%;
+		}
+	}
+</style>
+<div id=dirPane>
+	<div id=path></div>
+	<div id=dir></div>
+</div>
+<div id=dataPane>
+	<div id=data></div>
+	<div id=menu class="tight">
+		<div id=makedir onclick="makedir()">
+			<h1>&#128193</h1>
+			<p>new<br>folder</p>
+		</div>
+		<div id=newfile onclick="newfile()">
+			<h1>&#128196</h1>
+			<p>new<br>file</p>
+		</div>
+		<div id=tabopen onclick='window.open(`/open:${encodeURI(storage.path())}`, "_self")'>
+			<h1>&#128214</h1>
+			<p>open</p>
+		</div>
+		<div id=upload onclick="document.getElementById('uploader').click()">
+			<h1>&#128228</h1>
+			<p>upload</p>
+		</div>
+		<div id=rename onclick="rename()">
+			<h1>&#128394</h1>
+			<p>rename</p>
+		</div>
+		<div id=cart onclick="document.getElementById('cart').classList.toggle('on');
+			cartMode() ? cartSel() : nav(storage.path())" id="cart">
+			<h1>&#128722</h1>
+			<p>cart</p>
+			<p id=cartlen>0</p>
+		</div>
+		<div id=download onclick="download()">
+			<h1>&#128229</h1>
+			<p>down<br>load</p>
+		</div>
+		<div id=move onclick="move()">
+			<h1>&#128666</h1>
+			<p>move</p>
+		</div>
+		<div id=del onclick="del()">
+			<h1>&#128465</h1>
+			<p>delete</p>
+		</div>
+	</div>
+</div>
+<input id="uploader" type="file" multiple onchange="send()" style="display:none" />
+<a id="dwnld" download></a>
+
+
+<script src="/storage.js"></script>
+<script>
+	"use strict"
+	let cwd = () => storage.path().replace(/[^/]+$/g, '')
+	let setPath = path => {
+		document.getElementById('path').innerText = path
+		let newURL = `/browse:${encodeURI(path)}` // browser back/forwards navigation
+		if (window.location.pathname != newURL) window.history.pushState(null, null, newURL)
+	}
+	var cart = []
+	let cartMode = () => document.getElementById('cart').classList.contains("on")
+	let cartRemove = c => {cart.splice(cart.indexOf(c), 1); cartSel()}
+
+	function menuMode() {
+		let mode = (storage.path().endsWith("/") ? (
+			cartMode() ? (cart.length ? "cart" : "cartEmpty") :
+				cart.length ? "dirWithCart" : "dirEmptyCart") : "file")
+		menuItems.forEach(id => document.getElementById(id).style.display =
+			menuModes[mode].includes(id) ? 'initial' : 'none')
+	}
+	let menuModes = {
+		dirEmptyCart: ["makedir", "newfile", "upload", "rename", "cart"],
+		dirWithCart: ["download", "move", "del", "cart"],
+		file: ["tabopen", "rename", "download"],
+		cart: ["download", "del", "cart"],
+		cartEmpty: ["cart"],
+	}
+	let menuItems = new Set(Object.values(menuModes).flat())
+
+	/**
+	* Add the given path to the cart, if provided.
+	* Refresh the display of the cart and count.
+	* Cart enties remove themselves when clicked.
+	*/
+	function cartSel(path) {
+		if (path && !cart.includes(path)) cart.push(path)
+		document.getElementById('cartlen').innerText = cart.length.toString()
+		document.getElementById('data').replaceChildren(...cart.map(c => {
+			let nibIcon = document.createElement("h1")
+			let nib = document.createElement("p")
+			nib.innerText = c
+			nibIcon.innerText = c.endsWith('/') ? '\u{1F4C2}' : '\u{1F4C4}'
+			let div = document.createElement('div')
+			div.onclick = () => cartRemove(c)
+			div.replaceChildren(nibIcon, nib)
+			return div
+		}))
+		menuMode()
+	}
+
+	/**
+	* Navigate to, and show, a file or directory.
+	* For folders, path should be terminated in a "/".
+	* Also sets the current files or directories for future actions.
+	* Updates the folder area with interactive tree navigation.
+	* Displays file contents as best it can.
+	*/
+	function nav(path) {
+		setPath(path)
+		document.getElementById('data').replaceChildren()
+		let dir = document.getElementById('dir')
+		let curFile = storage.path().replace(/^.*[\\/]/, '')
+		// Refresh the contents of the directory by querying the server
+		storage.listDir(cwd()).then(r => dir.replaceChildren(...r.map(n => {
+			let nibIcon = document.createElement("h1")
+			let nib = document.createElement("p")
+			nib.innerText = n.replace(/\/$/, '')
+			nibIcon.innerText = n.endsWith('/') ? '\u{1F4C2}' : '\u{1F4C4}'
+			if (curFile == n) nibIcon.classList.add("on") // highlight selection
+			let div = document.createElement('div')
+			div.onclick = () => {
+				if (!cartMode() || n == "../") {
+					Array.from(dir.getElementsByClassName("on")).forEach(n => {
+						n.innerText = '\u{1F4C4}' // clear previous loading icons
+						n.classList.remove("on")
+					})
+					nibIcon.innerText = '\u{23F3}' // loading
+					nibIcon.classList.add("on") // highlight selection
+					if (n.endsWith('/'))
+						nav(n == "../" ? storage.path().replace(/[^/]+\/?$/g, '') : cwd() + n)
+					else load(cwd() + n, onload = () => nibIcon.innerText = '\u{1F4C4}')
+				} else cartSel(cwd() + n)
+			}
+			div.replaceChildren(nibIcon, nib)
+			return div
+		}))
+		).catch(e => alert(e))
+		// Open any file contents in the data pane
+		if (!path.endsWith("/")) load(path)
+		else if (cartMode()) cartSel()
+		else menuMode()
+	}
+
+	/**
+	* Open file contents in the data pane.
+	* Also sets the current file for future actions.
+	*/
+	function load(path, onload) {
+		setPath(path)
+		let nib = document.createElement("iframe")
+		if (onload) nib.onload = onload
+		nib.frameBorder = "0"
+		nib.src = `/preview:${encodeURI(path)}`
+		document.getElementById('data').replaceChildren(nib)
+		menuMode()
+	}
+
+	/**
+	* Make a directory on the server.
+	* The user is prompted for the name of the new directory and
+	* it is made inside the current directory.
+	*/
+	function makedir() {
+		let newDir = prompt("New Folder:", "")
+		if (!newDir) return
+		storage.newDir(cwd() + newDir).then(() => nav(cwd()))
+	}
+
+	/**
+	* Make a new file on the server.
+	* The user is prompted for the name of the new file and
+	* it is made inside the current directory.
+	*/
+	function newfile() {
+		let newFile = prompt("New File:", "")
+		if (!newFile) return
+		storage.newFile(cwd() + newFile).then(() => nav(cwd()))
+	}
+
+	/**
+	* Upload selected files to the server.
+	* Files are uploaded into the current directory.
+	* This is called after the file selection popup has been loaded
+	* and files have been selected.
+	*/
+	function send() {
+		let ico = document.createElement("h1")
+		ico.classList.add("status")
+		ico.innerText = '\u{1F4E4}'
+		document.getElementById("dataPane").appendChild(ico)
+		storage.writeFiles(cwd(),
+			document.getElementById('uploader').files).then(() => {
+				nav(cwd());
+				document.getElementById("dataPane").removeChild(ico)
+			})
+	}
+
+	/**
+	* Rename a file or directory on the server.
+	* The user is prompted for the new name.
+	*/
+	function rename() {
+		let suffix = storage.path().endsWith('/') ? '/' : ''
+		let folder = storage.path().replace(/[^/]+\/?$/g, '')
+		let oldName = storage.path().replace(/\/?$/g, '').split('/').pop()
+		let newName = prompt("Rename:", oldName)
+		if (!newName || newName == oldName) return
+		storage.rename(folder + oldName, folder + newName).then(
+			() => nav(folder + newName + suffix))
+	}
+
+	/**
+	* Download a file or a zip of multiple items.
+	* Supports downloading the selected file (if a file),
+	* a single file from the cart, or zipping multiple files
+	* and folders in the cart.
+	*/
+	function download() {
+		let paths = cart
+		if (!paths.length)
+			if (!storage.path().endsWith('/')) paths = [storage.path()]
+			else return alert('Please select a file, or items with the cart.')
+		let dwn = document.getElementById('dwnld')
+		dwn.download = 'download.zip'
+		dwn.href = storage.zipLink(paths)
+		if (paths.length == 1 && !paths[0].endsWith('/')) {
+			dwn.download = paths[0].split('/').pop()
+			dwn.href = storage.fileLink(paths[0])
+		}
+		dwn.click()
+	}
+
+	/**
+	* Moves everything in the cart to the current folder,
+	* after confirmation.
+	*/
+	function move() {
+		if (!cart.length) return alert('Please select items with the cart.')
+		let checkMsg = `Move ${cart.length} item${cart.length > 1 ? 's' : ''} to ${cwd()} ?`
+		if (!confirm(checkMsg)) return
+		/* Loop through the paths in the cart sorted backwards so sub-items
+			 are moved before parent items */
+		cart.sort().reverse().forEach(item => {
+			let dest = cwd() + item.replace(/\/?$/g, '').split('/').pop()
+			storage.rename(item, dest).then(() => {cartRemove(item); nav(cwd())})
+		})
+	}
+
+	/**
+	* Deletes everything in the cart,
+	* after confirmation.
+	*/
+	function del() {
+		if (!cart.length) return alert('Please select items with the cart.')
+		let checkMsg = `Delete ${cart.length} cart item${cart.length > 1 ? 's' : ''}?`
+		if (!confirm(checkMsg)) return
+		/* Loop through the paths in the cart sorted backwards so sub-items
+			 are removed before parent items */
+		cart.sort().reverse().forEach(item => {
+			storage.remove(item).then(() => {cartRemove(item); nav(cwd())})
+		})
+	}
+
+	window.onload = window.onpopstate = window.onpageshow = () => nav(storage.path())
+</script>

@@ -1,0 +1,59 @@
+<!doctype html>
+<!----
+  -- View the md file content with SimpleMDE,
+  -- and allow editing and saving back to the server.
+	-->
+<meta charset=utf-8>
+<title>FiletCloud</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
+<script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
+<style>
+	body {
+		display: flex;
+		width: calc(100% - 48px);
+		height: calc(100vh - 48px);
+		margin: 24px;
+	}
+
+	div.EasyMDEContainer {
+		width: 100%;
+	}
+
+	#upload {
+		position: fixed;
+		cursor: default;
+		display: none;
+		margin: 0px;
+		right: 24px;
+	}
+</style>
+
+<body>
+	<textarea>&#x23f3;</textarea>
+	<h1 id="upload">&#x1f4be;</h1>
+</body>
+<script src="/storage.js"></script>
+<script>
+	"use strict"
+	const easyMDE = new EasyMDE({status: false});
+	if (storage.isPreview()) {
+		document.getElementsByClassName('editor-toolbar')[0].style.display = "none"
+		easyMDE.toggleFullScreen()
+		document.getElementsByClassName('CodeMirror-fullscreen')[0].style.top = "0px"
+		easyMDE.togglePreview()
+	}
+	let path = storage.path()
+	storage.readFile(path).then(r => {
+		easyMDE.value(r)
+		easyMDE.codemirror.on("change", () => {
+			upload.style.display = "inline"
+		})
+	})
+	let upload = document.getElementById('upload')
+	upload.onclick = () => {
+		storage.writeFiles(
+			path.replace(/[^/]+$/g, ''),
+			[new File([new Blob([easyMDE.value()])], path.split('/').pop())])
+		upload.style.display = "none"
+	}
+</script>

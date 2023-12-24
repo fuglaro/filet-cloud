@@ -1,0 +1,73 @@
+<!doctype html>
+<!----
+	-- Displays the file contents as best it can using inbuilt
+	-- browser image and video elements, otherwise fall back to
+	-- a basic page. Video elements will also support compatible audio.
+	-->
+<meta charset=utf-8>
+<title>FiletCloud</title>
+<style>
+	video,
+	img {
+		display: block;
+		margin: auto;
+		width: 100%;
+	}
+
+	.preview {
+		max-height: 100vh;
+		object-fit: contain;
+	}
+
+	body,
+	h1,
+	p {
+		text-align: center;
+		margin: 0
+	}
+
+	#fail {
+		visibility: hidden;
+	}
+</style>
+&#x23f3;
+<div id=fail>
+	<h1 id=titlename></h1>
+	<p id=details></p>
+	<a id="download">
+		<h1>&#128229</h1>
+		<p>Download</p>
+	</a>
+</div>
+<script src="/storage.js"></script>
+<script>
+	"use strict"
+	let path = storage.path()
+	let link = storage.fileLink(path)
+	/* Attempts to load the selected file on a given html element.
+	Intended for "img" and "video" */
+	function tryElement(element, faller) {
+		let doc = document.createElement(element == "thumb" ? "img" : element)
+		if (storage.isPreview() || element == "video") doc.classList.add("preview")
+		doc.controls = "controls"
+		doc.onload = doc.oncanplay = () => {
+			document.body.replaceChildren(doc)
+			if (element == "thumb") faller()
+		}
+		doc.onerror = faller
+		doc.src = element == "thumb" ? storage.thumbLink(path) : link
+	}
+	// Chain up fallback for image, video, then downloadable link.
+	let fallback = () => tryElement("img", () => tryElement("video", () => {
+		document.getElementById("download").href = link
+		let filename = path.split('/').pop()
+		document.getElementById("download").download = filename
+		document.getElementById("titlename").innerText = filename
+		document.getElementById("details").innerText = path
+		document.body.replaceChildren(document.getElementById("fail"))
+		document.getElementById("fail").style.visibility = "visible"
+	}))
+	// Add a thumbnail preview first if appropriate.
+	if (storage.isPreview() && path.endsWith(".jpg")) tryElement("thumb", fallback)
+	else fallback()
+</script>
