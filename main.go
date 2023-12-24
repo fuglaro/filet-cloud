@@ -73,6 +73,23 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 	switch url := r.URL.Path; {
 
 	/*
+	 * Redirect to the home page.
+	 */
+	case url == "/":
+		if os.Getenv("FILETCLOUDDIR") == "" {
+			http.Redirect(w, r, "/browse:/", http.StatusSeeOther)
+			return
+		}
+		user, _, _ := r.BasicAuth()
+		http.Redirect(w, r, "/browse:/"+os.Getenv("FILETCLOUDDIR")+"/"+user+"/", http.StatusSeeOther)
+
+	/*
+	 * Serve a web file browser for the subsequent path.
+	 */
+	case strings.HasPrefix(url, "/browse:"):
+		http.ServeFile(w, r, "static/browse.html")
+
+	/*
 	 * Serve a web viewer or editor for the subsequent path.
 	 */
 	case strings.HasPrefix(url, "/open:") || strings.HasPrefix(url, "/preview:"):
@@ -325,9 +342,8 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	http.HandleFunc("/browse:/", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "static/browse.html")
-	})
+	http.HandleFunc("/", urlHandler)
+	http.HandleFunc("/browse:/", urlHandler)
 	http.HandleFunc("/open:/", urlHandler)
 	http.HandleFunc("/preview:/", urlHandler)
 	http.HandleFunc("/dir", urlHandler)
@@ -339,6 +355,8 @@ func main() {
 	http.HandleFunc("/rename", urlHandler)
 	http.HandleFunc("/upload", urlHandler)
 	http.HandleFunc("/zip", urlHandler)
-	http.Handle("/", http.FileServer(http.Dir("static")))
+	http.Handle("/favicon.ico", http.FileServer(http.Dir("static")))
+	http.Handle("/static/", http.StripPrefix("/static/",
+		http.FileServer(http.Dir("static"))))
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
