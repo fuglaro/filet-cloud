@@ -102,7 +102,7 @@
 	@media (orientation: portrait) {
 		@media (hover: none) {
 			body {
-				font-size: 2.2em;
+				font-size: 2.0em;
 			}
 		}
 
@@ -175,6 +175,10 @@
 			<h1>&#128465</h1>
 			<p>delete</p>
 		</div>
+		<div id=close onclick="nav(storage.path().replace(/[^/]+$/g, ''))">
+			<h1>&#10060;</h1>
+			<p>close</p>
+		</div>
 	</div>
 </div>
 <input id="uploader" type="file" multiple onchange="send()" style="display:none" />
@@ -204,7 +208,7 @@
 	let menuModes = {
 		dirEmptyCart: ["makedir", "newfile", "upload", "rename", "cart"],
 		dirWithCart: ["download", "move", "del", "cart"],
-		file: ["tabopen", "rename", "download"],
+		file: ["tabopen", "rename", "download", "close"],
 		cart: ["download", "del", "cart"],
 		cartEmpty: ["cart"],
 	}
@@ -260,7 +264,7 @@
 					nibIcon.innerText = '\u{23F3}' // loading
 					nibIcon.classList.add("on") // highlight selection
 					if (n.endsWith('/'))
-						nav(n == "../" ? storage.path().replace(/[^/]+\/?$/g, '') : cwd() + n)
+						nav(n == "../" ? storage.path().replace(/[^/]+\/[^/]*$/g, '') : cwd() + n)
 					else load(cwd() + n, onload = () => nibIcon.innerText = '\u{1F4C4}')
 				} else cartSel(cwd() + n)
 			}
