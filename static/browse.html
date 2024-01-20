@@ -255,6 +255,7 @@
 			nibIcon.innerText = n.endsWith('/') ? '\u{1F4C2}' : '\u{1F4C4}'
 			if (curFile == n) nibIcon.classList.add("on") // highlight selection
 			let div = document.createElement('div')
+			let path = cwd() // resolve here to avoid double click stacking the path
 			div.onclick = () => {
 				if (!cartMode() || n == "../") {
 					Array.from(dir.getElementsByClassName("on")).forEach(n => {
@@ -264,7 +265,7 @@
 					nibIcon.innerText = '\u{23F3}' // loading
 					nibIcon.classList.add("on") // highlight selection
 					if (n.endsWith('/'))
-						nav(n == "../" ? storage.path().replace(/[^/]+\/[^/]*$/g, '') : cwd() + n)
+						nav(n == "../" ? storage.path().replace(/[^/]+\/[^/]*$/g, '') : path + n)
 					else load(cwd() + n, onload = () => nibIcon.innerText = '\u{1F4C4}')
 				} else cartSel(cwd() + n)
 			}
