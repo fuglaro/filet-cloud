@@ -7,7 +7,7 @@ class Storage {
 	* Return the current path determined by the url.
 	*/
 	path() {
-		return decodeURI(window.location.pathname.replace(/^\/[a-z]+:\//, '/'))
+		return decodeURI(window.location.pathname.replace(/^\/.+:\//, '/'))
 	}
 
 	/**

@@ -78,23 +78,30 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 	case url == "/":
 		if os.Getenv("FILETCLOUDDIR") == "" {
 			http.Redirect(w, r, "/browse:/", http.StatusSeeOther)
-			return
+			break
 		}
 		user, _, _ := r.BasicAuth()
 		http.Redirect(w, r, "/browse:/"+os.Getenv("FILETCLOUDDIR")+"/"+user+"/", http.StatusSeeOther)
 
 	/*
-	 * Serve a web file browser for the subsequent path.
-	 */
-	case strings.HasPrefix(url, "/browse:"):
-		http.ServeFile(w, r, "static/browse.html")
-
-	/*
 	 * Serve a web viewer or editor for the subsequent path.
 	 */
-	case strings.HasPrefix(url, "/open:") || strings.HasPrefix(url, "/preview:"):
-		path = strings.TrimPrefix(url, "/open:")
-		path = strings.TrimPrefix(path, "/preview:")
+	case strings.HasPrefix(url, "/open") || strings.HasPrefix(url, "/preview"):
+		url, path, _ = strings.Cut(url, ":")
+		if strings.Count(url, "/") > 1 {
+			// fallback to generic viewer, if misc media
+			if strings.HasSuffix(url, "/misc/media") {
+				http.ServeFile(w, r, "static/open/fallback.html")
+				break
+
+			}
+			// Extact the mime type from the url, ensuring a secure path component.
+			mime := strings.SplitN(strings.Replace(url, "/../", "/./", -1), "/", 4)
+			loader := "static/open/" + mime[2] + "/" + strings.TrimSuffix(mime[3], ":") + ".html"
+			http.ServeFile(w, r, loader)
+			break
+		}
+
 		// attempt to load file extension based viewer
 		loader := "static/open/ext" + filepath.Ext(path) + ".html"
 		_, err := os.Stat(loader)
@@ -111,15 +118,12 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 		buffer := make([]byte, 512) /* 512 bytes is enough to catch headers */
 		n, err := contents.Read(buffer)
 		mime := strings.Split(http.DetectContentType(buffer[:n]), ";")[0]
-		// attempt to load a mime viewer
-		loader = "static/open/" + mime + ".html"
-		_, err = os.Stat(loader)
-		if err == nil {
-			http.ServeFile(w, r, loader)
-			break
+		// check if we should fallback to generic viewer
+		_, err = os.Stat("static/open/" + mime + ".html")
+		if err != nil {
+			mime = "misc/media"
 		}
-		// fallback to generic viewer
-		http.ServeFile(w, r, "static/open/fallback.html")
+		http.Redirect(w, r, url+"/"+mime+":/"+path, http.StatusSeeOther)
 
 	/*
 	 * Return the contents of the directory identified by the 'path'
@@ -160,9 +164,7 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 	 */
 	case url == "/newdir":
 		err = sftp.Mkdir(r.URL.Query().Get("path"))
-		if check(w, err) {
-			return
-		}
+		check(w, err)
 
 	/*
 	 * Creates a new file on the server.
@@ -170,10 +172,8 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 	 */
 	case url == "/newfile":
 		dest, err := sftp.Create(r.URL.Query().Get("path"))
-		if check(w, err) {
-			return
-		}
 		defer dest.Close()
+		check(w, err)
 
 	/*
 	 * Deletes a file or a folder including all contents.
@@ -223,9 +223,7 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 	 */
 	case url == "/rename":
 		err = sftp.Rename(path, r.URL.Query().Get("to"))
-		if check(w, err) {
-			return
-		}
+		check(w, err)
 
 	/*
 	 * Serve a thumbnail image of the file.
@@ -235,7 +233,7 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 		ppath := strings.Replace(path, "'", "\\'", -1)
 		cmd := "ffmpeg -i '" + ppath + "' -q:v 16 -vf scale=240:-1 -update 1 -f image2 -"
 		session, err := sshConn.NewSession()
-		if err != nil {
+		if check(w, err) {
 			return
 		}
 		defer session.Close()
@@ -343,18 +341,9 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	http.HandleFunc("/", urlHandler)
-	http.HandleFunc("/browse:/", urlHandler)
-	http.HandleFunc("/open:/", urlHandler)
-	http.HandleFunc("/preview:/", urlHandler)
-	http.HandleFunc("/dir", urlHandler)
-	http.HandleFunc("/file", urlHandler)
-	http.HandleFunc("/thumb", urlHandler)
-	http.HandleFunc("/newdir", urlHandler)
-	http.HandleFunc("/newfile", urlHandler)
-	http.HandleFunc("/remove", urlHandler)
-	http.HandleFunc("/rename", urlHandler)
-	http.HandleFunc("/upload", urlHandler)
-	http.HandleFunc("/zip", urlHandler)
+	http.HandleFunc("/browse:/", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "static/browse.html")
+	})
 	http.Handle("/favicon.ico", http.FileServer(http.Dir("static")))
 	http.Handle("/static/", http.StripPrefix("/static/",
 		http.FileServer(http.Dir("static"))))
