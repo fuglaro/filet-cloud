@@ -24,7 +24,7 @@ func sftpConnect(r *http.Request) (*ssh.Client, *sftp.Client, error) {
 	config := &ssh.ClientConfig{
 		User:            user,
 		Auth:            []ssh.AuthMethod{ssh.Password(pass)},
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(), // trust localhost
 	}
 	sshConn, err := ssh.Dial("tcp", "localhost:22", config)
 	if err != nil {

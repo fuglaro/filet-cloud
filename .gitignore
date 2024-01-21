@@ -1,1 +1,3 @@
 filet-cloud-web
+static/deps
+**.DS_Store
