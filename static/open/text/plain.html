@@ -1,11 +1,16 @@
 <!doctype html>
+<!----
+  -- View and edit text files.
+	-->
 <meta charset=utf-8>
+<meta name="viewport" content="initial-scale=1, interactive-widget=resizes-content" />
 <title>FiletCloud</title>
 <style>
 	body {
+		position: fixed;
 		display: flex;
 		width: calc(100% - 48px);
-		height: calc(100vh - 48px);
+		height: calc(100% - 48px);
 		margin: 24px;
 	}
 
@@ -30,23 +35,13 @@
 		margin: 0px;
 		right: 0px;
 	}
-
-	@media (hover: none) {
-		textarea {
-			font-size: 2.0em;
-		}
-
-		h1 {
-			font-size: 5.0em;
-
-		}
-	}
 </style>
 
 <body>
 	<textarea id=text>&#x23f3;</textarea>
 	<h1 id="upload">&#x1f4be;</h1>
 </body>
+
 <script src="/static/storage.js"></script>
 <script>
 	"use strict"

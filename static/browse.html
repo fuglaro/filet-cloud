@@ -1,5 +1,6 @@
 <!doctype html>
 <meta charset=utf-8>
+<meta name="viewport" content="initial-scale=1, interactive-widget=resizes-content" />
 <title>Filet Cloud</title>
 <style>
 	html * {
@@ -7,11 +8,12 @@
 	}
 
 	body {
+		position: fixed;
 		display: flex;
 		flex-direction: row;
 		margin: 0;
 		width: 100%;
-		height: 100vh;
+		height: 100%;
 	}
 
 	iframe {
@@ -100,12 +102,6 @@
 	}
 
 	@media (orientation: portrait) {
-		@media (hover: none) {
-			body {
-				font-size: 2.0em;
-			}
-		}
-
 		#menu {
 			margin-bottom: 0px;
 		}
