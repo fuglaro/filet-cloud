@@ -5,22 +5,18 @@
 <style>
 	html * {
 		font-family: sans-serif;
+
 	}
 
 	body {
 		position: fixed;
 		display: flex;
 		flex-direction: row;
-		margin: 0;
+		margin: 0px;
 		width: 100%;
 		height: 100%;
 	}
 
-	iframe {
-		display: block;
-		width: 100%;
-		height: 100%;
-	}
 
 	p,
 	h1 {
@@ -58,7 +54,7 @@
 		width: 100% - 48px;
 	}
 
-	#dir {
+	.maxer {
 		width: 100%;
 		height: 100%;
 		overflow-y: auto;
@@ -71,8 +67,21 @@
 		overflow-y: auto;
 	}
 
-	#data>div,
-	#dir>div {
+	body.open #data {
+		position: fixed;
+		left: 0px;
+		width: 100%;
+		height: 100%;
+		margin: 0px;
+	}
+
+	body.open #dirPane,
+	body.open #menu {
+		visibility: hidden;
+	}
+
+	#dir>div,
+	#data>div.file {
 		display: flex;
 		flex-direction: row;
 		align-items: center;
@@ -80,8 +89,8 @@
 		background: rgba(0, 0, 128, 0.04);
 	}
 
-	#data>div:nth-child(odd),
-	#dir>div:nth-child(odd) {
+	#dir>div:nth-child(odd),
+	#data>div.file:nth-child(odd) {
 		background: rgba(0, 0, 128, 0.02);
 	}
 
@@ -128,11 +137,11 @@
 </style>
 <div id=dirPane>
 	<div id=path></div>
-	<div id=dir></div>
+	<div id=dir class=maxer></div>
 </div>
 <div id=dataPane>
 	<div id=data></div>
-	<div id=menu class="tight">
+	<div id=menu class="tight" style="visibility: hidden">
 		<div id=makedir onclick="makedir()">
 			<h1>&#128193</h1>
 			<p>new<br>folder</p>
@@ -141,13 +150,17 @@
 			<h1>&#128196</h1>
 			<p>new<br>file</p>
 		</div>
-		<div id=tabopen onclick='window.open(`/open:${encodeURI(storage.path())}`, "_self")'>
+		<div id=tabopen onclick="setPath(storage.path(), '/open:')">
 			<h1>&#128214</h1>
 			<p>open</p>
 		</div>
 		<div id=upload onclick="document.getElementById('uploader').click()">
 			<h1>&#128228</h1>
 			<p>upload</p>
+		</div>
+		<div id=download onclick="download()">
+			<h1>&#128229</h1>
+			<p>down<br>load</p>
 		</div>
 		<div id=rename onclick="rename()">
 			<h1>&#128394</h1>
@@ -158,10 +171,6 @@
 			<h1>&#128722</h1>
 			<p>cart</p>
 			<p id=cartlen>0</p>
-		</div>
-		<div id=download onclick="download()">
-			<h1>&#128229</h1>
-			<p>down<br>load</p>
 		</div>
 		<div id=move onclick="move()">
 			<h1>&#128666</h1>
@@ -181,34 +190,241 @@
 <a id="dwnld" download></a>
 
 
-<script src="/static/storage.js"></script>
+<!--
+  -- Login form
+  --
+	-- Form for establishing a login connection and a storage
+	-- class to manage secure queries with the server.
+	-->
+<template id=-login-form>
+	<style>
+		:host {
+			position: fixed;
+			z-index: 999999;
+		}
+
+		div {
+			display: flex;
+			backdrop-filter: blur(18px);
+			width: 100vw;
+			height: 100vh;
+			align-items: center;
+			justify-content: center;
+		}
+
+		ul {
+			list-style: none;
+
+			label {
+				display: inline-block;
+				width: 80px;
+				text-align: right;
+			}
+
+			button {
+				float: right;
+				font-size: 2em;
+				border-style: solid;
+				border-color: currentColor;
+			}
+		}
+	</style>
+	<div tabindex="-1">
+		<form>
+			<h1>👤 Login</h1>
+			<ul>
+				<li>
+					<label for=username>Username</label>
+					<input type=text id=username name=username required />
+				</li>
+				<li>
+					<label for=password>Password</label>
+					<input type=password id=password name=password required />
+				</li>
+				<li>
+					<label for=code>(Code)</label>
+					<input type=password id=code name=code title="2FA access code (optional on some servers)" size=8 />
+				</li>
+				<br>
+				<li>
+					<button type=submit>Connect</button>
+				</li>
+			</ul>
+		</form>
+	</div>
+</template>
 <script>
-	"use strict"
-	let cwd = () => storage.path().replace(/[^/]+$/g, '')
-	let setPath = path => {
-		document.getElementById('path').innerText = path
-		let newURL = `/browse:${encodeURI(path)}` // browser back/forwards navigation
-		if (window.location.pathname != newURL) window.history.pushState(null, null, newURL)
+	login = () => {
+		if (!document.querySelector("login-form"))
+			document.body.appendChild(document.createElement("login-form"))
 	}
-	var cart = []
-	let cartMode = () => document.getElementById('cart').classList.contains("on")
-	let cartRemove = c => {cart.splice(cart.indexOf(c), 1); cartSel()}
+	customElements.define("login-form", class extends HTMLElement {
+		constructor() {
+			super()
+			this.attachShadow({mode: "open"}).appendChild(
+				document.getElementById("-login-form").content.cloneNode(true))
+		}
+		connectedCallback() {
+			this.shadowRoot.querySelector("form").addEventListener("submit", e => {
+				e.preventDefault()
+				// Establish WebSocket connection.
+				const safelocal = window.location.protocol === 'http:' && window.location.hostname === 'localhost'
+				const protocol = safelocal ? 'ws:' : 'wss:'
+				const url = `${protocol}//${window.location.host}/connect`
+				const ws = new WebSocket(url)
+				ws.onclose = login
+				ws.onerror = () => ws.close()
+				ws.onopen = () => {
+					// Authenticate WebSocket connection.
+					ws.send(this.shadowRoot.querySelector("#username").value)
+					ws.send(this.shadowRoot.querySelector("#password").value)
+					// Give connection to the storage API.
+					storage.connect(ws)
+				}
+				document.body.removeChild(document.querySelector("login-form"))
+			})
+			this.shadowRoot.querySelector("div").focus()
+		}
+	})
+
+	/**
+	* Interface for all operations interacting with the storage and server.
+	* Securely manages server connection, with login and session management,
+	* and only exposes the minimum interface.
+	*/
+	class Storage {
+		path = () => decodeURI(window.location.pathname.replace(/^\/.+:\//, '/'))
+
+		// Keep raw connections private, to limit javascript access.
+		#ws = null; // websocket connection to the server.
+		#connection = [] // pending connections awaiting login.
+		#reqs = {} // manage requests awaiting responses (stored by msgID).
+		#msgID = 0 // msgID counter for generating unique message IDs.
+
+		async #req(r, ok) {
+			// Ensure we have an established login connection.
+			if (this.#ws === null || this.#ws.readyState !== WebSocket.OPEN) await new Promise(ok => {
+				this.#connection.push(ok)
+				login()
+			})
+			// Send request to server, after preparing the response handler.
+			const msgID = this.#msgID += 1
+			const resp = new Promise(ok => {
+				this.#reqs[msgID] = [r, ok]
+			})
+			if (ok) this.#reqs[msgID][1] = ok
+			if (r instanceof Blob) {
+				if (msgID.toString().length > 20) throw new Error()
+				this.#ws.send(new Blob([msgID.toString().padEnd(20), r]))
+			} else {
+				r.id = msgID
+				this.#ws.send(JSON.stringify(r))
+			}
+			return resp
+		}
+		connect(ws) {
+			ws.onmessage = async m => {
+				var id = null, v = null
+				// Handle binary or json response mesage.
+				if (m.data instanceof Blob) {
+					id = Number(await m.data.slice(0, 20).text())
+					v = await m.data.slice(20)
+				} else {
+					const d = JSON.parse(m.data)
+					id = d.id
+					v = d.msg
+					if (d.err) console.log(`Error: ${JSON.stringify(d.err)}`)
+				}
+				// Activate the prepared response handler.
+				const ok = this.#reqs[id][1]
+				delete this.#reqs[id]
+				ok(v)
+			}
+			ws.onclose = () => {
+				// Requeue all pending requests, triggering re-login in the process.
+				for (const k in this.#reqs) {
+					const v = this.#reqs[k]
+					delete this.#reqs[k]
+					this.#req(v[0], v[1])
+				}
+			}
+			ws.onerror = () => ws.close()
+			this.#ws = ws
+			while (this.#connection.length) this.#connection.pop()()
+		}
+
+		mime = async (path) => await this.#req({action: "mime", path: path})
+		readFile = async (path) => await this.#req({action: "file", path: path})
+		newDir = async (path) => await this.#req({action: "newdir", path: path})
+		newFile = async (path) => await this.#req({action: "newfile", path: path})
+		rename = async (path, to) => await this.#req({action: "rename", path: path, to: to})
+		remove = async (path) => await this.#req({action: "remove", path: path})
+
+		/**
+		* Retrieve the contents of a directory as a list of strings,
+		* where child directories end in (forward) slashes.
+		* Results are returned sorted by name but with folders first.
+		*/
+		async listDir(path) {
+			const r = (await this.#req({action: "dir", path: path})).sort()
+			return r.map(([isFile, name]) => name + (isFile ? "" : "/"))
+		}
+
+		/**
+		* Upload a file to the server into the current directory,
+		* potentially overwriting existing files on the server.
+		*/
+		async upload(path, content) {
+			const plenstr = path.length.toString()
+			if (plenstr.length > 20) throw new Error()
+			await this.#req(new Blob([plenstr.padEnd(20), path, content]))
+		}
+
+		fileLink = (path) => `/file:${encodeURI(path)}`
+		thumbLink = (path) => `/thumb:${encodeURI(path)}`
+		zipLink = (paths) => '/zip?' + paths.map(p => `path=${encodeURI(p)}`).join('&')
+	}
+	const storage = new Storage();
+</script>
+
+
+<script>
+	/**
+	 * Browser UI code.
+	 */
+
+	"use strict"
+	const cwd = () => storage.path().replace(/[^/]+$/g, '')
+	const setPath = (path, mode) => {
+		document.getElementById('path').textContent = path
+		const newURL = `${mode}${encodeURI(path)}`
+		if (window.location.pathname !== newURL) window.history.pushState(null, null, newURL)
+		document.body.classList.remove('open')
+		if (mode === '/open:') {
+			document.querySelector('#data>.maxer').children[0]?.removeAttribute('preview');
+			document.body.classList.add('open')
+		}
+	}
+	const cart = []
+	const cartMode = () => document.getElementById('cart').classList.contains("on")
+	const cartRemove = c => {c ? cart.splice(cart.indexOf(c), 1) : cart.length = 0; cartSel()}
 
 	function menuMode() {
-		let mode = (storage.path().endsWith("/") ? (
+		const mode = (storage.path().endsWith("/") ? (
 			cartMode() ? (cart.length ? "cart" : "cartEmpty") :
 				cart.length ? "dirWithCart" : "dirEmptyCart") : "file")
 		menuItems.forEach(id => document.getElementById(id).style.display =
 			menuModes[mode].includes(id) ? 'initial' : 'none')
+		document.getElementById("menu").style.visibility = null
 	}
-	let menuModes = {
+	const menuModes = {
 		dirEmptyCart: ["makedir", "newfile", "upload", "rename", "cart"],
 		dirWithCart: ["download", "move", "del", "cart"],
-		file: ["tabopen", "rename", "download", "close"],
+		file: ["tabopen", "download", "rename", "close"],
 		cart: ["download", "del", "cart"],
 		cartEmpty: ["cart"],
 	}
-	let menuItems = new Set(Object.values(menuModes).flat())
+	const menuItems = new Set(Object.values(menuModes).flat())
 
 	/**
 	* Add the given path to the cart, if provided.
@@ -217,13 +433,14 @@
 	*/
 	function cartSel(path) {
 		if (path && !cart.includes(path)) cart.push(path)
-		document.getElementById('cartlen').innerText = cart.length.toString()
+		document.getElementById('cartlen').textContent = cart.length.toString()
 		document.getElementById('data').replaceChildren(...cart.map(c => {
-			let nibIcon = document.createElement("h1")
-			let nib = document.createElement("p")
-			nib.innerText = c
-			nibIcon.innerText = c.endsWith('/') ? '\u{1F4C2}' : '\u{1F4C4}'
-			let div = document.createElement('div')
+			const nibIcon = document.createElement("h1")
+			const nib = document.createElement("p")
+			nib.textContent = c
+			nibIcon.textContent = c.endsWith('/') ? '\u{1F4C2}' : '\u{1F4C4}'
+			const div = document.createElement('div')
+			div.classList.add('file')
 			div.onclick = () => cartRemove(c)
 			div.replaceChildren(nibIcon, nib)
 			return div
@@ -238,55 +455,59 @@
 	* Updates the folder area with interactive tree navigation.
 	* Displays file contents as best it can.
 	*/
-	function nav(path) {
-		setPath(path)
+	async function nav(path, justOpen) {
 		document.getElementById('data').replaceChildren()
-		let dir = document.getElementById('dir')
-		let curFile = storage.path().replace(/^.*[\\/]/, '')
-		// Refresh the contents of the directory by querying the server
-		storage.listDir(cwd()).then(r => dir.replaceChildren(...r.map(n => {
-			let nibIcon = document.createElement("h1")
-			let nib = document.createElement("p")
-			nib.innerText = n.replace(/\/$/, '')
-			nibIcon.innerText = n.endsWith('/') ? '\u{1F4C2}' : '\u{1F4C4}'
-			if (curFile == n) nibIcon.classList.add("on") // highlight selection
-			let div = document.createElement('div')
-			let path = cwd() // resolve here to avoid double click stacking the path
-			div.onclick = () => {
-				if (!cartMode() || n == "../") {
-					Array.from(dir.getElementsByClassName("on")).forEach(n => {
-						n.innerText = '\u{1F4C4}' // clear previous loading icons
-						n.classList.remove("on")
-					})
-					nibIcon.innerText = '\u{23F3}' // loading
-					nibIcon.classList.add("on") // highlight selection
-					if (n.endsWith('/'))
-						nav(n == "../" ? storage.path().replace(/[^/]+\/[^/]*$/g, '') : path + n)
-					else load(cwd() + n, onload = () => nibIcon.innerText = '\u{1F4C4}')
-				} else cartSel(cwd() + n)
-			}
-			div.replaceChildren(nibIcon, nib)
-			return div
-		}))
-		).catch(e => alert(e))
-		// Open any file contents in the data pane
-		if (!path.endsWith("/")) load(path)
-		else if (cartMode()) cartSel()
-		else menuMode()
-	}
-
-	/**
-	* Open file contents in the data pane.
-	* Also sets the current file for future actions.
-	*/
-	function load(path, onload) {
-		setPath(path)
-		let nib = document.createElement("iframe")
-		if (onload) nib.onload = onload
-		nib.frameBorder = "0"
-		nib.src = `/preview:${encodeURI(path)}`
-		document.getElementById('data').replaceChildren(nib)
-		menuMode()
+		if (cartMode()) cartSel()
+		if (!justOpen && window.location.pathname.startsWith("/browse:")) {
+			// Fill the folder contents
+			setPath(path, '/browse:')
+			// Refresh the contents of the directory by querying the server
+			const dir = document.getElementById('dir')
+			const curFile = storage.path().replace(/^.*[\\/]/, '')
+			storage.listDir(cwd()).then(r => dir.replaceChildren(...r.map(n => {
+				const nibIcon = document.createElement("h1")
+				const nib = document.createElement("p")
+				nib.textContent = n.replace(/\/$/, '')
+				nibIcon.textContent = n.endsWith('/') ? '\u{1F4C2}' : '\u{1F4C4}'
+				if (curFile === n) nibIcon.classList.add("on") // highlight selection
+				const div = document.createElement('div')
+				const path = cwd() // resolve here to avoid double click stacking the path
+				div.onclick = () => {
+					if (!cartMode() || n === "../") {
+						Array.from(dir.getElementsByClassName("on")).forEach(n => {
+							n.textContent = '\u{1F4C4}' // clear previous loading icons
+							n.classList.remove("on")
+						})
+						nibIcon.classList.add("on") // highlight selection
+						if (n.endsWith('/')) {
+							nibIcon.textContent = '\u{23F3}' // loading
+							nav(n === "../" ? path.replace(/[^/]+\/[^/]*$/g, '') : path + n)
+						} else nav(path + n, justOpen = true)
+					} else cartSel(path + n)
+				}
+				div.replaceChildren(nibIcon, nib)
+				return div
+			}))
+			)//.catch(e => alert(e)) // XXX TODO do all these need to be caught?
+			menuMode()
+		}
+		if (!path.endsWith("/")) {
+			// Open any file contents in the data pane
+			const div = document.createElement("div")
+			div.classList.add("maxer")
+			div.textContent = '\u{23F3}' // loading
+			document.getElementById('data').replaceChildren(div)
+			setPath(path, window.location.pathname.split(':')[0] + ':')
+			const reg = (n) => document.getElementById(`-${n}`)?.getAttribute("loader")
+			const nib = document.createElement(
+				reg(`ext-${/(?:\.([^.]+))?$/.exec(path)[1]}`) // try file extension loader
+				|| reg(`mime-${(await storage.mime(path)).replace("/", "-")}`) // try mime type loader
+				|| reg('misc-media')) // fallback loader
+			if (window.location.pathname.startsWith("/open:")) document.getElementById("tabopen").click()
+			else nib.setAttribute("preview", "")
+			div.replaceChildren(nib)
+			menuMode()
+		}
 	}
 
 	/**
@@ -295,7 +516,7 @@
 	* it is made inside the current directory.
 	*/
 	function makedir() {
-		let newDir = prompt("New Folder:", "")
+		const newDir = prompt("New Folder:", "")
 		if (!newDir) return
 		storage.newDir(cwd() + newDir).then(() => nav(cwd()))
 	}
@@ -306,9 +527,9 @@
 	* it is made inside the current directory.
 	*/
 	function newfile() {
-		let newFile = prompt("New File:", "")
+		const newFile = prompt("New File:", "")
 		if (!newFile) return
-		storage.newFile(cwd() + newFile).then(() => nav(cwd()))
+		storage.newFile(cwd() + newFile).then(() => nav(cwd() + newFile))
 	}
 
 	/**
@@ -318,15 +539,25 @@
 	* and files have been selected.
 	*/
 	function send() {
-		let ico = document.createElement("h1")
+		var ico = document.createElement("h1")
 		ico.classList.add("status")
-		ico.innerText = '\u{1F4E4}'
-		document.getElementById("dataPane").appendChild(ico)
-		storage.writeFiles(cwd(),
-			document.getElementById('uploader').files).then(() => {
+		ico.textContent = '\u{1F4E4}'
+		const existing = new Set(Array.from(
+			document.querySelectorAll("#dir>div>p")).map(p => p.textContent))
+		existing.forEach(p => console.log(p))
+		Array.from(document.getElementById('uploader').files).forEach(f => {
+			var ico2 = ico.cloneNode(true)
+			document.getElementById("dataPane").appendChild(ico2) // Show upload status icon
+			// Ensure filename for upload is unique
+			var filename = f.name
+			var n = 2
+			while (existing.has(filename)) filename = f.name.replace(/((?:\.|$)[^\.]*)/, `(${n++})$1`)
+			// Upload the file
+			storage.upload(cwd() + filename, f).then((ico3 => () => {
 				nav(cwd());
-				document.getElementById("dataPane").removeChild(ico)
-			})
+				document.getElementById("dataPane").removeChild(ico3) // Clear upload status icon
+			})(ico2))
+		})
 	}
 
 	/**
@@ -334,11 +565,11 @@
 	* The user is prompted for the new name.
 	*/
 	function rename() {
-		let suffix = storage.path().endsWith('/') ? '/' : ''
-		let folder = storage.path().replace(/[^/]+\/?$/g, '')
-		let oldName = storage.path().replace(/\/?$/g, '').split('/').pop()
-		let newName = prompt("Rename:", oldName)
-		if (!newName || newName == oldName) return
+		const suffix = storage.path().endsWith('/') ? '/' : ''
+		const folder = storage.path().replace(/[^/]+\/?$/g, '')
+		const oldName = storage.path().replace(/\/?$/g, '').split('/').pop()
+		const newName = prompt("Rename:", oldName)
+		if (!newName || newName === oldName) return
 		storage.rename(folder + oldName, folder + newName).then(
 			() => nav(folder + newName + suffix))
 	}
@@ -350,18 +581,19 @@
 	* and folders in the cart.
 	*/
 	function download() {
-		let paths = cart
+		const paths = cart
 		if (!paths.length)
 			if (!storage.path().endsWith('/')) paths = [storage.path()]
 			else return alert('Please select a file, or items with the cart.')
-		let dwn = document.getElementById('dwnld')
+		const dwn = document.getElementById('dwnld')
 		dwn.download = 'download.zip'
 		dwn.href = storage.zipLink(paths)
-		if (paths.length == 1 && !paths[0].endsWith('/')) {
+		if (paths.length === 1 && !paths[0].endsWith('/')) {
 			dwn.download = paths[0].split('/').pop()
 			dwn.href = storage.fileLink(paths[0])
 		}
 		dwn.click()
+		if (cart.length) cartRemove()
 	}
 
 	/**
@@ -370,12 +602,12 @@
 	*/
 	function move() {
 		if (!cart.length) return alert('Please select items with the cart.')
-		let checkMsg = `Move ${cart.length} item${cart.length > 1 ? 's' : ''} to ${cwd()} ?`
+		const checkMsg = `Move ${cart.length} item${cart.length > 1 ? 's' : ''} to ${cwd()} ?`
 		if (!confirm(checkMsg)) return
 		/* Loop through the paths in the cart sorted backwards so sub-items
 			 are moved before parent items */
 		cart.sort().reverse().forEach(item => {
-			let dest = cwd() + item.replace(/\/?$/g, '').split('/').pop()
+			const dest = cwd() + item.replace(/\/?$/g, '').split('/').pop()
 			storage.rename(item, dest).then(() => {cartRemove(item); nav(cwd())})
 		})
 	}
@@ -386,7 +618,7 @@
 	*/
 	function del() {
 		if (!cart.length) return alert('Please select items with the cart.')
-		let checkMsg = `Delete ${cart.length} cart item${cart.length > 1 ? 's' : ''}?`
+		const checkMsg = `Delete ${cart.length} cart item${cart.length > 1 ? 's' : ''}?`
 		if (!confirm(checkMsg)) return
 		/* Loop through the paths in the cart sorted backwards so sub-items
 			 are removed before parent items */
@@ -395,5 +627,368 @@
 		})
 	}
 
-	window.onload = window.onpopstate = window.onpageshow = () => nav(storage.path())
+	window.onload = window.onpopstate = () => nav(storage.path())
+</script>
+
+
+<!--
+  -- mime-text-plain
+  --
+	-- Loader for viewing and editing text files.
+	-->
+<ref-load id=-ext-txt loader=mime-text-plain />
+<template id=-mime-text-plain loader=mime-text-plain>
+	<style>
+		div {
+			display: flex;
+			width: calc(100% - 48px);
+			height: calc(100% - 48px);
+			margin: 24px;
+		}
+
+		.preview {
+			width: 100%;
+			height: 100%;
+			margin: 0px;
+		}
+
+		#text {
+			width: 100%;
+			height: 100%;
+			margin: 0px;
+			resize: none;
+			box-sizing: border-box;
+			outline: none;
+		}
+
+		#upload {
+			cursor: default;
+			display: none;
+			margin: 0px;
+			right: 0px;
+		}
+	</style>
+	<div>
+		<textarea id=text>&#x23f3;</textarea>
+		<h1 id="upload">&#x1f4be;</h1>
+	</div>
+</template>
+<script>
+	customElements.define("mime-text-plain", class extends HTMLElement {
+		constructor() {
+			super()
+			this.attachShadow({mode: "open"}).appendChild(
+				document.getElementById("-mime-text-plain").content.cloneNode(true))
+			const text = this.shadowRoot.querySelector("#text")
+			const path = storage.path()
+			const upload = this.shadowRoot.querySelector('#upload')
+			storage.readFile(path).then(r => r.text().then(r => {
+				text.value = r
+				text.oninput = () => upload.style.display = "inline"
+			}))
+			upload.onclick = async () => {
+				await storage.upload(path, new Blob([text.value]))
+				upload.style.display = "none"
+			}
+		}
+		static observedAttributes = ["preview"]
+		attributeChangedCallback(name, oldValue, newValue) {
+			this.shadowRoot.querySelector("#text").readOnly = newValue !== null
+			const div = this.shadowRoot.querySelector("div")
+			if (newValue !== null) div.classList.add("preview")
+			else div.classList.remove("preview")
+		}
+	})
+</script>
+
+
+<!--
+  -- misc
+  --
+	-- Fallback loader for all files, and browser compatible media.
+	-- Displays the file contents as best it can using inbuilt
+	-- browser image and video elements, otherwise fall back to
+	-- a basic page. Video elements will also support compatible audio.
+	-->
+<ref-load id=-ext-jpg loader=misc-media />
+<ref-load id=-ext-png loader=misc-media />
+<ref-load id=-ext-svg loader=misc-media />
+<ref-load id=-ext-gif loader=misc-media />
+<ref-load id=-ext-mp4 loader=misc-media />
+<template id=-misc-media loader=misc-media>
+	<style>
+		#body.preview {
+			width: 100%;
+			height: 100%;
+			margin: 0px;
+		}
+
+		video,
+		img {
+			display: block;
+			margin: auto;
+			width: 100%;
+			max-height: 100%;
+			object-fit: contain;
+		}
+
+		h1,
+		p {
+			text-align: center;
+			margin: 0
+		}
+	</style>
+	<div id=body>
+		&#x23f3;
+	</div>
+	<div id=fail style="display: none">
+		<h1 id=titlename></h1>
+		<p id=details></p>
+		<a id="download">
+			<h1>&#128229</h1>
+			<p>Download</p>
+		</a>
+	</div>
+</template>
+<script>
+	customElements.define("misc-media", class extends HTMLElement {
+		constructor() {
+			super()
+			this.attachShadow({mode: "open"}).appendChild(
+				document.getElementById("-misc-media").content.cloneNode(true))
+		}
+		connectedCallback() {
+			const path = storage.path()
+			const link = storage.fileLink(path)
+			const sr = this.shadowRoot
+			/* Attempts to load the selected file on a given html element.
+			Intended for "img" and "video" */
+			function tryElement(element, faller) {
+				const doc = document.createElement(element === "thumb" ? "img" : element)
+				doc.controls = "controls"
+				doc.onerror = faller
+				doc.onload = doc.oncanplay = () => {
+					sr.querySelector("#body").replaceChildren(doc)
+					if (element === "thumb") faller()
+					if (element === "video") sr.querySelector("#body").classList.add("preview")
+				}
+				doc.src = element === "thumb" ? storage.thumbLink(path) : link
+			}
+			// Chain up fallback for image, video, then downloadable link.
+			const fallback = () => tryElement("img", () => tryElement("video", () => {
+				sr.querySelector("#download").href = link
+				const filename = path.split('/').pop()
+				sr.querySelector("#download").download = filename
+				sr.querySelector("#titlename").textContent = filename
+				sr.querySelector("#details").textContent = path
+				sr.querySelector("#body").textContent = ""
+				sr.querySelector("#body").replaceChildren(sr.querySelector("#fail"))
+				sr.querySelector("#fail").style.display = "block"
+			}))
+			// Add a thumbnail preview first if appropriate.
+			if (this.getAttribute("preview") !== null && path.endsWith(".jpg"))
+				tryElement("thumb", fallback)
+			else fallback()
+		}
+
+		static observedAttributes = ["preview"]
+		attributeChangedCallback(name, oldValue, newValue) {
+			const div = this.shadowRoot.querySelector("#body")
+			if (div) {
+				if (newValue !== null) div.classList.add("preview")
+				else if (!this.shadowRoot.querySelector("video")) div.classList.remove("preview")
+			}
+		}
+	})
+</script>
+
+
+<!--
+  -- ext-md
+  --
+	-- Loader for viewing and editing Markdown files.
+  -- View the md file content with EasyMDE,
+  -- and allow editing and saving back to the server.
+	-->
+<template id=-ext-md loader=ext-md>
+	<link rel="stylesheet" href="/static/deps/easymde.min.css">
+	<style>
+		#body {
+			display: flex;
+			width: calc(100% - 48px);
+			height: calc(100% - 48px);
+			margin: 24px;
+
+			*.editor-toolbar {
+				display: inline;
+			}
+		}
+
+		#body.preview {
+			width: 100%;
+			height: 100%;
+			margin: 0px;
+
+			*.editor-toolbar {
+				display: none;
+			}
+
+			*.CodeMirror {
+				height: 100%
+			}
+		}
+
+		img,
+		textarea,
+		div.EasyMDEContainer {
+			width: 100%;
+		}
+
+		#upload {
+			position: fixed;
+			cursor: default;
+			display: none;
+			margin: 0px;
+			right: 24px;
+			z-index: 9;
+		}
+
+		.fa {
+			font-style: normal;
+		}
+
+		.fa-undo:before {
+			content: "↶";
+		}
+
+		.fa-redo:before {
+			content: "↷";
+		}
+
+		.fa-eye:before {
+			content: "👁";
+		}
+
+		.fa-columns:before {
+			content: "🪞";
+		}
+
+		.fa-arrows-alt:before {
+			content: "⛶";
+		}
+
+		.fa-question-circle:before {
+			content: "?";
+		}
+	</style>
+	<div id=body>
+		<textarea id=text>&#x23f3;</textarea>
+		<h1 id=upload>&#x1f4be;</h1>
+	</div>
+</template>
+<script src="/static/deps/easymde.min.js"></script>
+<script>
+	customElements.define("ext-md", class extends HTMLElement {
+		constructor() {
+			super()
+			this.attachShadow({mode: "open"}).appendChild(
+				document.getElementById("-ext-md").content.cloneNode(true))
+			const path = storage.path()
+			const sr = this.shadowRoot
+			const imgH = (img) => img.includes('://') ? img : storage.fileLink(path.replace(/[^/]+$/g, img))
+			this.mde = new EasyMDE({
+				element: sr.querySelector("#text"),
+				status: false,
+				toolbar: ["undo", "redo", "preview", "side-by-side", "fullscreen", "guide"],
+				spellChecker: false,
+				autoDownloadFontAwesome: false,
+				previewImagesInEditor: true,
+				imagesPreviewHandler: imgH,
+				previewRender: (v) => this.mde.markdown(v.replace(/\!\[([^\]\)\n]*)\]\(([^\)\n]+)\)/g,
+					(_, label, img) => `![${label}](${imgH(img)})`)),
+			});
+			storage.readFile(path).then(r => r.text().then(r => {
+				this.mde.value(r)
+				this.mde.codemirror.doc.clearHistory()
+				this.mde.codemirror.on("change", () => {
+					upload.style.display = "inline"
+				})
+				const upload = sr.querySelector('#upload')
+				upload.onclick = async () => {
+					await storage.upload(path, new Blob([this.mde.value()]))
+					upload.style.display = "none"
+				}
+			}))
+		}
+		diconnectedCallback() {
+			this.mde.cleanup()
+		}
+		static observedAttributes = ["preview"]
+		attributeChangedCallback(name, oldValue, newValue) {
+			const cl = this.shadowRoot.querySelector("#body").classList
+			if (newValue !== null) cl.add("preview")
+			else cl.remove("preview")
+			if (!cl.contains('preview') && cl.contains('connected')) {
+				this.mde.togglePreview()
+				this.shadowRoot.querySelector(".CodeMirror").style.height = 'calc(100% - 48px)'
+			}
+		}
+		connectedCallback() {
+			this.classList.add('CodeMirror-sizer') // easyMDE bug with images in shadowRoot
+			const cl = this.shadowRoot.querySelector("#body").classList
+			if (cl.contains("preview")) this.mde.togglePreview()
+			else this.shadowRoot.querySelector(".CodeMirror").style.height = 'calc(100% - 48px)'
+			cl.add('connected')
+		}
+	})
+</script>
+
+
+<!--
+  -- ext-pdf
+  --
+	-- Loader for viewing PDF files.
+	-- Creates a canvas in the body for each page of the
+	-- pdf and renders all pages onto them.
+	-- Uses pdfjs for the rendering. PDF.js is mighty.
+	-->
+<template id=-ext-pdf loader=ext-pdf>
+	<style>
+		div,
+		canvas {
+			margin: 0;
+			width: 100%;
+		}
+	</style>
+	<div>
+		<h1 id=wait>&#x23f3;</h1>
+	</div>
+</template>
+<script src="/static/deps/pdf.min.js"></script>
+<script src="/static/deps/pdf.worker.min.js"></script>
+<script>
+	customElements.define("ext-pdf", class extends HTMLElement {
+		constructor() {
+			super()
+			this.attachShadow({mode: "open"}).appendChild(
+				document.getElementById("-ext-pdf").content.cloneNode(true))
+			const path = storage.path()
+			const link = storage.fileLink(path)
+			pdfjsLib.getDocument(link).promise.then(pdf => {
+				for (var i = 0; i < pdf.numPages; i++) {
+					pdf.getPage(i + 1).then(page => {
+						const nib = document.createElement('canvas')
+						const ctx = nib.getContext("2d");
+						const vp = page.getViewport({scale: 1});
+						nib.height = vp.height;
+						nib.width = vp.width;
+						page.render({canvasContext: ctx, viewport: vp})
+						this.shadowRoot.querySelector("#wait").style.display = "none"
+						this.shadowRoot.appendChild(nib)
+					})
+				}
+			})
+		}
+		static observedAttributes = ["preview"]
+	})
 </script>
