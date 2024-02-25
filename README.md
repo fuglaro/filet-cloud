@@ -44,16 +44,16 @@ and device to make full use of these protections.
   * Setting the Cross Origin Opener Policy to ensure the browsing context is exclusively isolated to same-origin documents. TODO: All: Cross-Origin-Opener-Policy: same-origin
   * Setting the Cross Origin Embedder Policy to require corp (Cross Origin Resource Policy). TODO
   * Ensuring Cross Origin Isolation is fully activated by checking that the crossOriginIsolated property in the browser is active, before opening the login form. TODO  (https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cross-Origin-Embedder-Policy To check if cross origin isolation has been successful, you can test against the crossOriginIsolated property available to window and worker contexts: )
-* Default Cross Origin Read Blocking browser protections are enhanced by all Content Type Options being configured with nosniff, and the Content-Type header being set based on file name extension TODO or inspection of the first block. TODO X-Content-Type-Options: nosniff
+* Default Cross Origin Read Blocking browser protections are enhanced by all Content Type Options being configured with nosniff, and the Content-Type header being set based on inspection of the first block. TODO X-Content-Type-Options: nosniff
 * Cross Origin Resource Policy is configured to same-origin so that all resources are protected from access by any other origin. TODO ALL: Cross-Origin-Resource-Policy: same-origin
 * Content Security Policy is enforced with a configuration that ensures: TODO (https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP)
   * Image and media content can only be loaded from the site's own origin. TODO
   * Script, stylesheet, and font resources can only be loaded from the site's own origin. TODO
   * Contents that do not match the above types, are denied. TODO
-  * All content is loaded sandboxed with restricted allowances. TODO (omit sandbox for browse.html)
+  * All content is loaded sandboxed with restricted allowances. TODO
   * Documents are prevented from being embedded. TODO
   * Forms are denied from using URLs as the target of form submission. TODO
-  ``` browse.html
+  ``` browse.html (to be renamed to main.html)
   Content-Security-Policy:
    sandbox allow-downloads allow-forms allow-same-origin allow-scripts;
    default-src 'none';
@@ -126,40 +126,20 @@ and device to make full use of these protections.
 * All third-party dependencies loaded in the browser are Subresource Integrity checked. TODO
 
 == TODO
-* https://web.dev/articles/coop-coep
-* https://web.dev/articles/cross-origin-isolation-guide
-* https://web.dev/articles/why-coop-coep
-* https://web.dev/articles/fetch-metadata
-* https://xsleaks.dev/docs/defenses/isolation-policies/resource-isolation/
-* https://www.chromium.org/Home/chromium-security/site-isolation/
-* https://chromium.googlesource.com/chromium/src/+/master/services/network/cross_origin_read_blocking_explainer.md#determining-whether-a-response-is-corb_protected
-* https://www.w3.org/TR/post-spectre-webdev/#documents-isolated
-* https://w3c.github.io/webappsec-fetch-metadata/
-* https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy
-* https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy/sandbox
-* https://developer.mozilla.org/en-US/docs/Web/HTTP/Cross-Origin_Resource_Policy
-* https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cross-Origin-Embedder-Policy
-
-* https://docs.google.com/document/d/1zDlfvfTJ_9e8Jdc8ehuV4zMEu9ySMCiTGMS9y0GU92k/edit
 * Read over the security section to check it.
 
 * Test favicon still works after security changes.
 * TODO Switch to package managed dependencies and update security docs -- maybe.
 * TODO Run some standard test suites.
 * TODO Setup security regression tests.
+* Rename browse.html to main.html (clearer compliance with the security documentation).
 
 * Kill Basic Auth
-
-* Launch thumbnail loads at the same time as file loads but always let the file win.
-* Support other image types for thumbnails smartly.
-* Abort early on getting thumbnail link that wont work.
-* Don't try to query the thumbnail if the full image is already cached by checking the .complete property on the image without waiting.
 * When the links ensure authentication, allow them to be awaited on.
-* Investigate hardware accelerated thumbnail generation.
+
 * Reload files without loging in again.
 * Auto reload unmodified opened files.
 * roll our own popup - nobody likes browser pop ups.
-* ensure blur in load until confirmed login - especially between login attempts.
 * dark mode try 2.
 * best practise on inline unicode symbols
 * Switch relevant divs to buttons, ensure accessibility, and check keyboard only input.
@@ -177,6 +157,11 @@ and device to make full use of these protections.
 * note on working well with: https://stephango.com/file-over-app
 * Document about embedding resources in Markdown files.
 * Make as a Progressive Web App (PWA)
+* Thumbnails
+  * Support other image types for thumbnails smartly.
+  * Investigate hardware accelerated thumbnail generation.
+  * Switch to Webp for thumbnails.
+  * Test thumbnails laoading.
 
 # Filet Cloud Web
 Web service for a minimalistic personal cloud storage, letting you control your data privacy. This has a simple and elegant design that provides a lean web interface to local storage via a local ssh connection. 

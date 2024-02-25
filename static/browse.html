@@ -110,6 +110,14 @@
 		flex-direction: column;
 	}
 
+	#contenthider {
+		position: fixed;
+		z-index: 999998;
+		backdrop-filter: blur(18px);
+		width: 100vw;
+		height: 100vh;
+	}
+
 	@media (orientation: portrait) {
 		#menu {
 			margin-bottom: 0px;
@@ -188,6 +196,7 @@
 </div>
 <input id="uploader" type="file" multiple onchange="send()" style="display:none" />
 <a id="dwnld" download></a>
+<div id=contenthider></div>
 
 
 <!--
@@ -280,6 +289,7 @@
 					ws.send(this.shadowRoot.querySelector("#password").value)
 					// Give connection to the storage API.
 					storage.connect(ws)
+					document.getElementById("contenthider").style.display = 'none'
 				}
 				document.body.removeChild(document.querySelector("login-form"))
 			})
@@ -341,6 +351,7 @@
 				ok(v)
 			}
 			ws.onclose = () => {
+				document.getElementById("contenthider").style.display = 'initial'
 				// Requeue all pending requests, triggering re-login in the process.
 				for (const k in this.#reqs) {
 					const v = this.#reqs[k]
@@ -380,6 +391,17 @@
 			await this.#req(new Blob([plenstr.padEnd(20), path, content]))
 		}
 
+
+		// TODO - remove basic auth and switch to JWT auth cookie
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
 		fileLink = (path) => `/file:${encodeURI(path)}`
 		thumbLink = (path) => `/thumb:${encodeURI(path)}`
 		zipLink = (paths) => '/zip?' + paths.map(p => `path=${encodeURI(p)}`).join('&')
@@ -739,7 +761,7 @@
 		}
 	</style>
 	<div id=body>
-		&#x23f3;
+		<p>&#x23f3;</p>
 	</div>
 	<div id=fail style="display: none">
 		<h1 id=titlename></h1>
@@ -759,36 +781,36 @@
 		}
 		connectedCallback() {
 			const path = storage.path()
-			const link = storage.fileLink(path)
 			const sr = this.shadowRoot
-			/* Attempts to load the selected file on a given html element.
-			Intended for "img" and "video" */
-			function tryElement(element, faller) {
-				const doc = document.createElement(element === "thumb" ? "img" : element)
-				doc.controls = "controls"
-				doc.onerror = faller
-				doc.onload = doc.oncanplay = () => {
-					sr.querySelector("#body").replaceChildren(doc)
-					if (element === "thumb") faller()
-					if (element === "video") sr.querySelector("#body").classList.add("preview")
+			const wait = sr.querySelector("#body > *")
+			// Prepare the thumbnail loader.
+			const thm = document.createElement("img")
+			thm.onload = () => wait.replaceWith(thm)
+			// Ready an attempted load of an img.
+			const img = document.createElement("img")
+			img.onload = () => wait.replaceWith(img)
+			img.onerror = () => {
+				// Fallback to attempting to load as a video (or audio).
+				const vid = document.createElement("video")
+				vid.controls = "controls"
+				vid.oncanplay = () => wait.replaceWith(vid)
+				vid.onerror = () => {
+					// Fallback to dowload link.
+					const filename = path.split('/').pop()
+					sr.querySelector("#download").download = filename
+					sr.querySelector("#titlename").textContent = filename
+					sr.querySelector("#details").textContent = path
+					sr.querySelector("#download").href = storage.fileLink(path)
+					wait.replaceWith(sr.querySelector("#fail"))
+					sr.querySelector("#fail").style.display = "block"
 				}
-				doc.src = element === "thumb" ? storage.thumbLink(path) : link
+				vid.src = storage.fileLink(path)
 			}
-			// Chain up fallback for image, video, then downloadable link.
-			const fallback = () => tryElement("img", () => tryElement("video", () => {
-				sr.querySelector("#download").href = link
-				const filename = path.split('/').pop()
-				sr.querySelector("#download").download = filename
-				sr.querySelector("#titlename").textContent = filename
-				sr.querySelector("#details").textContent = path
-				sr.querySelector("#body").textContent = ""
-				sr.querySelector("#body").replaceChildren(sr.querySelector("#fail"))
-				sr.querySelector("#fail").style.display = "block"
-			}))
-			// Add a thumbnail preview first if appropriate.
-			if (this.getAttribute("preview") !== null && path.endsWith(".jpg"))
-				tryElement("thumb", fallback)
-			else fallback()
+			img.src = storage.fileLink(path)
+			// Set off a thumbnail preview to ensure fast loads, if appropriate.
+			if (this.getAttribute("preview") !== null && path.endsWith(".jpg") && !img.complete) {
+				thm.src = storagre.thumbLink(path)
+			}
 		}
 
 		static observedAttributes = ["preview"]
