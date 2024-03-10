@@ -521,11 +521,11 @@ func main() {
 	http.Handle("/file:/", SMW(http.HandlerFunc(authServeContent)))
 	http.Handle("/thumb:/", SMW(http.HandlerFunc(authServeContent)))
 	http.Handle("/zip:/", SMW(http.HandlerFunc(authServeContent)))
-	browse := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "static/browse.html")
+	main := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "static/main.html")
 	})
-	http.Handle("/browse:/", SMW(browse))
-	http.Handle("/open:/", SMW(browse))
+	http.Handle("/browse:/", SMW(main))
+	http.Handle("/open:/", SMW(main))
 	http.Handle("/static/", SMW(http.StripPrefix("/static/", http.FileServer(http.Dir("static")))))
 	http.Handle("/favicon.ico", SMW(http.FileServer(http.Dir("static"))))
 	log.Fatal(http.ListenAndServeTLS(addr, cert, key, nil))

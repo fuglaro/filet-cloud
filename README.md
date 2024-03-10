@@ -10,7 +10,6 @@
 * TODO Switch to package managed dependencies and update security docs -- maybe.
 * TODO Run some standard test suites.
 * TODO Setup security regression tests.
-* Rename browse.html to main.html (clearer compliance with the security documentation).
 
 * Kill Basic Auth
 * When the links ensure authentication, allow them to be awaited on.
@@ -86,7 +85,7 @@ TODO XXX diagram of connections ssh, browser, backend, authentication etc.
 
 The code is organised in the following areas:
 * [main.go](main.go) - the primary server.
-* [static/browse.html](static/browse.html) - the main frontend browser page.
+* [static/main.html](static/main.html) - the main frontend browser page.
 
 No frontend framework is used because adopting one on top of the simple interface design would have introduced unnecessary complexity.
 
@@ -126,14 +125,13 @@ Disclaimer: Use at your own risk. The codebase is strikingly small and the depen
   * Automatically when closing or refreshing the browser tab.
   * When restarting the backend service.
   * From a disruption to the network connection.
-* Automatic logout will also occur 5 minutes after a page remains not visible, such as after navigating to a new page, switching tabs, minimising the browser, or, on mobile, switching to another app. TODO https://developer.mozilla.org/en-US/docs/Web/API/Document/visibilitychange_event
+* Automatic logout will also occur 5 minutes after a page remains not visible, such as after navigating to a new page, switching tabs, minimising the browser, or, on mobile, switching to another app.
 * Logout events will trigger all cached site data to be cleared.
   * Cached site data may not be cleared if the browser exits uncleanly or the backend is not contactable.
-* The user may choose to store the credentials in the browser's password management system, if supported and enabled in the browser. For additial security, 2FA is recommended. TODO
+* The user may choose to store the credentials in the browser's password management system, if supported and enabled in the browser. For additial security, 2FA is recommended.
 
 ### Site Isolation and Content Protection
-* Same-Origin Policy is enforced. TODO (https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy)
-* Content Security Policy is configured to only allow content coming from the site's own origin. TODO (https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP)
+* Same-Origin Policy is enforced.
 * Cross Origin Isolation is enforced by: TODO
   * Setting the Cross Origin Opener Policy to ensure the browsing context is exclusively isolated to same-origin documents. TODO: All: Cross-Origin-Opener-Policy: same-origin
   * Setting the Cross Origin Embedder Policy to require corp (Cross Origin Resource Policy). TODO
@@ -147,7 +145,7 @@ Disclaimer: Use at your own risk. The codebase is strikingly small and the depen
   * All content is loaded sandboxed with restricted allowances. TODO
   * Documents are prevented from being embedded. TODO
   * Forms are denied from using URLs as the target of form submission. TODO
-  ``` browse.html (to be renamed to main.html)
+  ``` main.html
   Content-Security-Policy:
    sandbox allow-downloads allow-forms allow-same-origin allow-scripts;
    default-src 'none';
