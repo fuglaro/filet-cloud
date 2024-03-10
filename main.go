@@ -76,10 +76,6 @@ func authServeContent(w http.ResponseWriter, r *http.Request) {
 	if check(w, err) {
 		return
 	}
-	if !token.Valid { // XXX TODO is this really needed?
-		http.Error(w, "Invalid authentication token.", http.StatusForbidden)
-		return
-	}
 	cIDs, err := token.Claims.GetSubject()
 	if check(w, err) {
 		return
