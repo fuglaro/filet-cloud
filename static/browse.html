@@ -263,6 +263,7 @@
 	</div>
 </template>
 <script>
+	var autoLogoutTimer = null
 	login = () => {
 		fetch("/logout")
 		if (!document.querySelector("login-form"))
@@ -285,6 +286,12 @@
 				ws.onclose = login
 				ws.onerror = () => ws.close()
 				ws.onopen = () => {
+					// Set up auto-logout mechanism.
+					document.onvisibilitychange = () => {
+						clearTimeout(autoLogoutTimer)
+						if (document.visibilityState === "hidden")
+							autoLogoutTimer = setTimeout(() => ws.close(), 300000)
+					}
 					// Authenticate WebSocket connection.
 					ws.send(this.shadowRoot.querySelector("#username").value)
 					ws.send(this.shadowRoot.querySelector("#password").value)

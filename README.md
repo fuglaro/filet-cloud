@@ -126,9 +126,9 @@ Disclaimer: Use at your own risk. The codebase is strikingly small and the depen
   * Automatically when closing or refreshing the browser tab.
   * When restarting the backend service.
   * From a disruption to the network connection.
+* Automatic logout will also occur 5 minutes after a page remains not visible, such as after navigating to a new page, switching tabs, minimising the browser, or, on mobile, switching to another app. TODO https://developer.mozilla.org/en-US/docs/Web/API/Document/visibilitychange_event
 * Logout events will trigger all cached site data to be cleared.
-  * Cached site data may not be cleared if the browser exits uncleanly.
-* Automatic logout will occur 5 minutes after a page remains not visible, such as after navigating to a new page, switching tabs, minimising the browser, or, on mobile, switching to another app. TODO https://developer.mozilla.org/en-US/docs/Web/API/Document/visibilitychange_event
+  * Cached site data may not be cleared if the browser exits uncleanly or the backend is not contactable.
 * The user may choose to store the credentials in the browser's password management system, if supported and enabled in the browser. For additial security, 2FA is recommended. TODO
 
 ### Site Isolation and Content Protection
