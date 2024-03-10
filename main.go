@@ -461,16 +461,24 @@ func main() {
 		return
 	}
 
+	// Set up the standard security middleware.
+	SMW := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload")
+			next.ServeHTTP(w, r)
+		})
+	}
+
 	// Redirect HTTP to HTTPS.
 	go func() {
 		log.Fatal(http.ListenAndServe(":8080",
-			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			SMW(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				redirect := "https://" + strings.Split(r.Host, ":")[0]
 				if strings.Contains(addr, ":") {
 					redirect += ":" + strings.Split(addr, ":")[1]
 				}
 				http.Redirect(w, r, redirect+r.URL.Path, http.StatusTemporaryRedirect)
-			})))
+			}))))
 	}()
 
 	// Generate private key for JWT signing.
@@ -481,36 +489,44 @@ func main() {
 	}
 
 	// Serve all endpoints.
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	http.Handle("/", SMW(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/browse:/", http.StatusSeeOther)
-	})
-	http.HandleFunc("/connect", connect)
-	http.HandleFunc("/authenticate", func(w http.ResponseWriter, r *http.Request) {
-		// Register the rebounded JWT as a secure authentication cookie
-		// for allowing authenticated access to authServeContent.
-		b, err := io.ReadAll(r.Body)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		http.SetCookie(w, &http.Cookie{
-			Name:     "__Host-Auth",
-			Value:    string(b),
-			MaxAge:   300,
-			Secure:   true,
-			HttpOnly: true,
-			SameSite: http.SameSiteStrictMode,
-		})
-	})
-	http.HandleFunc("/file:/", authServeContent)
-	http.HandleFunc("/thumb:/", authServeContent)
-	http.HandleFunc("/zip:/", authServeContent)
-	browse := func(w http.ResponseWriter, r *http.Request) {
+	})))
+	http.Handle("/connect", SMW(http.HandlerFunc(connect)))
+	http.Handle("/authenticate", SMW(http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			// Register the rebounded JWT as a secure authentication cookie
+			// for allowing authenticated access to authServeContent.
+			b, err := io.ReadAll(r.Body)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			http.SetCookie(w, &http.Cookie{
+				Name:     "__Host-Auth",
+				Value:    string(b),
+				MaxAge:   300,
+				Secure:   true,
+				HttpOnly: true,
+				SameSite: http.SameSiteStrictMode,
+			})
+		})))
+	http.Handle("/logout", SMW(http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			// Finalise the logout sequence by clearing all site data.
+			// Note that the WebSocket connection should be closed before calling
+			// this to ensure a full logout.
+			w.Header().Set("Clear-Site-Data", "\"*\"")
+		})))
+	http.Handle("/file:/", SMW(http.HandlerFunc(authServeContent)))
+	http.Handle("/thumb:/", SMW(http.HandlerFunc(authServeContent)))
+	http.Handle("/zip:/", SMW(http.HandlerFunc(authServeContent)))
+	browse := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "static/browse.html")
-	}
-	http.HandleFunc("/browse:/", browse)
-	http.HandleFunc("/open:/", browse)
-	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
-	http.Handle("/favicon.ico", http.FileServer(http.Dir("static")))
+	})
+	http.Handle("/browse:/", SMW(browse))
+	http.Handle("/open:/", SMW(browse))
+	http.Handle("/static/", SMW(http.StripPrefix("/static/", http.FileServer(http.Dir("static")))))
+	http.Handle("/favicon.ico", SMW(http.FileServer(http.Dir("static"))))
 	log.Fatal(http.ListenAndServeTLS(addr, cert, key, nil))
 }

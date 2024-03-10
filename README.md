@@ -3,7 +3,7 @@
 ==== TODO ====
 
 == TODO
-* https - accept certs via env var or auto setup with let's encrypt autocert NewListener (with domain provided by FC_DOMAIN) and note on acceptance of LetsEncrypt Terms of Service.
+* https - accept certs via env var or auto setup with let's encrypt autocert NewListener (with domain provided by FC_DOMAIN).
 * Add underscores to other env vars.
 
 * Test favicon still works after security changes.
@@ -101,9 +101,9 @@ Disclaimer: Use at your own risk. The codebase is strikingly small and the depen
 ### Transport Security
 * The login form will not open unless the connection protocol is HTTPS.
 * HTTP requests to the main page are redirected to HTTPS.
-* The backend implements a strict HTTPS ONLY policy. TODO (check for static and resources)
-* HTTP Strict Transport Security (HSTS) is enforced. TODO
-* All WebSocket connections use WebSocket Secure (WSS). TODO
+* The backend implements a strict HTTPS ONLY policy.
+* HTTP Strict Transport Security (HSTS) is enforced.
+* All WebSocket connections use WebSocket Secure (WSS).
 * The Content Security Policy is configured to ensure that content is only loaded via HTTPS. TODO add https: to all parts of the content security policy.
 * The backend supports being provided TLS credentials otherwise it uses an included certbot integration. TODO
 * The webserver connects to the SFTP/SSH server without verifying the ssh host key so the connection between the filet-cloud-web server and the SFTP server cannot run across an untrusted network. This project intends for the SFTP server to be on the webserver localhost itself. Connecting to localhost is hardcoded to ensure this is the case. If you change this, ensure the HostKeyCallback is changed to use something secure.
@@ -126,7 +126,7 @@ Disclaimer: Use at your own risk. The codebase is strikingly small and the depen
   * Automatically when closing or refreshing the browser tab.
   * When restarting the backend service.
   * From a disruption to the network connection.
-* Logout events will trigger all cached site data to be cleared. TODO https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Clear-Site-Data
+* Logout events will trigger all cached site data to be cleared.
   * Cached site data may not be cleared if the browser exits uncleanly.
 * Automatic logout will occur 5 minutes after a page remains not visible, such as after navigating to a new page, switching tabs, minimising the browser, or, on mobile, switching to another app. TODO https://developer.mozilla.org/en-US/docs/Web/API/Document/visibilitychange_event
 * The user may choose to store the credentials in the browser's password management system, if supported and enabled in the browser. For additial security, 2FA is recommended. TODO
@@ -179,7 +179,7 @@ Disclaimer: Use at your own risk. The codebase is strikingly small and the depen
   * For the /connect endpoint:
     * The request site and mode is same-origin.
     * The request destination is a websocket.
-  * For the /authenticate endpoint:
+  * For the /authenticate and /logout endpoints:
     * The request site and mode is same-origin.
     * The request destination is empty.
   * For everything else:

@@ -264,6 +264,7 @@
 </template>
 <script>
 	login = () => {
+		fetch("/logout")
 		if (!document.querySelector("login-form"))
 			document.body.appendChild(document.createElement("login-form"))
 	}
