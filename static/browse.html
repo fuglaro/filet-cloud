@@ -17,7 +17,6 @@
 		height: 100%;
 	}
 
-
 	p,
 	h1 {
 		cursor: default;
@@ -114,6 +113,7 @@
 		position: fixed;
 		z-index: 999998;
 		backdrop-filter: blur(18px);
+		background-color: rgba(255, 255, 255, 0.2);
 		width: 100vw;
 		height: 100vh;
 	}
@@ -270,17 +270,16 @@
 	customElements.define("login-form", class extends HTMLElement {
 		constructor() {
 			super()
+			if (location.protocol != 'https:') return // Ensure secure transport.
 			this.attachShadow({mode: "open"}).appendChild(
 				document.getElementById("-login-form").content.cloneNode(true))
 		}
 		connectedCallback() {
+			if (!this.shadowRoot) return
 			this.shadowRoot.querySelector("form").addEventListener("submit", e => {
 				e.preventDefault()
 				// Establish WebSocket connection.
-				const safelocal = window.location.protocol === 'http:' && window.location.hostname === 'localhost'
-				const protocol = safelocal ? 'ws:' : 'wss:'
-				const url = `${protocol}//${window.location.host}/connect`
-				const ws = new WebSocket(url)
+				const ws = new WebSocket(`wss://${window.location.host}/connect`)
 				ws.onclose = login
 				ws.onerror = () => ws.close()
 				ws.onopen = () => {
@@ -311,28 +310,27 @@
 		#reqs = {} // manage requests awaiting responses (stored by msgID).
 		#msgID = 0 // msgID counter for generating unique message IDs.
 
-		async #req(r, ok) {
-			// Ensure we have an established login connection.
-			if (this.#ws === null || this.#ws.readyState !== WebSocket.OPEN) await new Promise(ok => {
-				this.#connection.push(ok)
+		async connect(ws) {
+			// Setup auto logout on close or error.
+			ws.onclose = () => {
+				document.getElementById("contenthider").style.display = 'initial'
+				// Requeue all pending requests, triggering re-login in the process.
+				for (const k in this.#reqs) {
+					const v = this.#reqs[k]
+					delete this.#reqs[k]
+					this.#req(v[0], v[1])
+				}
 				login()
-			})
-			// Send request to server, after preparing the response handler.
-			const msgID = this.#msgID += 1
-			const resp = new Promise(ok => {
-				this.#reqs[msgID] = [r, ok]
-			})
-			if (ok) this.#reqs[msgID][1] = ok
-			if (r instanceof Blob) {
-				if (msgID.toString().length > 20) throw new Error()
-				this.#ws.send(new Blob([msgID.toString().padEnd(20), r]))
-			} else {
-				r.id = msgID
-				this.#ws.send(JSON.stringify(r))
 			}
-			return resp
-		}
-		connect(ws) {
+			ws.onerror = () => ws.close()
+			// Setup authenticated browser access.
+			const jwtp = new Promise(ok => ws.onmessage = m => ok(m))
+			ws.send(JSON.stringify({action: 'token'}))
+			if (!(await fetch("/authenticate", {method: "POST", body: (await jwtp).data})).ok) {
+				ws.close()
+				return
+			}
+			// Setup normal message response handling.
 			ws.onmessage = async m => {
 				var id = null, v = null
 				// Handle binary or json response mesage.
@@ -350,18 +348,31 @@
 				delete this.#reqs[id]
 				ok(v)
 			}
-			ws.onclose = () => {
-				document.getElementById("contenthider").style.display = 'initial'
-				// Requeue all pending requests, triggering re-login in the process.
-				for (const k in this.#reqs) {
-					const v = this.#reqs[k]
-					delete this.#reqs[k]
-					this.#req(v[0], v[1])
-				}
-			}
-			ws.onerror = () => ws.close()
 			this.#ws = ws
 			while (this.#connection.length) this.#connection.pop()()
+		}
+
+		async #req(r, ok) {
+			// Ensure we have an established login connection.
+			if (this.#ws === null || this.#ws.readyState !== WebSocket.OPEN) await new Promise(ok => {
+				this.#connection.push(ok)
+				login()
+			})
+			if (r === undefined) return // Used by authLinks when ensuring authenticated login.
+			// Send request to server, after preparing the response handler.
+			const msgID = this.#msgID += 1
+			const resp = new Promise(ok => {
+				this.#reqs[msgID] = [r, ok]
+			})
+			if (ok) this.#reqs[msgID][1] = ok
+			if (r instanceof Blob) {
+				if (msgID.toString().length > 20) throw new Error()
+				this.#ws.send(new Blob([msgID.toString().padEnd(20), r]))
+			} else {
+				r.id = msgID
+				this.#ws.send(JSON.stringify(r))
+			}
+			return resp
 		}
 
 		mime = async (path) => await this.#req({action: "mime", path: path})
@@ -370,6 +381,10 @@
 		newFile = async (path) => await this.#req({action: "newfile", path: path})
 		rename = async (path, to) => await this.#req({action: "rename", path: path, to: to})
 		remove = async (path) => await this.#req({action: "remove", path: path})
+		authLinks = async () => await this.#req()
+		fileLink = (path) => `/file:${encodeURI(path)}`
+		thumbLink = (path) => `/thumb:${encodeURI(path)}`
+		zipLink = (paths) => '/zip?' + paths.map(p => `path=${encodeURI(p)}`).join('&')
 
 		/**
 		* Retrieve the contents of a directory as a list of strings,
@@ -390,21 +405,6 @@
 			if (plenstr.length > 20) throw new Error()
 			await this.#req(new Blob([plenstr.padEnd(20), path, content]))
 		}
-
-
-		// TODO - remove basic auth and switch to JWT auth cookie
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		//
-		fileLink = (path) => `/file:${encodeURI(path)}`
-		thumbLink = (path) => `/thumb:${encodeURI(path)}`
-		zipLink = (paths) => '/zip?' + paths.map(p => `path=${encodeURI(p)}`).join('&')
 	}
 	const storage = new Storage();
 </script>
@@ -509,8 +509,7 @@
 				}
 				div.replaceChildren(nibIcon, nib)
 				return div
-			}))
-			)//.catch(e => alert(e)) // XXX TODO do all these need to be caught?
+			})))
 			menuMode()
 		}
 		if (!path.endsWith("/")) {
@@ -602,13 +601,14 @@
 	* a single file from the cart, or zipping multiple files
 	* and folders in the cart.
 	*/
-	function download() {
+	async function download() {
 		const paths = cart
 		if (!paths.length)
 			if (!storage.path().endsWith('/')) paths = [storage.path()]
 			else return alert('Please select a file, or items with the cart.')
 		const dwn = document.getElementById('dwnld')
 		dwn.download = 'download.zip'
+		await storage.authLinks()
 		dwn.href = storage.zipLink(paths)
 		if (paths.length === 1 && !paths[0].endsWith('/')) {
 			dwn.download = paths[0].split('/').pop()
@@ -739,7 +739,8 @@
 <ref-load id=-ext-mp4 loader=misc-media />
 <template id=-misc-media loader=misc-media>
 	<style>
-		#body.preview {
+		#body.preview,
+		#body>video {
 			width: 100%;
 			height: 100%;
 			margin: 0px;
@@ -806,20 +807,21 @@
 				}
 				vid.src = storage.fileLink(path)
 			}
-			img.src = storage.fileLink(path)
-			// Set off a thumbnail preview to ensure fast loads, if appropriate.
-			if (this.getAttribute("preview") !== null && path.endsWith(".jpg") && !img.complete) {
-				thm.src = storagre.thumbLink(path)
-			}
+			(async () => {
+				await storage.authLinks()
+				img.src = storage.fileLink(path)
+				// Set off a thumbnail preview to ensure fast loads, if appropriate.
+				if (this.getAttribute("preview") !== null && path.endsWith(".jpg") && !img.complete) {
+					thm.src = storage.thumbLink(path)
+				}
+			})()
 		}
 
 		static observedAttributes = ["preview"]
 		attributeChangedCallback(name, oldValue, newValue) {
 			const div = this.shadowRoot.querySelector("#body")
-			if (div) {
-				if (newValue !== null) div.classList.add("preview")
-				else if (!this.shadowRoot.querySelector("video")) div.classList.remove("preview")
-			}
+			if (newValue !== null) div.classList.add("preview")
+			else div.classList.remove("preview")
 		}
 	})
 </script>

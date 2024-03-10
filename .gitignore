@@ -1,3 +1,9 @@
 filet-cloud-web
 static/deps
 **.DS_Store
+**.key
+**.csr
+**.crt
+**.cert
+**.pem
+**.p12

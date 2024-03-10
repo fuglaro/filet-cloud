@@ -2,6 +2,7 @@ package main
 
 import (
 	"archive/zip"
+	"crypto/rand"
 	"encoding/json"
 	"io"
 	"log"
@@ -10,39 +11,32 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/websocket"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 )
 
-var port = "22"
+var sshport = "22"
 var upgrader = websocket.Upgrader{}
+var privateKey = make([]byte, 512/8)
+var connectionID atomic.Uint64 // sequential ID generator making keys for connections.
+var connections = map[uint64]*ssh.Client{}
 
-/**
- * Estabilishes, and returns a sftp connection.
- * Caller is expected to close both,
- * unless an error is returned.
- */
-func sftpConnect(r *http.Request) (*ssh.Client, *sftp.Client, error) {
-	user, pass, _ := r.BasicAuth()
-	config := &ssh.ClientConfig{
-		User:            user,
-		Auth:            []ssh.AuthMethod{ssh.Password(pass)},
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(), // trust localhost
+// Attempt to find the Client IP (without the port) for an incomming request.
+func clientIP(r *http.Request) string {
+	ip := r.RemoteAddr
+	for _, header := range []string{"X-Client-IP", "X-Forwarded-For", "X-Real-IP"} {
+		v := r.Header.Get(header)
+		if v != "" {
+			ip = v
+			break
+		}
 	}
-	sshConn, err := ssh.Dial("tcp", "localhost:"+port, config)
-	if err != nil {
-		return nil, nil, err
-	}
-	// create new SFTP sftp
-	sftp, err := sftp.NewClient(sshConn)
-	if err != nil {
-		sshConn.Close()
-		return nil, nil, err
-	}
-	return sshConn, sftp, nil
+	return strings.SplitN(strings.SplitN(ip, ",", 2)[0], ":", 2)[0]
 }
 
 /**
@@ -50,7 +44,8 @@ func sftpConnect(r *http.Request) (*ssh.Client, *sftp.Client, error) {
  * a StatusForbidden error is provided to the response.
  * For the purposes of this webserver, where we are exposing
  * files via SFTP, assuming any error relates to a permission
- * issue, is sufficient. Breaks some HTTP rules but its nice and simple.
+ * issue, is sufficient. It breaks some HTTP conventions but
+ * its nice and simple.
  * Returns whether the error had a value.
  */
 func check(w http.ResponseWriter, e error) bool {
@@ -60,48 +55,59 @@ func check(w http.ResponseWriter, e error) bool {
 	return e != nil
 }
 
-/** rp
- * (realpath)
- * Returns the full path on the filesystem for the given url path.
- */
-func rp(path string, r *http.Request) string {
-	if os.Getenv("FILETCLOUDDIR") == "" {
-		return path
-	}
-	user, _, _ := r.BasicAuth()
-	return filepath.Join(os.Getenv("FILETCLOUDDIR"), user, path)
-}
-
 /**
- * Request queries that rely on connection to the storage, and therefore
- * the appropriate authentication.
+ * Endpoints for content that is served for browser access like
+ * images, streaming or downloads, and which requires authentication
+ * to be previously established through the WebSocket connection.
  */
-func secureUrlHandler(w http.ResponseWriter, r *http.Request) {
-	/* Ensure authentiction is successfull and get storage connection */
-	sshConn, sftp, err := sftpConnect(r)
-	if err != nil {
-		w.Header().Add("WWW-Authenticate", `Basic realm="Filet Cloud Login"`)
-		http.Error(w, "", http.StatusUnauthorized)
+func authServeContent(w http.ResponseWriter, r *http.Request) {
+	// Ensure authentiction is successfull and get storage connection.
+	ts, err := r.Cookie("__Host-Auth")
+	if check(w, err) {
+		return
+	}
+	token, err := jwt.Parse(ts.Value,
+		func(token *jwt.Token) (interface{}, error) {
+			return privateKey, nil
+		},
+		jwt.WithValidMethods([]string{"HS512"}),
+		jwt.WithAudience(clientIP(r)),
+		jwt.WithExpirationRequired())
+	if check(w, err) {
+		return
+	}
+	if !token.Valid { // XXX TODO is this really needed?
+		http.Error(w, "Invalid authentication token.", http.StatusForbidden)
+		return
+	}
+	cIDs, err := token.Claims.GetSubject()
+	if check(w, err) {
+		return
+	}
+	cID, err := strconv.ParseUint(cIDs, 10, 64)
+	sshConn := connections[cID]
+	if sshConn == nil {
+		http.Error(w, "Invalid authentication token.", http.StatusForbidden)
+		return
+	}
+	// Wrap SSH connection with SFTP interface.
+	sftp, err := sftp.NewClient(sshConn)
+	if check(w, err) {
 		return
 	}
 	defer sftp.Close()
-	defer sshConn.Close()
+	user := sshConn.Conn.User()
+	prepath := strings.Replace(os.Getenv("FC_DIR"), "USERNAME", string(user), -1) + "/"
 
 	components := strings.SplitN(r.URL.Path, ":", 2)
 	switch components[0] {
-
-	/*
-	 * Redirect to the home page.
-	 */
-	case "/":
-		http.Redirect(w, r, "/browse:/", http.StatusSeeOther)
 
 	/*
 	 * Retrieves a file and sends it to the client.
 	 * The 'path' query parameter identifies the file to send.
 	 */
 	case "/file":
-		path := rp(components[1], r)
+		path := prepath + components[1]
 		// stream the file contents
 		contents, err := sftp.Open(path)
 		if check(w, err) {
@@ -115,10 +121,9 @@ func secureUrlHandler(w http.ResponseWriter, r *http.Request) {
 	 * This does not support all formats.
 	 */
 	case "/thumb":
-		path := rp(components[1], r)
 		// Single quoted POSIX command argument input sanitisation,
 		// necessary due to needing to travel through the ssh stream.
-		ppath := strings.Replace(path, "'", "'\\''", -1)
+		ppath := strings.Replace(prepath+components[1], "'", "'\\''", -1)
 		cmd := "ffmpeg -i '" + ppath + "' -q:v 16 -vf scale=240:-1 -update 1 -f image2 -"
 		session, err := sshConn.NewSession()
 		if check(w, err) {
@@ -141,7 +146,7 @@ func secureUrlHandler(w http.ResponseWriter, r *http.Request) {
 		var files []string
 		// walk the paths expanding to the list of files inside
 		for _, upath := range r.URL.Query()["path"] {
-			path := rp(upath, r)
+			path := prepath + upath
 			if path[len(path)-1:] != "/" {
 				// include files
 				files = append(files, path)
@@ -190,10 +195,6 @@ func secureUrlHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-
-	// Bad endpoint error handling.
-	default:
-		http.Error(w, "bad url", http.StatusForbidden)
 	}
 }
 
@@ -213,7 +214,7 @@ func connect(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
-	sshConn, err := ssh.Dial("tcp", "localhost:"+port, &ssh.ClientConfig{
+	sshConn, err := ssh.Dial("tcp", "localhost:"+sshport, &ssh.ClientConfig{
 		User:            string(user),
 		Auth:            []ssh.AuthMethod{ssh.Password(string(pass))},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(), // trust localhost
@@ -227,6 +228,11 @@ func connect(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
+	// Associate the connection with a unique ID for subsequent authenticated access.
+	connID := connectionID.Add(1)
+	connections[connID] = sshConn
+	// Ensure the connection is cleared when the WebSocket connection closes.
+	defer delete(connections, connID)
 	// Handle messages on established authenticated connection.
 	type Msg struct {
 		Action string
@@ -234,12 +240,9 @@ func connect(w http.ResponseWriter, r *http.Request) {
 		To     string
 		Id     int
 	}
-	prepath := os.Getenv("FILETCLOUDDIR")
-	if prepath != "" {
-		prepath += "/" + string(user) + "/"
-	}
+	prepath := strings.Replace(os.Getenv("FC_DIR"), "USERNAME", string(user), -1) + "/"
 	for {
-		mtype, r, err := c.NextReader()
+		mtype, re, err := c.NextReader()
 		if err != nil {
 			return
 		}
@@ -248,7 +251,7 @@ func connect(w http.ResponseWriter, r *http.Request) {
 			/* Handle file upload.
 			 * Unpack the message header to get the path name then store the rest. */
 			idbuf := make([]byte, 20)
-			if _, err = io.ReadFull(r, idbuf); err != nil {
+			if _, err = io.ReadFull(re, idbuf); err != nil {
 				return
 			}
 			id, err := strconv.Atoi(strings.TrimSpace(string(idbuf)))
@@ -256,7 +259,7 @@ func connect(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			pathlenbuf := make([]byte, 20)
-			if _, err = io.ReadFull(r, pathlenbuf); err != nil {
+			if _, err = io.ReadFull(re, pathlenbuf); err != nil {
 				return
 			}
 			pathlen, err := strconv.Atoi(strings.TrimSpace(string(pathlenbuf)))
@@ -264,7 +267,7 @@ func connect(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			pathbuf := make([]byte, pathlen)
-			if _, err = io.ReadFull(r, pathbuf); err != nil {
+			if _, err = io.ReadFull(re, pathbuf); err != nil {
 				return
 			}
 			path := strings.TrimSpace(string(pathbuf))
@@ -275,7 +278,7 @@ func connect(w http.ResponseWriter, r *http.Request) {
 			}
 			defer dest.Close()
 			// copy contents of uploaded file to the server
-			if _, err = io.Copy(dest, r); err != nil {
+			if _, err = io.Copy(dest, re); err != nil {
 				return
 			}
 			if c.WriteJSON(map[string]interface{}{"id": id}) != nil {
@@ -285,13 +288,27 @@ func connect(w http.ResponseWriter, r *http.Request) {
 		}
 
 		m := Msg{}
-		mstr, err := io.ReadAll(r)
+		mstr, err := io.ReadAll(re)
 		err = json.Unmarshal(mstr, &m)
 		if err != nil {
 			return
 		}
 	action:
 		switch m.Action {
+		// Prepares and sends an authentication JWT
+		// for allowing authenticated access to authServeContent.
+		case "token":
+			t := jwt.NewWithClaims(jwt.SigningMethodHS512, &jwt.RegisteredClaims{
+				Audience:  jwt.ClaimStrings{clientIP(r)},
+				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 5)),
+				Subject:   strconv.FormatUint(connID, 10)})
+			s, err := t.SignedString(privateKey)
+			if err != nil {
+				return
+			}
+			if c.WriteMessage(websocket.TextMessage, []byte(s)) != nil {
+				return
+			}
 
 		/* Returns the contents of the given directory,
 		 * including whether each entry is a file. E.g:
@@ -431,12 +448,67 @@ func connect(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	p := os.Getenv("FILETCLOUDSSHPORT")
+	// Handle options.
+	p := os.Getenv("FC_SSH_PORT")
 	if p != "" {
-		port = p
+		sshport = p
 	}
+	addr := os.Getenv("FC_LISTEN")
+	if addr == "" {
+		addr = ":8443"
+	}
+	cert := os.Getenv("FC_CERT_FILE")
+	key := os.Getenv("FC_KEY_FILE")
+	if cert == "" || key == "" {
+		log.Fatal("Provide FC_CERT_FILE and FC_KEY_FILE, or " +
+			"FC_DOMAIN to accept the LetsEncrypt Terms of Service and  use LetsEncrypt.")
+		return
+	}
+
+	// Redirect HTTP to HTTPS.
+	go func() {
+		log.Fatal(http.ListenAndServe(":8080",
+			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				redirect := "https://" + strings.Split(r.Host, ":")[0]
+				if strings.Contains(addr, ":") {
+					redirect += ":" + strings.Split(addr, ":")[1]
+				}
+				http.Redirect(w, r, redirect+r.URL.Path, http.StatusTemporaryRedirect)
+			})))
+	}()
+
+	// Generate private key for JWT signing.
+	_, err := rand.Read(privateKey)
+	if err != nil {
+		log.Fatal("Failed to generate cryptographically secure pseudorandom private JWT signing key.")
+		return
+	}
+
+	// Serve all endpoints.
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/browse:/", http.StatusSeeOther)
+	})
 	http.HandleFunc("/connect", connect)
-	http.HandleFunc("/", secureUrlHandler)
+	http.HandleFunc("/authenticate", func(w http.ResponseWriter, r *http.Request) {
+		// Register the rebounded JWT as a secure authentication cookie
+		// for allowing authenticated access to authServeContent.
+		b, err := io.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		http.SetCookie(w, &http.Cookie{
+			Name:     "__Host-Auth",
+			Value:    string(b),
+			MaxAge:   300,
+			Secure:   true,
+			HttpOnly: true,
+			SameSite: http.SameSiteStrictMode,
+		})
+	})
+	http.HandleFunc("/file:/", authServeContent)
+	http.HandleFunc("/thumb:/", authServeContent)
+	http.HandleFunc("/zip:/", authServeContent)
 	browse := func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "static/browse.html")
 	}
@@ -444,5 +516,5 @@ func main() {
 	http.HandleFunc("/open:/", browse)
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	http.Handle("/favicon.ico", http.FileServer(http.Dir("static")))
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServeTLS(addr, cert, key, nil))
 }
