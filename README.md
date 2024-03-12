@@ -103,7 +103,7 @@ Disclaimer: Use at your own risk. The codebase is strikingly small and the depen
 * The backend implements a strict HTTPS ONLY policy.
 * HTTP Strict Transport Security (HSTS) is enforced.
 * All WebSocket connections use WebSocket Secure (WSS).
-* The Content Security Policy is configured to ensure that content is only loaded via HTTPS. TODO add https: to all parts of the content security policy.
+* The Content Security Policy is configured to ensure that content is only loaded via HTTPS.
 * The backend supports being provided TLS credentials otherwise it uses an included certbot integration. TODO
 * The webserver connects to the SFTP/SSH server without verifying the ssh host key so the connection between the filet-cloud-web server and the SFTP server cannot run across an untrusted network. This project intends for the SFTP server to be on the webserver localhost itself. Connecting to localhost is hardcoded to ensure this is the case. If you change this, ensure the HostKeyCallback is changed to use something secure.
 
@@ -138,40 +138,20 @@ Disclaimer: Use at your own risk. The codebase is strikingly small and the depen
   * Ensuring Cross Origin Isolation is fully activated by checking that the crossOriginIsolated property in the browser is active, before opening the login form. TODO  (https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cross-Origin-Embedder-Policy To check if cross origin isolation has been successful, you can test against the crossOriginIsolated property available to window and worker contexts: )
 * Default Cross Origin Read Blocking browser protections are enhanced by all Content Type Options being configured with nosniff, and the Content-Type header being set based on inspection of the first block. TODO X-Content-Type-Options: nosniff
 * Cross Origin Resource Policy is configured to same-origin so that all resources are protected from access by any other origin. TODO ALL: Cross-Origin-Resource-Policy: same-origin
-* Content Security Policy is enforced with a configuration that ensures: TODO (https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP)
-  * Image and media content can only be loaded from the site's own origin. TODO
-  * Script, stylesheet, and font resources can only be loaded from the site's own origin. TODO
-  * Contents that do not match the above types, are denied. TODO
-  * All content is loaded sandboxed with restricted allowances. TODO
-  * Documents are prevented from being embedded. TODO
-  * Forms are denied from using URLs as the target of form submission. TODO
-  ``` main.html
-  Content-Security-Policy:
-   sandbox allow-downloads allow-forms allow-same-origin allow-scripts;
-   default-src 'none';
-   frame-ancestors: 'none';
-   form-action: 'none';
-   image-src 'self';
-   media-src 'self';
-   script-src-elem 'self';
-   style-src 'self';
-   font-src 'self';
-  TODO
-  ```
-  ``` everything else
-  Content-Security-Policy:
-   sandbox;
-   default-src 'none';
-   frame-ancestors: 'none';
-   form-action: 'none';
-  TODO
-  ```
+* Content Security Policy is enforced with a configuration that ensures:
+  * Image, font and media content can only be loaded from the site's own origin.
+  * Script and stylesheet resources can only be loaded from the site's own origin or from inline elements protected with a 128 bit cryptographically secure random nonce.
+  * WebSockets can only be connected to the site own origin.
+  * Contents that do not match the above types, are denied.
+  * All content is loaded sandboxed with restricted allowances.
+  * Documents are prevented from being embedded.
+  * Forms are denied from using URLs as the target of form submission.
 * The backend requires the browser to provide Secure Fetch Metadata Request Headers, and denies access to content unless the following policies are met: TODO
   * For the main page:
     * The request site is 'none', ensuring user initiated access.
     * The request mode is not from a navigate, preventing access through links.
     * The request destination is a document, preventing embedding.
-  * For the /static/deps/ URL path:
+  * For the /static/ URL path:
     * The request site and mode is same-origin.
     * The request destination is a script, font or style.
   * For the /connect endpoint:

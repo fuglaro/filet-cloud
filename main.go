@@ -3,7 +3,9 @@ package main
 import (
 	"archive/zip"
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
+	"html/template"
 	"io"
 	"log"
 	"net/http"
@@ -498,8 +500,7 @@ func main() {
 			// Register the rebounded JWT as a secure authentication cookie
 			// for allowing authenticated access to authServeContent.
 			b, err := io.ReadAll(r.Body)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
+			if check(w, err) {
 				return
 			}
 			http.SetCookie(w, &http.Cookie{
@@ -522,7 +523,22 @@ func main() {
 	http.Handle("/thumb:/", SMW(http.HandlerFunc(authServeContent)))
 	http.Handle("/zip:/", SMW(http.HandlerFunc(authServeContent)))
 	main := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "static/main.html")
+		nonceb := make([]byte, 128/8)
+		_, err = rand.Read(nonceb)
+		if check(w, err) {
+			return
+		}
+		nonce := base64.URLEncoding.EncodeToString(nonceb)
+		w.Header().Set("Content-Security-Policy", "sandbox allow-downloads allow-forms "+
+			"allow-same-origin allow-scripts; default-src 'none'; frame-ancestors 'none'; "+
+			"form-action 'none'; img-src 'self' https:; media-src 'self' https:; font-src 'self' https:; "+
+			"connect-src 'self' https:; style-src-elem 'self' https: 'nonce-"+nonce+"'; "+
+			"script-src-elem 'self' https: 'nonce-"+nonce+"';")
+		t, err := template.ParseFiles("static/main.html")
+		if check(w, err) {
+			return
+		}
+		t.Execute(w, nonce)
 	})
 	http.Handle("/browse:/", SMW(main))
 	http.Handle("/open:/", SMW(main))

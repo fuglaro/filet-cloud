@@ -2,7 +2,7 @@
 <meta charset=utf-8>
 <meta name="viewport" content="initial-scale=1, interactive-widget=resizes-content" />
 <title>Filet Cloud</title>
-<style>
+<style nonce="{{.}}">
 	html * {
 		font-family: sans-serif;
 
@@ -118,6 +118,10 @@
 		height: 100vh;
 	}
 
+	#uploader {
+		display: none;
+	}
+
 	@media (orientation: portrait) {
 		#menu {
 			margin-bottom: 0px;
@@ -149,52 +153,51 @@
 </div>
 <div id=dataPane>
 	<div id=data></div>
-	<div id=menu class="tight" style="visibility: hidden">
-		<div id=makedir onclick="makedir()">
+	<div id=menu class="tight">
+		<div id=makedir>
 			<h1>&#128193</h1>
 			<p>new<br>folder</p>
 		</div>
-		<div id=newfile onclick="newfile()">
+		<div id=newfile>
 			<h1>&#128196</h1>
 			<p>new<br>file</p>
 		</div>
-		<div id=tabopen onclick="setPath(storage.path(), '/open:')">
+		<div id=tabopen>
 			<h1>&#128214</h1>
 			<p>open</p>
 		</div>
-		<div id=upload onclick="document.getElementById('uploader').click()">
+		<div id=upload>
 			<h1>&#128228</h1>
 			<p>upload</p>
 		</div>
-		<div id=download onclick="download()">
+		<div id=download>
 			<h1>&#128229</h1>
 			<p>down<br>load</p>
 		</div>
-		<div id=rename onclick="rename()">
+		<div id=rename>
 			<h1>&#128394</h1>
 			<p>rename</p>
 		</div>
-		<div id=cart onclick="document.getElementById('cart').classList.toggle('on');
-			cartMode() ? cartSel() : nav(storage.path())" id="cart">
+		<div id=cart>
 			<h1>&#128722</h1>
 			<p>cart</p>
 			<p id=cartlen>0</p>
 		</div>
-		<div id=move onclick="move()">
+		<div id=move>
 			<h1>&#128666</h1>
 			<p>move</p>
 		</div>
-		<div id=del onclick="del()">
+		<div id=del>
 			<h1>&#128465</h1>
 			<p>delete</p>
 		</div>
-		<div id=close onclick="nav(storage.path().replace(/[^/]+$/g, ''))">
+		<div id=close>
 			<h1>&#10060;</h1>
 			<p>close</p>
 		</div>
 	</div>
 </div>
-<input id="uploader" type="file" multiple onchange="send()" style="display:none" />
+<input id="uploader" type="file" multiple />
 <a id="dwnld" download></a>
 <div id=contenthider></div>
 
@@ -206,7 +209,7 @@
 	-- class to manage secure queries with the server.
 	-->
 <template id=-login-form>
-	<style>
+	<style nonce="{{.}}">
 		:host {
 			position: fixed;
 			z-index: 999999;
@@ -262,7 +265,7 @@
 		</form>
 	</div>
 </template>
-<script>
+<script nonce="{{.}}">
 	var autoLogoutTimer = null
 	login = () => {
 		fetch("/logout")
@@ -419,12 +422,27 @@
 </script>
 
 
-<script>
+<script nonce="{{.}}">
 	/**
 	 * Browser UI code.
 	 */
-
 	"use strict"
+
+	document.getElementById("makedir").onclick = () => makedir()
+	document.getElementById("newfile").onclick = () => newfile()
+	document.getElementById("tabopen").onclick = () => setPath(storage.path(), '/open:')
+	document.getElementById("upload").onclick = () => document.getElementById('uploader').click()
+	document.getElementById("download").onclick = () => download()
+	document.getElementById("rename").onclick = () => rename()
+	document.getElementById("cart").onclick = () => {
+		document.getElementById('uploader').click()
+		cartMode() ? cartSel() : nav(storage.path())
+	}
+	document.getElementById("move").onclick = () => move()
+	document.getElementById("del").onclick = () => del()
+	document.getElementById("close").onclick = () => nav(storage.path().replace(/[^/]+$/g, ''))
+	document.getElementById("uploader").onchange = () => send()
+
 	const cwd = () => storage.path().replace(/[^/]+$/g, '')
 	const setPath = (path, mode) => {
 		document.getElementById('path').textContent = path
@@ -446,7 +464,6 @@
 				cart.length ? "dirWithCart" : "dirEmptyCart") : "file")
 		menuItems.forEach(id => document.getElementById(id).style.display =
 			menuModes[mode].includes(id) ? 'initial' : 'none')
-		document.getElementById("menu").style.visibility = null
 	}
 	const menuModes = {
 		dirEmptyCart: ["makedir", "newfile", "upload", "rename", "cart"],
@@ -669,7 +686,7 @@
 	-->
 <ref-load id=-ext-txt loader=mime-text-plain />
 <template id=-mime-text-plain loader=mime-text-plain>
-	<style>
+	<style nonce="{{.}}">
 		div {
 			display: flex;
 			width: calc(100% - 48px);
@@ -704,7 +721,7 @@
 		<h1 id="upload">&#x1f4be;</h1>
 	</div>
 </template>
-<script>
+<script nonce="{{.}}">
 	customElements.define("mime-text-plain", class extends HTMLElement {
 		constructor() {
 			super()
@@ -747,7 +764,7 @@
 <ref-load id=-ext-gif loader=misc-media />
 <ref-load id=-ext-mp4 loader=misc-media />
 <template id=-misc-media loader=misc-media>
-	<style>
+	<style nonce="{{.}}">
 		#body.preview,
 		#body>video {
 			width: 100%;
@@ -764,6 +781,10 @@
 			object-fit: contain;
 		}
 
+		#fail {
+			display: none;
+		}
+
 		h1,
 		p {
 			text-align: center;
@@ -773,7 +794,7 @@
 	<div id=body>
 		<p>&#x23f3;</p>
 	</div>
-	<div id=fail style="display: none">
+	<div id=fail>
 		<h1 id=titlename></h1>
 		<p id=details></p>
 		<a id="download">
@@ -782,7 +803,7 @@
 		</a>
 	</div>
 </template>
-<script>
+<script nonce="{{.}}">
 	customElements.define("misc-media", class extends HTMLElement {
 		constructor() {
 			super()
@@ -833,7 +854,7 @@
 			else div.classList.remove("preview")
 		}
 	})
-</script>
+</script nonce="{{.}}">
 
 
 <!--
@@ -845,7 +866,7 @@
 	-->
 <template id=-ext-md loader=ext-md>
 	<link rel="stylesheet" href="/static/deps/easymde.min.css">
-	<style>
+	<style nonce="{{.}}">
 		#body {
 			display: flex;
 			width: calc(100% - 48px);
@@ -920,7 +941,7 @@
 	</div>
 </template>
 <script src="/static/deps/easymde.min.js"></script>
-<script>
+<script nonce="{{.}}">
 	customElements.define("ext-md", class extends HTMLElement {
 		constructor() {
 			super()
@@ -986,7 +1007,7 @@
 	-- Uses pdfjs for the rendering. PDF.js is mighty.
 	-->
 <template id=-ext-pdf loader=ext-pdf>
-	<style>
+	<style nonce="{{.}}">
 		div,
 		canvas {
 			margin: 0;
@@ -999,28 +1020,31 @@
 </template>
 <script src="/static/deps/pdf.min.js"></script>
 <script src="/static/deps/pdf.worker.min.js"></script>
-<script>
+<script nonce="{{.}}">
 	customElements.define("ext-pdf", class extends HTMLElement {
 		constructor() {
 			super()
 			this.attachShadow({mode: "open"}).appendChild(
 				document.getElementById("-ext-pdf").content.cloneNode(true))
-			const path = storage.path()
-			const link = storage.fileLink(path)
-			pdfjsLib.getDocument(link).promise.then(pdf => {
-				for (var i = 0; i < pdf.numPages; i++) {
-					pdf.getPage(i + 1).then(page => {
-						const nib = document.createElement('canvas')
-						const ctx = nib.getContext("2d");
-						const vp = page.getViewport({scale: 1});
-						nib.height = vp.height;
-						nib.width = vp.width;
-						page.render({canvasContext: ctx, viewport: vp})
-						this.shadowRoot.querySelector("#wait").style.display = "none"
-						this.shadowRoot.appendChild(nib)
-					})
-				}
-			})
+			const path = storage.path();
+			(async () => {
+				await storage.authLinks()
+				const link = storage.fileLink(path)
+				pdfjsLib.getDocument(link).promise.then(pdf => {
+					for (var i = 0; i < pdf.numPages; i++) {
+						pdf.getPage(i + 1).then(page => {
+							const nib = document.createElement('canvas')
+							const ctx = nib.getContext("2d");
+							const vp = page.getViewport({scale: 1});
+							nib.height = vp.height;
+							nib.width = vp.width;
+							page.render({canvasContext: ctx, viewport: vp})
+							this.shadowRoot.querySelector("#wait").style.display = "none"
+							this.shadowRoot.appendChild(nib)
+						})
+					}
+				})
+			})()
 		}
 		static observedAttributes = ["preview"]
 	})
