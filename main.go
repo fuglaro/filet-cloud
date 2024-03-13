@@ -63,7 +63,16 @@ func check(w http.ResponseWriter, e error) bool {
  * to be previously established through the WebSocket connection.
  */
 func authServeContent(w http.ResponseWriter, r *http.Request) {
-	// Ensure authentiction is successfull and get storage connection.
+	// Ensure Secure Fetch Metadata validity.
+	if r.Header.Get("Sec-Fetch-Site") != "same-origin" ||
+		(r.Header.Get("Sec-Fetch-Dest") != "audio" &&
+			r.Header.Get("Sec-Fetch-Dest") != "image" &&
+			r.Header.Get("Sec-Fetch-Dest") != "video" &&
+			r.Header.Get("Sec-Fetch-Dest") != "document") {
+		http.Error(w, "Invalid Secure Fetch Metadata", http.StatusForbidden)
+		return
+	}
+	// Ensure authentication is successfull and get storage connection.
 	ts, err := r.Cookie("__Host-Auth")
 	if check(w, err) {
 		return
@@ -119,17 +128,21 @@ func authServeContent(w http.ResponseWriter, r *http.Request) {
 	 * This does not support all formats.
 	 */
 	case "/thumb":
+		w.Header().Set("Content-Type", "image/jpeg")
 		// Single quoted POSIX command argument input sanitisation,
 		// necessary due to needing to travel through the ssh stream.
 		ppath := strings.Replace(prepath+components[1], "'", "'\\''", -1)
-		cmd := "ffmpeg -i '" + ppath + "' -q:v 16 -vf scale=240:-1 -update 1 -f image2 -"
+		cmd := "ffmpeg -i '" + ppath + "' -q:v 16 -vf scale=240:-1 -update 1 -f image2 -vcodec mjpeg -"
 		session, err := sshConn.NewSession()
 		if check(w, err) {
 			return
 		}
 		defer session.Close()
 		session.Stdout = w
-		_ = session.Run(cmd)
+		err = session.Run(cmd)
+		if check(w, err) {
+			return
+		}
 
 	/*
 	 * Generate a zip file from a list of files and directories
@@ -197,6 +210,13 @@ func authServeContent(w http.ResponseWriter, r *http.Request) {
 }
 
 func connect(w http.ResponseWriter, r *http.Request) {
+	// Ensure Secure Fetch Metadata validity.
+	if r.Header.Get("Sec-Fetch-Site") != "same-origin" ||
+		r.Header.Get("Sec-Fetch-Mode") != "websocket" ||
+		r.Header.Get("Sec-Fetch-Dest") != "empty" {
+		http.Error(w, "Invalid Secure Fetch Metadata", http.StatusForbidden)
+		return
+	}
 	// Establish Websocket connection.
 	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -467,6 +487,8 @@ func main() {
 	SMW := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload")
+			w.Header().Set("Cross-Origin-Resource-Policy", "same-origin")
+			w.Header().Set("X-Content-Type-Options", "nosniff")
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -495,34 +517,44 @@ func main() {
 		http.Redirect(w, r, "/browse:/", http.StatusSeeOther)
 	})))
 	http.Handle("/connect", SMW(http.HandlerFunc(connect)))
-	http.Handle("/authenticate", SMW(http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			// Register the rebounded JWT as a secure authentication cookie
-			// for allowing authenticated access to authServeContent.
-			b, err := io.ReadAll(r.Body)
-			if check(w, err) {
-				return
-			}
-			http.SetCookie(w, &http.Cookie{
-				Name:     "__Host-Auth",
-				Value:    string(b),
-				MaxAge:   300,
-				Secure:   true,
-				HttpOnly: true,
-				SameSite: http.SameSiteStrictMode,
-			})
-		})))
-	http.Handle("/logout", SMW(http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			// Finalise the logout sequence by clearing all site data.
-			// Note that the WebSocket connection should be closed before calling
-			// this to ensure a full logout.
-			w.Header().Set("Clear-Site-Data", "\"*\"")
-		})))
+	http.Handle("/authenticate", SMW(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Ensure Secure Fetch Metadata validity.
+		if r.Header.Get("Sec-Fetch-Site") != "same-origin" ||
+			r.Header.Get("Sec-Fetch-Dest") != "empty" {
+			http.Error(w, "Invalid Secure Fetch Metadata", http.StatusForbidden)
+			return
+		}
+		// Register the rebounded JWT as a secure authentication cookie
+		// for allowing authenticated access to authServeContent.
+		b, err := io.ReadAll(r.Body)
+		if check(w, err) {
+			return
+		}
+		http.SetCookie(w, &http.Cookie{
+			Name:     "__Host-Auth",
+			Value:    string(b),
+			MaxAge:   300,
+			Secure:   true,
+			HttpOnly: true,
+			SameSite: http.SameSiteStrictMode,
+		})
+	})))
+	http.Handle("/logout", SMW(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Finalise the logout sequence by clearing all site data.
+		// Note that the WebSocket connection should be closed before calling
+		// this to ensure a full logout.
+		w.Header().Set("Clear-Site-Data", "\"*\"")
+	})))
 	http.Handle("/file:/", SMW(http.HandlerFunc(authServeContent)))
 	http.Handle("/thumb:/", SMW(http.HandlerFunc(authServeContent)))
-	http.Handle("/zip:/", SMW(http.HandlerFunc(authServeContent)))
+	http.Handle("/zip", SMW(http.HandlerFunc(authServeContent)))
 	main := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Ensure Secure Fetch Metadata validity.
+		if r.Header.Get("Sec-Fetch-Site") != "none" ||
+			r.Header.Get("Sec-Fetch-Dest") != "document" {
+			http.Error(w, "Invalid Secure Fetch Metadata", http.StatusForbidden)
+			return
+		}
 		nonceb := make([]byte, 128/8)
 		_, err = rand.Read(nonceb)
 		if check(w, err) {
@@ -534,6 +566,8 @@ func main() {
 			"form-action 'none'; img-src 'self' https:; media-src 'self' https:; font-src 'self' https:; "+
 			"connect-src 'self' https:; style-src-elem 'self' https: 'nonce-"+nonce+"'; "+
 			"script-src-elem 'self' https: 'nonce-"+nonce+"';")
+		w.Header().Set("Cross-Origin-Opener-Policy", "same-origin")
+		w.Header().Set("Cross-Origin-Embedder-Policy", "require-corp")
 		t, err := template.ParseFiles("static/main.html")
 		if check(w, err) {
 			return
@@ -542,7 +576,16 @@ func main() {
 	})
 	http.Handle("/browse:/", SMW(main))
 	http.Handle("/open:/", SMW(main))
-	http.Handle("/static/", SMW(http.StripPrefix("/static/", http.FileServer(http.Dir("static")))))
+	http.Handle("/static/", SMW(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Ensure Secure Fetch Metadata validity.
+		if r.Header.Get("Sec-Fetch-Site") != "same-origin" ||
+			(r.Header.Get("Sec-Fetch-Dest") != "script" &&
+				r.Header.Get("Sec-Fetch-Dest") != "style") {
+			http.Error(w, "Invalid Secure Fetch Metadata", http.StatusForbidden)
+			return
+		}
+		http.StripPrefix("/static/", http.FileServer(http.Dir("static"))).ServeHTTP(w, r)
+	})))
 	http.Handle("/favicon.ico", SMW(http.FileServer(http.Dir("static"))))
 	log.Fatal(http.ListenAndServeTLS(addr, cert, key, nil))
 }

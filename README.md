@@ -58,14 +58,9 @@ See (https://github.com/fuglaro/filet-cloud) for an example deployment on a Rasp
 * Markdown (with editing via easyMDE)
 * Text (with editing)
 
-Viewers and editors for new formats can be added via an internal plugin system. Plugins can be registered by file extension or content-type:
-* File extension registered plugins: static/open/ext.EXTENSION.html
-* Content-type registered plugins: static/open/CONTENTTYPE/SUBTYPE.html
-Please get in touch if you would like any further formats supported.
-
 ## Features
 * Authentication via local user account credentials.
-* Browse folder structure.
+* Browse folders.
 * View and edit files in supported formats.
 * Stream video and audio.
 * Create new folders.
@@ -76,20 +71,37 @@ Please get in touch if you would like any further formats supported.
 * Move multiple files and folders.
 * Delete files and folders.
 * Maintains file-system ownership integrity consistent with local access.
-
-Automatic cloud data synchronization of smart phones and similar devices can be configured alongside this service via an ssh connection to the same server running Filet Cloud Web with apps like Folder Sync Pro. When set up securely, this can be used in place of default cloud backups allowing you full control of your personal data.
+* Automatic cloud data synchronization of smart phones and similar devices can be configured alongside this service via an ssh connection to the same server running Filet Cloud Web with, apps like Folder Sync Pro. When set up securely, this can be used in place of default cloud backups allowing you full control of your personal data.
 
 ## Design
 
-TODO XXX diagram of connections ssh, browser, backend, authentication etc.
+This design for this solution favors simplicity and minimalism, both inside and out, without losing powerful features. *Filet Cloud Web* pushes a personal cloud solution to its leanest essence. It leaves you fully in control of your own data. It is a joy to use because it does what it needs to, reliably and quickly, and then gets out of the way. The primary design philosophy for this project is: **"complexity must justify itself, ruthlessly"**.
+
+```mermaid
+flowchart
+    Browser[Filet Cloud\nFrontend]
+    Login
+    WebSocket
+    Mobile[Mobile\nDevice]
+    subgraph Host
+        FiletCloud[Filet Cloud\nBackend]
+        SSH
+    end
+    FiletCloud ---|"ssh localhost\n(using login credentials)"| SSH
+    Login -.->|"Establishes\nWebSocket\nconnection"| WebSocket
+    Browser --> Login
+    Browser -->|Storage\nRequests| WebSocket
+    WebSocket -->|JWT| Browser
+    WebSocket --- FiletCloud
+    Browser -->|"Media\nRequests\n(using JWT)"| FiletCloud
+    Mobile ----->|Nightly\nSync| SSH
+```
 
 The code is organised in the following areas:
 * [main.go](main.go) - the primary server.
 * [static/main.html](static/main.html) - the main frontend browser page.
 
-No frontend framework is used because adopting one on top of the simple interface design would have introduced unnecessary complexity.
-
-This design for this solution favors simplicity and minimalism, both inside and out, without losing powerful features. *Filet Cloud Web* pushes a personal cloud solution to its leanest essence. It leaves you fully in control of your own data. It is a joy to use because it does what it needs to, reliably and quickly, and then gets out of the way. The primary design philosophy for this project is: **"complexity must justify itself, ruthlessly"**.
+No frontend framework is used because adopting one on top of the simple interface design would have introduced unjustified complexity.
 
 ## Security
 
@@ -133,11 +145,11 @@ Disclaimer: Use at your own risk. The codebase is strikingly small and the depen
 ### Site Isolation and Content Protection
 * Same-Origin Policy is enforced.
 * Cross Origin Isolation is enforced by: TODO
-  * Setting the Cross Origin Opener Policy to ensure the browsing context is exclusively isolated to same-origin documents. TODO: All: Cross-Origin-Opener-Policy: same-origin
-  * Setting the Cross Origin Embedder Policy to require corp (Cross Origin Resource Policy). TODO
-  * Ensuring Cross Origin Isolation is fully activated by checking that the crossOriginIsolated property in the browser is active, before opening the login form. TODO  (https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cross-Origin-Embedder-Policy To check if cross origin isolation has been successful, you can test against the crossOriginIsolated property available to window and worker contexts: )
-* Default Cross Origin Read Blocking browser protections are enhanced by all Content Type Options being configured with nosniff, and the Content-Type header being set based on inspection of the first block. TODO X-Content-Type-Options: nosniff
-* Cross Origin Resource Policy is configured to same-origin so that all resources are protected from access by any other origin. TODO ALL: Cross-Origin-Resource-Policy: same-origin
+  * Setting the Cross Origin Opener Policy to ensure the browsing context is exclusively isolated to same-origin documents.
+  * Setting the Cross Origin Embedder Policy to require corp (Cross Origin Resource Policy).
+  * Ensuring Cross Origin Isolation is fully activated by checking that the crossOriginIsolated property in the browser is active, before opening the login form.
+  * Default Cross Origin Read Blocking browser protections are enhanced by all Content Type Options being configured with nosniff, and with the Content-Type header being set.
+* Cross Origin Resource Policy is configured to same-origin so that all resources are protected from access by any other origin.
 * Content Security Policy is enforced with a configuration that ensures:
   * Image, font and media content can only be loaded from the site's own origin.
   * Script and stylesheet resources can only be loaded from the site's own origin or from inline elements protected with a 128 bit cryptographically secure random nonce.
@@ -146,23 +158,23 @@ Disclaimer: Use at your own risk. The codebase is strikingly small and the depen
   * All content is loaded sandboxed with restricted allowances.
   * Documents are prevented from being embedded.
   * Forms are denied from using URLs as the target of form submission.
-* The backend requires the browser to provide Secure Fetch Metadata Request Headers, and denies access to content unless the following policies are met: TODO
+* The backend requires the browser to provide Secure Fetch Metadata Request Headers, and denies access to content unless the following policies are met:
   * For the main page:
-    * The request site is 'none', ensuring user initiated access.
-    * The request mode is not from a navigate, preventing access through links.
+    * The request site is set to none, ensuring user initiated access.
     * The request destination is a document, preventing embedding.
-  * For the /static/ URL path:
-    * The request site and mode is same-origin.
-    * The request destination is a script, font or style.
-  * For the /connect endpoint:
-    * The request site and mode is same-origin.
-    * The request destination is a websocket.
-  * For the /authenticate and /logout endpoints:
-    * The request site and mode is same-origin.
+  * For the `/static/` URL path:
+    * The request site is same-origin.
+    * The request destination is a script or style.
+  * For the `/connect` endpoint:
+    * The request site is same-origin.
+    * The request mode is a websocket.
     * The request destination is empty.
-  * For everything else:
-    * The request site and mode is same-origin.
-    * The request destination is audio, an image, or a video.
+  * For the `/authenticate` endpoint:
+    * The request site is same-origin.
+    * The request destination is empty.
+  * For `/file:/` `/thumb:/` and `/zip` URL paths:
+    * The request site is same-origin.
+    * The request destination is audio, an image, a video, or a document.
 * The backend enforces a browser cache policy which ensures cached content access adheres to the above Secure Fetch Metadata Request Header policy, including when the headers vary across subsequent requests. TODO Vary: Sec-Fetch-Dest, Sec-Fetch-Mode, Sec-Fetch-Site
 * The browser is instructed to not allow content to be loaded in any embeded documents, by setting X-Frame-Options: DENY. TODO X-Frame-Options: DENY
 * A Referrer Policy of same-origin is enforced. TODO

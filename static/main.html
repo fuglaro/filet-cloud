@@ -269,7 +269,7 @@
 	var autoLogoutTimer = null
 	login = () => {
 		fetch("/logout")
-		if (!document.querySelector("login-form"))
+		if (!document.querySelector("login-form") && crossOriginIsolated)
 			document.body.appendChild(document.createElement("login-form"))
 	}
 	login()
@@ -435,7 +435,7 @@
 	document.getElementById("download").onclick = () => download()
 	document.getElementById("rename").onclick = () => rename()
 	document.getElementById("cart").onclick = () => {
-		document.getElementById('uploader').click()
+		document.getElementById('cart').classList.toggle('on')
 		cartMode() ? cartSel() : nav(storage.path())
 	}
 	document.getElementById("move").onclick = () => move()
@@ -1028,22 +1028,20 @@
 				document.getElementById("-ext-pdf").content.cloneNode(true))
 			const path = storage.path();
 			(async () => {
-				await storage.authLinks()
-				const link = storage.fileLink(path)
-				pdfjsLib.getDocument(link).promise.then(pdf => {
-					for (var i = 0; i < pdf.numPages; i++) {
-						pdf.getPage(i + 1).then(page => {
-							const nib = document.createElement('canvas')
-							const ctx = nib.getContext("2d");
-							const vp = page.getViewport({scale: 1});
-							nib.height = vp.height;
-							nib.width = vp.width;
-							page.render({canvasContext: ctx, viewport: vp})
-							this.shadowRoot.querySelector("#wait").style.display = "none"
-							this.shadowRoot.appendChild(nib)
-						})
-					}
-				})
+				const data = await (await storage.readFile(path)).arrayBuffer()
+				const pdf = await pdfjsLib.getDocument(data).promise
+				for (var i = 0; i < pdf.numPages; i++) {
+					pdf.getPage(i + 1).then(page => {
+						const nib = document.createElement('canvas')
+						const ctx = nib.getContext("2d");
+						const vp = page.getViewport({scale: 1});
+						nib.height = vp.height;
+						nib.width = vp.width;
+						page.render({canvasContext: ctx, viewport: vp})
+						this.shadowRoot.querySelector("#wait").style.display = "none"
+						this.shadowRoot.appendChild(nib)
+					})
+				}
 			})()
 		}
 		static observedAttributes = ["preview"]
