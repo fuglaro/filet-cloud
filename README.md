@@ -144,7 +144,7 @@ Disclaimer: Use at your own risk. The codebase is strikingly small and the depen
 
 ### Site Isolation and Content Protection
 * Same-Origin Policy is enforced.
-* Cross Origin Isolation is enforced by: TODO
+* Cross Origin Isolation is enforced by:
   * Setting the Cross Origin Opener Policy to ensure the browsing context is exclusively isolated to same-origin documents.
   * Setting the Cross Origin Embedder Policy to require corp (Cross Origin Resource Policy).
   * Ensuring Cross Origin Isolation is fully activated by checking that the crossOriginIsolated property in the browser is active, before opening the login form.
@@ -175,7 +175,7 @@ Disclaimer: Use at your own risk. The codebase is strikingly small and the depen
   * For `/file:/` `/thumb:/` and `/zip` URL paths:
     * The request site is same-origin.
     * The request destination is audio, an image, a video, or a document.
-* The backend enforces a browser cache policy which ensures cached content access adheres to the above Secure Fetch Metadata Request Header policy, including when the headers vary across subsequent requests. TODO Vary: Sec-Fetch-Dest, Sec-Fetch-Mode, Sec-Fetch-Site
+* The backend enforces a browser cache policy which ensures cached content access adheres to the above Secure Fetch Metadata Request Header policy, including when the headers vary across subsequent requests.
 * The browser is instructed to not allow content to be loaded in any embeded documents, by setting X-Frame-Options: DENY. TODO X-Frame-Options: DENY
 * A Referrer Policy of same-origin is enforced. TODO
 
