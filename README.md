@@ -176,8 +176,7 @@ Disclaimer: Use at your own risk. The codebase is strikingly small and the depen
     * The request site is same-origin.
     * The request destination is audio, an image, a video, or a document.
 * The backend enforces a browser cache policy which ensures cached content access adheres to the above Secure Fetch Metadata Request Header policy, including when the headers vary across subsequent requests.
-* The browser is instructed to not allow content to be loaded in any embeded documents, by setting X-Frame-Options: DENY. TODO X-Frame-Options: DENY
-* A Referrer Policy of same-origin is enforced. TODO
+* A Referrer Policy of same-origin is enforced.
 
 ### Authorised Browser Access to Content
 * Along with storage requests being served via the authenticated WebSocket connection, authorised access is extended to the browser to allow the display of media and content, and for downloads. TODO

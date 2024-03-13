@@ -569,6 +569,7 @@ func main() {
 			"script-src-elem 'self' https: 'nonce-"+nonce+"';")
 		w.Header().Set("Cross-Origin-Opener-Policy", "same-origin")
 		w.Header().Set("Cross-Origin-Embedder-Policy", "require-corp")
+		w.Header().Set("Referrer-Policy", "same-origin")
 		t, err := template.ParseFiles("static/main.html")
 		if check(w, err) {
 			return
