@@ -179,31 +179,30 @@ Disclaimer: Use at your own risk. The codebase is strikingly small and the depen
 * A Referrer Policy of same-origin is enforced.
 
 ### Authorised Browser Access to Content
-* Along with storage requests being served via the authenticated WebSocket connection, authorised access is extended to the browser to allow the display of media and content, and for downloads. TODO
+* Along with storage requests being served via the authenticated WebSocket connection, authorised access is extended to the browser to allow the display of media and content, and for downloads.
 * Extension of authorised access to the browser is achieved via the following process: TODO
   * On login, the Storage class will:
-    * Use the authenticated WebSocket connection to request an authentication JSON Web Token (JWT), which is created by the backend with the following JWT payload: TODO https://datatracker.ietf.org/doc/html/rfc7519#section-4.1
-      * The remote address IP (which is never stored persistently by the backend) of the authenticated WebSocket connection's client side, as the Registered Audience Claim (aud). TODO
-      * A time of 5 minutes later, as the Registered Expiration Time Claim (exp). TODO
-      * A sequential identifier uniquely associated with the authenticated WebSocket connection, as the Registered Subject Claim (sub). TODO
-    * Prevent exposure of the authorization JWT to JavaScript contexts outside of the Storage class. TODO
-    * Send the JWT, via request body, to the backend's /authenticate endpoint so it can instruct the browser to set the JWT as an authentication cookie with the following cookie attribute protections: TODO https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Sec-Fetch-User
-       * The browser only uses the authentication cookie in requests back to the site's own originating site, by setting SameSite=Strict. TODO
-       * The browser expires the cookie after 5 minutes, by setting Max-Age=300. TODO
-       * The authorization JWT is protected from JavaScript access, by setting HttpOnly. TODO
-       * The cookie is further protected by setting the Secure cookie attribute, and by giving the cookie name to have the secure __Host- prefix. TODO
+    * Use the authenticated WebSocket connection to request an authentication JSON Web Token (JWT), which is created by the backend with the following JWT payload:
+      * The remote address IP (which is never stored persistently by the backend) of the authenticated WebSocket connection's client side, as the Registered Audience Claim (aud).
+      * A time of 5 minutes later, as the Registered Expiration Time Claim (exp).
+      * A sequential identifier uniquely associated with the authenticated WebSocket connection, as the Registered Subject Claim (sub).
+    * Prevent exposure of the authorization JWT to JavaScript contexts outside of the Storage class.
+    * Send the JWT, via request body, to the backend's /authenticate endpoint so it can instruct the browser to set the JWT as an authentication cookie with the following cookie attribute protections:
+       * The browser only uses the authentication cookie in requests back to the site's own originating site, by setting SameSite=Strict.
+       * The browser expires the cookie after 5 minutes, by setting Max-Age=300.
+       * The authorization JWT is protected from JavaScript access, by setting HttpOnly.
+       * The cookie is further protected by setting the Secure cookie attribute, and by giving the cookie name to have the secure __Host- prefix.
     * While the login session remains active, the Storage Class will keep the JWT refreshed by repeating this process on intervals. TODO
-  * Requests to any storage link will succeed only if the backend's checks of the authentication JWT cookie is successfully validated with the following policy: TODO
-    * The JWT is correctly signed. TODO
-    * The remote address IP of the request must match the JWT's Registered Audience Claim. TODO
-    * The JWT's Registered Expiration Time Claim must not have expired. TODO
-    * The JWT's Registered Subject Claim (sub) must exactly match a unique identifier associated with an authenticated WebSocket connection, which is then used to fulfill the storage request. TODO
-  * The JWT is signed using HS512 with a crytographically secure pseudorandom key generated on launch of the server TODO.
+  * Requests to any storage link will succeed only if the backend's checks of the authentication JWT cookie is successfully validated with the following policy:
+    * The JWT is correctly signed.
+    * The remote address IP of the request must match the JWT's Registered Audience Claim.
+    * The JWT's Registered Expiration Time Claim must not have expired.
+    * The JWT's Registered Subject Claim (sub) must exactly match a unique identifier associated with an authenticated WebSocket connection, which is then used to fulfill the storage request.
+  * The JWT is signed using HS512 with a crytographically secure pseudorandom key generated on launch of the server.
 
 ### Additional Cross-Site Request Forgery (CSRF/XSRF) Protection
-* All backend endpoints which cause any changes or side effects (besides server load and establishing authentication), are only accessible through the WebSocket connection. TODO
+* All backend endpoints which cause any changes or side effects (besides server load or establishing authentication), are only accessible through the WebSocket connection.
 * The WebSocket connection is stored in a private variable, inside the Storage class, and is only accessible via it's restricted API.
-* No cross-site queries have access to that WebSocket connection.
 
 ### Third-Party Dependencies
 * All third-party dependencies are servered from the backend and are version controlled and stored locally.
