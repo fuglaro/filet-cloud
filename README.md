@@ -217,12 +217,12 @@ We stand on the shoulders of giants. They own this, far more than I do.
 * a world of countless open source contributors.
 
 # TODO
+* roll our own input popup - current one is blocked.
 * https - accept certs via env var or auto setup with let's encrypt autocert NewListener (with domain provided by FC_DOMAIN).
 * Switch to package managed dependencies and update security docs -- maybe.
 * Run some standard test suites.
 * Add a refresh button for files that change (avoiding re-logging in to refresh the content).
 * Auto reload unmodified opened files.
-* roll our own popup - nobody likes browser pop ups.
 * dark mode try 2.
 * best practise on inline unicode symbols
 * Switch relevant divs to buttons, ensure accessibility, and check keyboard only input.
