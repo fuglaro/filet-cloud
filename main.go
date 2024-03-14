@@ -478,7 +478,7 @@ func main() {
 	}
 	addr := os.Getenv("FC_LISTEN")
 	if addr == "" {
-		addr = ":8443"
+		addr = ":443"
 	}
 	cert := os.Getenv("FC_CERT_FILE")
 	key := os.Getenv("FC_KEY_FILE")
