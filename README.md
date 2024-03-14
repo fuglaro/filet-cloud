@@ -1,54 +1,9 @@
-==== TODO ====
-==== TODO ====
-==== TODO ====
-
-== TODO
-* https - accept certs via env var or auto setup with let's encrypt autocert NewListener (with domain provided by FC_DOMAIN).
-* Add underscores to other env vars.
-
-* Test favicon still works after security changes.
-* TODO Switch to package managed dependencies and update security docs -- maybe.
-* TODO Run some standard test suites.
-* TODO Setup security regression tests.
-
-* Kill Basic Auth
-* When the links ensure authentication, allow them to be awaited on.
-
-* Reload files without loging in again.
-* Auto reload unmodified opened files.
-* roll our own popup - nobody likes browser pop ups.
-* dark mode try 2.
-* best practise on inline unicode symbols
-* Switch relevant divs to buttons, ensure accessibility, and check keyboard only input.
-* xtermjs via same WebSocket connection that allows sshConn endpoint including resize triggers, distinguish from uploads with first bit.
-* Document env vars (be clear about cloud dir needing username folder after that level).
-* Deliver system information to file (accessible via xtermjs), so a HAT is not needed.
-
-* Add support for a different local ssh port (Android Termux)
-
-* Swap to RP3A+ for low power and compact.
-* Mobile phone version with battery pack and 4G for always on.
-
-* Monitor storage interval access (maybe backup interval is an issue - maybe only backup when things change) for allowing the storage to power down.
-
-* note on working well with: https://stephango.com/file-over-app
-* Document about embedding resources in Markdown files.
-* Make as a Progressive Web App (PWA)
-* Thumbnails
-  * Support other image types for thumbnails smartly.
-  * Investigate hardware accelerated thumbnail generation.
-  * Switch to Webp for thumbnails.
-  * Test thumbnails laoading.
-* Add observable status summary for each user - but build it with graphviz project that bakes to svg so it doesn't use live scripts.
-
 # Filet Cloud Web
 Web service for a minimalistic personal cloud storage, letting you control your data privacy. This has a simple and elegant design that provides a lean web interface to local storage via a local ssh connection.
 
 ![demo video](filet-cloud-demo.gif)
 
 Browse files, download, upload, stream videos and music, view images, create and edit documents.
-
-See (https://github.com/fuglaro/filet-cloud) for an example deployment on a Raspberry Pi including data snapshots. It is recommended to set up automatic backups in any deployment.
 
 ## Supported formats
 * Images
@@ -71,7 +26,8 @@ See (https://github.com/fuglaro/filet-cloud) for an example deployment on a Rasp
 * Move multiple files and folders.
 * Delete files and folders.
 * Maintains file-system ownership integrity consistent with local access.
-* Automatic cloud data synchronization of smart phones and similar devices can be configured alongside this service via an ssh connection to the same server running Filet Cloud Web with, apps like Folder Sync Pro. When set up securely, this can be used in place of default cloud backups allowing you full control of your personal data.
+* Compatible with automatic phone data upload tools like Folder Sync Pro via the STFP/SSH service running on the same server.
+* Be in full control of your own private data.
 
 ## Design
 
@@ -113,14 +69,14 @@ Disclaimer: Use at your own risk. The codebase is strikingly small and the depen
 * The login form will not open unless the connection protocol is HTTPS.
 * HTTP requests to the main page are redirected to HTTPS.
 * The backend implements a strict HTTPS ONLY policy.
-* HTTP Strict Transport Security (HSTS) is enforced.
+* HTTP Strict Transport Security (HSTS) is enabled.
 * All WebSocket connections use WebSocket Secure (WSS).
 * The Content Security Policy is configured to ensure that content is only loaded via HTTPS.
 * The backend supports being provided TLS credentials otherwise it uses an included certbot integration. TODO
-* The webserver connects to the SFTP/SSH server without verifying the ssh host key so the connection between the filet-cloud-web server and the SFTP server cannot run across an untrusted network. This project intends for the SFTP server to be on the webserver localhost itself. Connecting to localhost is hardcoded to ensure this is the case. If you change this, ensure the HostKeyCallback is changed to use something secure.
+* The webserver connects to the local SFTP/SSH service without verifying the SSH Host Key, therefore the connection between them cannot run across an untrusted network. Connecting to localhost is hardcoded to ensure this is the case. If you change this, ensure the HostKeyCallback is changed to use something secure.
 
 ### Authentication
-* Authentication is made by proxying the SSH authentication mechanism through the backend in establishing a local SSH connection managed by the backend.
+* Authentication is made by proxying the SSH credentials through the backend in establishing a local SSH connection managed by the backend.
 * This primarily relies on SSH username and password authentication.
 * 2FA can be additionally configured with a Pluggable Authentication Module (PAM). TODO https://www.digitalocean.com/community/tutorials/how-to-set-up-multi-factor-authentication-for-ssh-on-ubuntu-20-04
 
@@ -132,14 +88,13 @@ Disclaimer: Use at your own risk. The codebase is strikingly small and the depen
   * The SFTP/SSH connection is attached to the WebSocket connection to handle future requests.
   * The credentials are not stored in any persistent way.
   * Failure to establish an authenticated SFTP/SSH connection will close the WebSocket connection, triggering a new login sequence.
-  * After sending the credentials to the WebSocket connection, the login form will pass the potentially authenticated WebSocket connection to be stored inside an instance of the Storage class in a private variable, so as to restrict direct access from JavaScript except via the Storage class' API.
+  * After sending the credentials to the WebSocket connection, the login form will pass the potentially authenticated WebSocket connection to be stored inside an instance of the Storage class in a private variable, so as to restrict direct access from JavaScript except via its API.
 * Logout occurs when either the browser or the backend closes the WebSocket connection, such as:
   * Automatically when closing or refreshing the browser tab.
   * When restarting the backend service.
   * From a disruption to the network connection.
 * Automatic logout will also occur 5 minutes after a page remains not visible, such as after navigating to a new page, switching tabs, minimising the browser, or, on mobile, switching to another app.
-* Logout events will trigger all cached site data to be cleared.
-  * Cached site data may not be cleared if the browser exits uncleanly or the backend is not contactable.
+* Logout events will trigger all cached site data to be cleared. Cached site data may not be cleared if the browser exits uncleanly or the backend is not contactable.
 * The user may choose to store the credentials in the browser's password management system, if supported and enabled in the browser. For additial security, 2FA is recommended.
 
 ### Site Isolation and Content Protection
@@ -151,8 +106,8 @@ Disclaimer: Use at your own risk. The codebase is strikingly small and the depen
   * Default Cross Origin Read Blocking browser protections are enhanced by all Content Type Options being configured with nosniff, and with the Content-Type header being set.
 * Cross Origin Resource Policy is configured to same-origin so that all resources are protected from access by any other origin.
 * Content Security Policy is enforced with a configuration that ensures:
-  * Image, font and media content can only be loaded from the site's own origin.
-  * Script and stylesheet resources can only be loaded from the site's own origin or from inline elements protected with a 128 bit cryptographically secure random nonce.
+  * Image, font and media content can be loaded only from the site's own origin.
+  * Script and stylesheet resources can be loaded only from the site's own origin or from inline elements protected with a 128 bit cryptographically secure random nonce.
   * WebSockets can only be connected to the site own origin.
   * Contents that do not match the above types, are denied.
   * All content is loaded sandboxed with restricted allowances.
@@ -164,7 +119,7 @@ Disclaimer: Use at your own risk. The codebase is strikingly small and the depen
     * The request destination is a document, preventing embedding.
   * For the `/static/` URL path:
     * The request site is same-origin.
-    * The request destination is a script or style.
+    * The request destination is a script or style element.
   * For the `/connect` endpoint:
     * The request site is same-origin.
     * The request mode is a websocket.
@@ -180,7 +135,7 @@ Disclaimer: Use at your own risk. The codebase is strikingly small and the depen
 
 ### Authorised Browser Access to Content
 * Along with storage requests being served via the authenticated WebSocket connection, authorised access is extended to the browser to allow the display of media and content, and for downloads.
-* Extension of authorised access to the browser is achieved via the following process: TODO
+* Extension of authorised access to the browser is achieved via the following process:
   * On login, the Storage class will:
     * Use the authenticated WebSocket connection to request an authentication JSON Web Token (JWT), which is created by the backend with the following JWT payload:
       * The remote address IP (which is never stored persistently by the backend) of the authenticated WebSocket connection's client side, as the Registered Audience Claim (aud).
@@ -191,13 +146,13 @@ Disclaimer: Use at your own risk. The codebase is strikingly small and the depen
        * The browser only uses the authentication cookie in requests back to the site's own originating site, by setting SameSite=Strict.
        * The browser expires the cookie after 5 minutes, by setting Max-Age=300.
        * The authorization JWT is protected from JavaScript access, by setting HttpOnly.
-       * The cookie is further protected by setting the Secure cookie attribute, and by giving the cookie name to have the secure __Host- prefix.
+       * The cookie is further protected by setting the Secure cookie attribute, and by giving the cookie the secure `__Host-` prefix.
     * While the login session remains active, the Storage Class will keep the JWT refreshed by repeating this process on intervals. TODO
-  * Requests to any storage link will succeed only if the backend's checks of the authentication JWT cookie is successfully validated with the following policy:
+  * Requests to any storage link (via the `/file:/` `/thumb:/` and `/zip` URL paths) will succeed only if the backend's checks of the authentication JWT cookie is successfully validated against the following policy:
     * The JWT is correctly signed.
     * The remote address IP of the request must match the JWT's Registered Audience Claim.
     * The JWT's Registered Expiration Time Claim must not have expired.
-    * The JWT's Registered Subject Claim (sub) must exactly match a unique identifier associated with an authenticated WebSocket connection, which is then used to fulfill the storage request.
+    * The JWT's Registered Subject Claim must exactly match a unique identifier associated with an authenticated WebSocket connection, which is then used to fulfill the storage request.
   * The JWT is signed using HS512 with a crytographically secure pseudorandom key generated on launch of the server.
 
 ### Additional Cross-Site Request Forgery (CSRF/XSRF) Protection
@@ -231,7 +186,7 @@ FC_CERT_FILE=my.crt FC_KEY_FILE=my.key ./filet-cloud-web
 ## Launch Options
 
 Supported environment variables:
-* `FC_LISTEN`: The address to listen on. Defaults to ':8443'.
+* `FC_LISTEN`: The address to listen on. Defaults to ':443'.
 * `FC_DOMAIN`: The domain to use with the included Let's Encrypt integration. Use of this implies acceptance of the LetsEncrypt Terms of Service.
 * `FC_CERT_FILE` & `FC_KEY_FILE`: The cerdentials to use for TLS connections.
 * `FC_DIR`: The folder path to use when serving storage, rather than the root. Supports a USERNAME token to serve a different tree for each user.
@@ -260,3 +215,28 @@ We stand on the shoulders of giants. They own this, far more than I do.
 * https://www.jsdelivr.com/
 * https://github.com/AlDanial/cloc
 * a world of countless open source contributors.
+
+# TODO
+* https - accept certs via env var or auto setup with let's encrypt autocert NewListener (with domain provided by FC_DOMAIN).
+* Switch to package managed dependencies and update security docs -- maybe.
+* Run some standard test suites.
+* Add a refresh button for files that change (avoiding re-logging in to refresh the content).
+* Auto reload unmodified opened files.
+* roll our own popup - nobody likes browser pop ups.
+* dark mode try 2.
+* best practise on inline unicode symbols
+* Switch relevant divs to buttons, ensure accessibility, and check keyboard only input.
+* xtermjs via same WebSocket connection that allows sshConn endpoint including resize triggers, distinguish from uploads with first bit.
+* Deliver system information to file (accessible via xtermjs), so a HAT is not needed.
+* Add support for a different local ssh port (Android Termux)
+* Swap to RP3A+ for low power and compact.
+* Mobile phone version with battery pack and 4G for always on.
+* Monitor storage interval access (maybe backup interval is an issue - maybe only backup when things change) for allowing the storage to power down.
+* note on working well with: https://stephango.com/file-over-app
+* Document about embedding resources in Markdown files.
+* Make as a Progressive Web App (PWA)
+* Thumbnails
+  * Support other image types for thumbnails smartly.
+  * Investigate hardware accelerated thumbnail generation.
+  * Switch to Webp for thumbnails.
+* Incorporate https://github.com/fuglaro/filet-cloud
