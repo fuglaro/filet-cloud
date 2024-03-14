@@ -115,13 +115,18 @@ func authServeContent(w http.ResponseWriter, r *http.Request) {
 	 */
 	case "/file":
 		path := prepath + components[1]
+		// get the file stat information
+		stat, err := sftp.Stat(path)
+		if check(w, err) {
+			return
+		}
 		// stream the file contents
 		contents, err := sftp.Open(path)
 		if check(w, err) {
 			return
 		}
 		defer contents.Close()
-		http.ServeContent(w, r, filepath.Base(path), time.Time{}, contents)
+		http.ServeContent(w, r, filepath.Base(path), stat.ModTime(), contents)
 
 	/*
 	 * Serve a thumbnail image of the file.
