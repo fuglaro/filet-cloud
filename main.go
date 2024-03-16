@@ -19,6 +19,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/websocket"
 	"github.com/pkg/sftp"
+	"golang.org/x/crypto/acme/autocert"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -594,5 +595,9 @@ func main() {
 		http.StripPrefix("/static/", http.FileServer(http.Dir("static"))).ServeHTTP(w, r)
 	})))
 	http.Handle("/favicon.ico", SMW(http.FileServer(http.Dir("static"))))
-	log.Fatal(http.ListenAndServeTLS(addr, cert, key, nil))
+	if os.Getenv("FC_DOMAIN") != "" {
+		log.Fatal(http.Serve(autocert.NewListener(os.Getenv("FC_DOMAIN")), nil))
+	} else {
+		log.Fatal(http.ListenAndServeTLS(addr, cert, key, nil))
+	}
 }

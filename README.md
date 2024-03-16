@@ -72,7 +72,7 @@ Disclaimer: Use at your own risk. The codebase is strikingly small and the depen
 * HTTP Strict Transport Security (HSTS) is enabled.
 * All WebSocket connections use WebSocket Secure (WSS).
 * The Content Security Policy is configured to ensure that content is only loaded via HTTPS.
-* The backend supports being provided TLS credentials otherwise it uses an included certbot integration. TODO
+* The backend supports being provided TLS credentials otherwise it uses an included certbot integration.
 * The webserver connects to the local SFTP/SSH service without verifying the SSH Host Key, therefore the connection between them cannot run across an untrusted network. Connecting to localhost is hardcoded to ensure this is the case. If you change this, ensure the HostKeyCallback is changed to use something secure.
 
 ### Authentication
