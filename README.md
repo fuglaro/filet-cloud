@@ -78,7 +78,7 @@ Disclaimer: Use at your own risk. The codebase is strikingly small and the depen
 ### Authentication
 * Authentication is made by proxying the SSH credentials through the backend in establishing a local SSH connection managed by the backend.
 * This primarily relies on SSH username and password authentication.
-* 2FA can be additionally configured with a Pluggable Authentication Module (PAM). TODO https://www.digitalocean.com/community/tutorials/how-to-set-up-multi-factor-authentication-for-ssh-on-ubuntu-20-04
+* 2FA can be additionally configured with a Pluggable Authentication Module (PAM).
 
 ### Login Session Managment
 * On completion of the login form, an authenticated secure connection is established:
@@ -218,20 +218,13 @@ We stand on the shoulders of giants. They own this, far more than I do.
 
 # TODO
 * roll our own input popup - current one is blocked.
-* https - accept certs via env var or auto setup with let's encrypt autocert NewListener (with domain provided by FC_DOMAIN).
 * Switch to package managed dependencies and update security docs -- maybe.
-* Run some standard test suites.
 * Add a refresh button for files that change (avoiding re-logging in to refresh the content).
 * Auto reload unmodified opened files.
 * dark mode try 2.
 * best practise on inline unicode symbols
 * Switch relevant divs to buttons, ensure accessibility, and check keyboard only input.
 * xtermjs via same WebSocket connection that allows sshConn endpoint including resize triggers, distinguish from uploads with first bit.
-* Deliver system information to file (accessible via xtermjs), so a HAT is not needed.
-* Add support for a different local ssh port (Android Termux)
-* Swap to RP3A+ for low power and compact.
-* Mobile phone version with battery pack and 4G for always on.
-* Monitor storage interval access (maybe backup interval is an issue - maybe only backup when things change) for allowing the storage to power down.
 * note on working well with: https://stephango.com/file-over-app
 * Document about embedding resources in Markdown files.
 * Make as a Progressive Web App (PWA)
@@ -239,4 +232,16 @@ We stand on the shoulders of giants. They own this, far more than I do.
   * Support other image types for thumbnails smartly.
   * Investigate hardware accelerated thumbnail generation.
   * Switch to Webp for thumbnails.
-* Incorporate https://github.com/fuglaro/filet-cloud
+* Run some standard security test suites.
+* Installation enhancement pass
+  * Incorporate https://github.com/fuglaro/filet-cloud
+  * Setup 2FA
+  * Monitor storage interval access (maybe backup interval is an issue - maybe only backup when things change) for allowing the storage to power down.
+  * Mobile phone version with battery pack and 4G for always on.
+  * Swap to RP3A+ for low power and compact.
+  * Connect via cable.
+  * Android Termix.
+  * Deliver system information to file (accessible via xtermjs), so a HAT is not needed.
+  * https - accept certs via env var or auto setup with let's encrypt autocert NewListener (with domain provided by FC_DOMAIN).
+    * Remove nginx.
+    * Switch to included autocert.

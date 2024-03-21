@@ -238,9 +238,18 @@ func connect(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
+	_, code, err := c.ReadMessage()
+	if err != nil {
+		return
+	}
 	sshConn, err := ssh.Dial("tcp", "localhost:"+sshport, &ssh.ClientConfig{
-		User:            string(user),
-		Auth:            []ssh.AuthMethod{ssh.Password(string(pass))},
+		User: string(user),
+		Auth: []ssh.AuthMethod{
+			ssh.Password(string(pass)),
+			ssh.KeyboardInteractive(
+				func(name, instruction string, question []string, echos []bool) (answers []string, err error) {
+					return []string{string(code)}, nil
+				})},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(), // trust localhost
 	})
 	if err != nil {

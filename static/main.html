@@ -298,6 +298,7 @@
 					// Authenticate WebSocket connection.
 					ws.send(this.shadowRoot.querySelector("#username").value)
 					ws.send(this.shadowRoot.querySelector("#password").value)
+					ws.send(this.shadowRoot.querySelector("#code").value)
 					// Give connection to the storage API.
 					storage.connect(ws)
 					document.getElementById("contenthider").style.display = 'none'
