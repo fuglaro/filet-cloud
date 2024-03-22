@@ -322,6 +322,7 @@
 		#connection = [] // pending connections awaiting login.
 		#reqs = {} // manage requests awaiting responses (stored by msgID).
 		#msgID = 0 // msgID counter for generating unique message IDs.
+		#authRefresh = null // refresh the authentication cookie on intervals.
 
 		async connect(ws) {
 			// Setup auto logout on close or error.
@@ -337,12 +338,17 @@
 			}
 			ws.onerror = () => ws.close()
 			// Setup authenticated browser access.
-			const jwtp = new Promise(ok => ws.onmessage = m => ok(m))
-			ws.send(JSON.stringify({action: 'token'}))
-			if (!(await fetch("/authenticate", {method: "POST", body: (await jwtp).data})).ok) {
-				ws.close()
-				return
+			const authenticate = async () => {
+				const jwtp = new Promise(ok => ws.onmessage = m => ok(m))
+				ws.send(JSON.stringify({action: 'token'}))
+				if (!(await fetch("/authenticate", {method: "POST", body: (await jwtp).data})).ok) {
+					ws.close()
+					return
+				}
 			}
+			clearInterval(this.#authRefresh)
+			this.#authRefresh = setInterval(authenticate, 4 * 60000) // Refresh every 4 minutes.
+			await authenticate()
 			// Setup normal message response handling.
 			ws.onmessage = async m => {
 				var id = null, v = null

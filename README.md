@@ -147,7 +147,7 @@ Disclaimer: Use at your own risk. The codebase is strikingly small and the depen
        * The browser expires the cookie after 5 minutes, by setting Max-Age=300.
        * The authorization JWT is protected from JavaScript access, by setting HttpOnly.
        * The cookie is further protected by setting the Secure cookie attribute, and by giving the cookie the secure `__Host-` prefix.
-    * While the login session remains active, the Storage Class will keep the JWT refreshed by repeating this process on intervals. TODO
+    * While the login session remains active, the Storage Class will keep the JWT refreshed by repeating this process on intervals.
   * Requests to any storage link (via the `/file:/` `/thumb:/` and `/zip` URL paths) will succeed only if the backend's checks of the authentication JWT cookie is successfully validated against the following policy:
     * The JWT is correctly signed.
     * The remote address IP of the request must match the JWT's Registered Audience Claim.
