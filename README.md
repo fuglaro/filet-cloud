@@ -217,7 +217,6 @@ We stand on the shoulders of giants. They own this, far more than I do.
 * a world of countless open source contributors.
 
 # TODO
-* roll our own input popup - current one is blocked.
 * Switch to package managed dependencies and update security docs -- maybe.
 * Add a refresh button for files that change (avoiding re-logging in to refresh the content).
 * Auto reload unmodified opened files.

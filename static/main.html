@@ -4,7 +4,7 @@
 <title>Filet Cloud</title>
 <style nonce="{{.}}">
 	html * {
-		font-family: sans-serif;
+		font-family: system-ui;
 
 	}
 
@@ -201,7 +201,6 @@
 <a id="dwnld" download></a>
 <div id=contenthider></div>
 
-
 <!--
   -- Login form
   --
@@ -233,6 +232,10 @@
 				text-align: right;
 			}
 
+			input {
+				padding: 5px;
+			}
+
 			button {
 				float: right;
 				font-size: 2em;
@@ -259,7 +262,7 @@
 				</li>
 				<br>
 				<li>
-					<button type=submit>Connect</button>
+					<button>Connect</button>
 				</li>
 			</ul>
 		</form>
@@ -569,8 +572,8 @@
 	* The user is prompted for the name of the new directory and
 	* it is made inside the current directory.
 	*/
-	function makedir() {
-		const newDir = prompt("New Folder:", "")
+	async function makedir() {
+		const newDir = await prompter("New Folder:", "")
 		if (!newDir) return
 		storage.newDir(cwd() + newDir).then(() => nav(cwd()))
 	}
@@ -580,8 +583,8 @@
 	* The user is prompted for the name of the new file and
 	* it is made inside the current directory.
 	*/
-	function newfile() {
-		const newFile = prompt("New File:", "")
+	async function newfile() {
+		const newFile = await prompter("New File:", "")
 		if (!newFile) return
 		storage.newFile(cwd() + newFile).then(() => nav(cwd() + newFile))
 	}
@@ -598,7 +601,6 @@
 		ico.textContent = '\u{1F4E4}'
 		const existing = new Set(Array.from(
 			document.querySelectorAll("#dir>div>p")).map(p => p.textContent))
-		existing.forEach(p => console.log(p))
 		Array.from(document.getElementById('uploader').files).forEach(f => {
 			var ico2 = ico.cloneNode(true)
 			document.getElementById("dataPane").appendChild(ico2) // Show upload status icon
@@ -618,11 +620,11 @@
 	* Rename a file or directory on the server.
 	* The user is prompted for the new name.
 	*/
-	function rename() {
+	async function rename() {
 		const suffix = storage.path().endsWith('/') ? '/' : ''
 		const folder = storage.path().replace(/[^/]+\/?$/g, '')
 		const oldName = storage.path().replace(/\/?$/g, '').split('/').pop()
-		const newName = prompt("Rename:", oldName)
+		const newName = await prompter("Rename:", oldName)
 		if (!newName || newName === oldName) return
 		storage.rename(folder + oldName, folder + newName).then(
 			() => nav(folder + newName + suffix))
@@ -636,9 +638,7 @@
 	*/
 	async function download() {
 		const paths = cart
-		if (!paths.length)
-			if (!storage.path().endsWith('/')) paths = [storage.path()]
-			else return alert('Please select a file, or items with the cart.')
+		if (!paths.length && !storage.path().endsWith('/')) paths = [storage.path()]
 		const dwn = document.getElementById('dwnld')
 		dwn.download = 'download.zip'
 		await storage.authLinks()
@@ -655,10 +655,9 @@
 	* Moves everything in the cart to the current folder,
 	* after confirmation.
 	*/
-	function move() {
-		if (!cart.length) return alert('Please select items with the cart.')
+	async function move() {
 		const checkMsg = `Move ${cart.length} item${cart.length > 1 ? 's' : ''} to ${cwd()} ?`
-		if (!confirm(checkMsg)) return
+		if (! await prompter(checkMsg, true)) return
 		/* Loop through the paths in the cart sorted backwards so sub-items
 			 are moved before parent items */
 		cart.sort().reverse().forEach(item => {
@@ -671,10 +670,9 @@
 	* Deletes everything in the cart,
 	* after confirmation.
 	*/
-	function del() {
-		if (!cart.length) return alert('Please select items with the cart.')
+	async function del() {
 		const checkMsg = `Delete ${cart.length} cart item${cart.length > 1 ? 's' : ''}?`
-		if (!confirm(checkMsg)) return
+		if (! await prompter(checkMsg, true)) return
 		/* Loop through the paths in the cart sorted backwards so sub-items
 			 are removed before parent items */
 		cart.sort().reverse().forEach(item => {
@@ -683,6 +681,82 @@
 	}
 
 	window.onload = window.onpopstate = () => nav(storage.path())
+</script>
+
+
+<!--
+  -- Prompt
+	--
+	-- Pop-up prompt for general text input, or confirmation questions.
+	-- Pass true as the value for question mode.
+	-->
+<style nonce="{{.}}">
+	.ip {
+		position: fixed;
+		z-index: 99;
+		backdrop-filter: blur(18px);
+		background-color: rgba(255, 255, 255, 0.2);
+		width: 100vw;
+		height: 100vh;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+
+		ul {
+			list-style-type: none;
+
+			input {
+				width: min(80vw, 400px);
+				padding: 5px;
+				margin: 5px
+			}
+
+			button {
+				font-size: 1.6em;
+				border-style: solid;
+				border-color: currentColor;
+				float: right;
+				margin: 5px;
+			}
+		}
+	}
+</style>
+<template id=input-prompt>
+	<div class=ip>
+		<ul>
+			<li>
+				<label for=intext></label>
+			</li>
+			<li>
+				<input type=text id=intext />
+			</li>
+			<li>
+				<button id=ok>OK</button>
+				<button id=cancel>Cancel</button>
+			</li>
+		</ul>
+	</div>
+</template>
+<script nonce="{{.}}">
+	async function prompter(message, value) {
+		const el = document.getElementById("input-prompt").content.cloneNode(true).querySelector(".ip")
+		el.querySelector("label").innerText += message
+		const inp = el.querySelector("#intext")
+		if (value === true) inp.style.display = "none"
+		inp.value = value
+		document.body.appendChild(el)
+		inp.focus()
+		const val = await new Promise(ok => {
+			inp.onkeydown = ev => {
+				if (ev.key == "Enter") ok(inp.value)
+				if (ev.key == "Escape") ok(false)
+			}
+			el.querySelector("#ok").onclick = () => ok(inp.value)
+			el.querySelector("#cancel").onclick = () => ok(false)
+		})
+		document.body.removeChild(el)
+		return val
+	}
 </script>
 
 
