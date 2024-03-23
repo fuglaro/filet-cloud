@@ -161,7 +161,7 @@ Disclaimer: Use at your own risk. The codebase is strikingly small and the depen
 
 ### Third-Party Dependencies
 * All third-party dependencies are servered from the backend and are version controlled and stored locally.
-* All third-party dependencies loaded in the browser are Subresource Integrity checked. TODO
+* All third-party dependencies loaded in the browser are Subresource Integrity checked.
 
 ## Installation
 * Ensure your machine allows ssh from localhost.
@@ -217,7 +217,6 @@ We stand on the shoulders of giants. They own this, far more than I do.
 * a world of countless open source contributors.
 
 # TODO
-* Switch to package managed dependencies and update security docs -- maybe.
 * Add a refresh button for files that change (avoiding re-logging in to refresh the content).
 * Auto reload unmodified opened files.
 * dark mode try 2.

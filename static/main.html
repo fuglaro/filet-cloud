@@ -946,7 +946,8 @@
   -- and allow editing and saving back to the server.
 	-->
 <template id=-ext-md loader=ext-md>
-	<link rel="stylesheet" href="/static/deps/easymde.min.css">
+	<link rel="stylesheet" href="/static/deps/easymde.min.css"
+		integrity="sha384-uqD/OYCNfagd1EgXMgl5QedTD5K+B3e9b8GYo/41t7+Serf7CBxvl+tU1gHd+qd1"/>
 	<style nonce="{{.}}">
 		#body {
 			display: flex;
@@ -1021,7 +1022,8 @@
 		<h1 id=upload>&#x1f4be;</h1>
 	</div>
 </template>
-<script src="/static/deps/easymde.min.js"></script>
+<script src="/static/deps/easymde.min.js"
+	integrity="sha384-KtB38COewxfrhJxoN2d+olxJAeT08LF8cVZ6DQ8Poqu89zIptqO6zAXoIxpGNWYE"></script>
 <script nonce="{{.}}">
 	customElements.define("ext-md", class extends HTMLElement {
 		constructor() {
@@ -1099,8 +1101,10 @@
 		<h1 id=wait>&#x23f3;</h1>
 	</div>
 </template>
-<script src="/static/deps/pdf.min.js"></script>
-<script src="/static/deps/pdf.worker.min.js"></script>
+<script src="/static/deps/pdf.min.js"
+	integrity="sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e"></script>
+<script src="/static/deps/pdf.worker.min.js"
+	iintegrity="sha384-SnzOobpRMLXZ52iJvZm/C0fYw0OQemTXzTjIsdsfMcrCtCEe9qgzxTd3RSklO5x2"></script>
 <script nonce="{{.}}">
 	customElements.define("ext-pdf", class extends HTMLElement {
 		constructor() {
