@@ -217,20 +217,21 @@ We stand on the shoulders of giants. They own this, far more than I do.
 * a world of countless open source contributors.
 
 # TODO
-* Add a refresh button for files that change (avoiding re-logging in to refresh the content).
 * Auto reload unmodified opened files.
-* dark mode try 2.
+* Document about embedding resources in Markdown files.
+* Run some standard security test suites.
+* ----
+* Play with the bottom of the viewport having a smaller margin.
 * best practise on inline unicode symbols
-* Switch relevant divs to buttons, ensure accessibility, and check keyboard only input.
+* dark mode try 2.
+* Switch relevant divs to buttons, ensure accessibility, and check keyboard only input, taborder etc, arrow nav etc.
 * xtermjs via same WebSocket connection that allows sshConn endpoint including resize triggers, distinguish from uploads with first bit.
 * note on working well with: https://stephango.com/file-over-app
-* Document about embedding resources in Markdown files.
-* Make as a Progressive Web App (PWA)
 * Thumbnails
   * Support other image types for thumbnails smartly.
   * Investigate hardware accelerated thumbnail generation.
   * Switch to Webp for thumbnails.
-* Run some standard security test suites.
+* Make as a Progressive Web App (PWA)
 * Installation enhancement pass
   * Incorporate https://github.com/fuglaro/filet-cloud
   * Setup 2FA
@@ -243,3 +244,4 @@ We stand on the shoulders of giants. They own this, far more than I do.
   * https - accept certs via env var or auto setup with let's encrypt autocert NewListener (with domain provided by FC_DOMAIN).
     * Remove nginx.
     * Switch to included autocert.
+* Check todo list stored on cloud server.

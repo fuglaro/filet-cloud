@@ -154,6 +154,10 @@
 <div id=dataPane>
 	<div id=data></div>
 	<div id=menu class="tight">
+		<div id=reload>
+			<h1>&#128260</h1>
+			<p>reload</p>
+		</div>
 		<div id=makedir>
 			<h1>&#128193</h1>
 			<p>new<br>folder</p>
@@ -192,7 +196,7 @@
 			<p>delete</p>
 		</div>
 		<div id=close>
-			<h1>&#10060;</h1>
+			<h1>&#10060</h1>
 			<p>close</p>
 		</div>
 	</div>
@@ -438,6 +442,7 @@
 	 */
 	"use strict"
 
+	document.getElementById("reload").onclick = () => nav(storage.path())
 	document.getElementById("makedir").onclick = () => makedir()
 	document.getElementById("newfile").onclick = () => newfile()
 	document.getElementById("tabopen").onclick = () => setPath(storage.path(), '/open:')
@@ -476,9 +481,9 @@
 			menuModes[mode].includes(id) ? 'initial' : 'none')
 	}
 	const menuModes = {
-		dirEmptyCart: ["makedir", "newfile", "upload", "rename", "cart"],
-		dirWithCart: ["download", "move", "del", "cart"],
-		file: ["tabopen", "download", "rename", "close"],
+		dirEmptyCart: ["reload", "makedir", "newfile", "upload", "rename", "cart"],
+		dirWithCart: ["reload", "download", "move", "del", "cart"],
+		file: ["reload", "tabopen", "download", "rename", "close"],
 		cart: ["download", "del", "cart"],
 		cartEmpty: ["cart"],
 	}
@@ -773,6 +778,11 @@
 			width: calc(100% - 48px);
 			height: calc(100% - 48px);
 			margin: 24px;
+
+			@media (orientation: portrait) {
+				flex-direction: column-reverse;
+				align-items: flex-end;
+			}
 		}
 
 		.preview {
@@ -791,15 +801,17 @@
 		}
 
 		#upload {
-			cursor: default;
-			display: none;
+			visibility: hidden;
 			margin: 0px;
 			right: 0px;
+			font-size: 1.2em;
+			width: 2em;
+			height: 2em;
 		}
 	</style>
 	<div>
 		<textarea id=text>&#x23f3;</textarea>
-		<h1 id="upload">&#x1f4be;</h1>
+		<button id=upload label="Save changes">&#x1f4be;</button>
 	</div>
 </template>
 <script nonce="{{.}}">
@@ -813,11 +825,11 @@
 			const upload = this.shadowRoot.querySelector('#upload')
 			storage.readFile(path).then(r => r.text().then(r => {
 				text.value = r
-				text.oninput = () => upload.style.display = "inline"
+				text.oninput = () => upload.style.visibility = "visible"
 			}))
 			upload.onclick = async () => {
 				await storage.upload(path, new Blob([text.value]))
-				upload.style.display = "none"
+				upload.style.visibility = "hidden"
 			}
 		}
 		static observedAttributes = ["preview"]
@@ -956,7 +968,13 @@
 			margin: 24px;
 
 			*.editor-toolbar {
-				display: inline;
+				padding: 0px;
+
+				button {
+					height: 40px;
+					font-size: 1.2em;
+					width: 2em;
+				}
 			}
 		}
 
@@ -981,12 +999,8 @@
 		}
 
 		#upload {
-			position: fixed;
-			cursor: default;
 			display: none;
-			margin: 0px;
-			right: 24px;
-			z-index: 9;
+			float: right;
 		}
 
 		.fa {
@@ -1019,7 +1033,7 @@
 	</style>
 	<div id=body>
 		<textarea id=text>&#x23f3;</textarea>
-		<h1 id=upload>&#x1f4be;</h1>
+		<button id=upload label="Save changes">&#x1f4be;</button>
 	</div>
 </template>
 <script src="/static/deps/easymde.min.js"
@@ -1045,12 +1059,14 @@
 					(_, label, img) => `![${label}](${imgH(img)})`)),
 			});
 			storage.readFile(path).then(r => r.text().then(r => {
+				const upload = sr.querySelector('#upload')
+				upload.remove()
+				sr.querySelector(".editor-toolbar").appendChild(upload)
 				this.mde.value(r)
 				this.mde.codemirror.doc.clearHistory()
 				this.mde.codemirror.on("change", () => {
 					upload.style.display = "inline"
 				})
-				const upload = sr.querySelector('#upload')
 				upload.onclick = async () => {
 					await storage.upload(path, new Blob([this.mde.value()]))
 					upload.style.display = "none"
