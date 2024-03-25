@@ -60,6 +60,35 @@ The code is organised in the following areas:
 
 No frontend framework is used because adopting one on top of the simple interface design would have introduced unjustified complexity.
 
+## Installation
+* Ensure your machine allows ssh from localhost.
+* Setup a certficate for TLS and ensure your browser respects it.
+* Build:
+```bash
+go build
+```
+* Install dependencies:
+```bash
+wget https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js -O static/deps/pdf.min.js
+wget https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js -O static/deps/pdf.worker.min.js
+wget https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.css -O static/deps/easymde.min.css
+wget https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.js -O static/deps/easymde.min.js
+```
+* Start server:
+```bash
+FC_CERT_FILE=my.crt FC_KEY_FILE=my.key ./filet-cloud-web
+```
+* Open in browser: `https://localhost/`
+
+## Launch Options
+
+Supported environment variables:
+* `FC_LISTEN`: The address to listen on. Defaults to ':443'.
+* `FC_DOMAIN`: The domain to use with the included Let's Encrypt integration. Use of this implies acceptance of the LetsEncrypt Terms of Service.
+* `FC_CERT_FILE` & `FC_KEY_FILE`: The cerdentials to use for TLS connections.
+* `FC_DIR`: The folder path to use when serving storage, rather than the root. Supports a USERNAME token to serve a different tree for each user.
+* `FC_SSH_PORT`: The port to use to connect locally.
+
 ## Security
 
 Since this service proxies SSH credentials, and both serves and modifies personal data, strict security policies have been implemented. Please use a modern and up-to-date browser and device to make full use of these protections.
@@ -164,35 +193,6 @@ Disclaimer: Use at your own risk. The codebase is strikingly small and the depen
 * All third-party dependencies are servered from the backend and are version controlled and stored locally.
 * All third-party dependencies loaded in the browser are Subresource Integrity checked.
 * Cache-Control is enforced so the browser caches content for no longer than 10 hours.
-
-## Installation
-* Ensure your machine allows ssh from localhost.
-* Setup a certficate for TLS and ensure your browser respects it.
-* Build:
-```bash
-go build
-```
-* Install dependencies:
-```bash
-wget https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js -O static/deps/pdf.min.js
-wget https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js -O static/deps/pdf.worker.min.js
-wget https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.css -O static/deps/easymde.min.css
-wget https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.js -O static/deps/easymde.min.js
-```
-* Start server:
-```bash
-FC_CERT_FILE=my.crt FC_KEY_FILE=my.key ./filet-cloud-web
-```
-* Open in browser: `https://localhost/`
-
-## Launch Options
-
-Supported environment variables:
-* `FC_LISTEN`: The address to listen on. Defaults to ':443'.
-* `FC_DOMAIN`: The domain to use with the included Let's Encrypt integration. Use of this implies acceptance of the LetsEncrypt Terms of Service.
-* `FC_CERT_FILE` & `FC_KEY_FILE`: The cerdentials to use for TLS connections.
-* `FC_DIR`: The folder path to use when serving storage, rather than the root. Supports a USERNAME token to serve a different tree for each user.
-* `FC_SSH_PORT`: The port to use to connect locally.
 
 ## Development Testing
 
