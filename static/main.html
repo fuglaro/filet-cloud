@@ -2,7 +2,7 @@
 <meta charset=utf-8>
 <meta name="viewport" content="initial-scale=1, interactive-widget=resizes-content" />
 <title>Filet Cloud</title>
-<style nonce="{{.}}">
+<style nonce="{{.Nonce}}">
 	html * {
 		font-family: system-ui;
 
@@ -212,7 +212,7 @@
 	-- class to manage secure queries with the server.
 	-->
 <template id=-login-form>
-	<style nonce="{{.}}">
+	<style nonce="{{.Nonce}}">
 		:host {
 			position: fixed;
 			z-index: 999999;
@@ -269,13 +269,14 @@
 					<button>Connect</button>
 				</li>
 			</ul>
+			<input type=hidden id=CSRFToken value="{{.CSRF}}" />
 		</form>
 	</div>
 </template>
-<script nonce="{{.}}">
+<script nonce="{{.Nonce}}">
 	var autoLogoutTimer = null
 	login = () => {
-		fetch("/logout")
+		clearTimeout(autoLogoutTimer)
 		if (!document.querySelector("login-form") && crossOriginIsolated)
 			document.body.appendChild(document.createElement("login-form"))
 	}
@@ -298,11 +299,11 @@
 				ws.onopen = () => {
 					// Set up auto-logout mechanism.
 					document.onvisibilitychange = () => {
-						clearTimeout(autoLogoutTimer)
 						if (document.visibilityState === "hidden")
 							autoLogoutTimer = setTimeout(() => ws.close(), 300000)
 					}
 					// Authenticate WebSocket connection.
+					ws.send(this.shadowRoot.querySelector("#CSRFToken").value)
 					ws.send(this.shadowRoot.querySelector("#username").value)
 					ws.send(this.shadowRoot.querySelector("#password").value)
 					ws.send(this.shadowRoot.querySelector("#code").value)
@@ -334,6 +335,8 @@
 		async connect(ws) {
 			// Setup auto logout on close or error.
 			ws.onclose = () => {
+				fetch("/logout")
+				clearInterval(this.#authRefresh)
 				document.getElementById("contenthider").style.display = 'initial'
 				// Requeue all pending requests, triggering re-login in the process.
 				for (const k in this.#reqs) {
@@ -344,18 +347,6 @@
 				login()
 			}
 			ws.onerror = () => ws.close()
-			// Setup authenticated browser access.
-			const authenticate = async () => {
-				const jwtp = new Promise(ok => ws.onmessage = m => ok(m))
-				ws.send(JSON.stringify({action: 'token'}))
-				if (!(await fetch("/authenticate", {method: "POST", body: (await jwtp).data})).ok) {
-					ws.close()
-					return
-				}
-			}
-			clearInterval(this.#authRefresh)
-			this.#authRefresh = setInterval(authenticate, 4 * 60000) // Refresh every 4 minutes.
-			await authenticate()
 			// Setup normal message response handling.
 			ws.onmessage = async m => {
 				var id = null, v = null
@@ -375,6 +366,17 @@
 				ok(v)
 			}
 			this.#ws = ws
+			// Setup authenticated browser access.
+			const authenticate = async () => {
+				if (!(await fetch("/authenticate",
+					{method: "POST", body: await this.#req({action: "token"})})).ok) {
+					ws.close()
+					return
+				}
+			}
+			await authenticate()
+			this.#authRefresh = setInterval(authenticate, 4 * 60000) // Refresh every 4 minutes.
+			// Handle all the waiting requests.
 			while (this.#connection.length) this.#connection.pop()()
 		}
 
@@ -436,7 +438,7 @@
 </script>
 
 
-<script nonce="{{.}}">
+<script nonce="{{.Nonce}}">
 	/**
 	 * Browser UI code.
 	 */
@@ -695,7 +697,7 @@
 	-- Pop-up prompt for general text input, or confirmation questions.
 	-- Pass true as the value for question mode.
 	-->
-<style nonce="{{.}}">
+<style nonce="{{.Nonce}}">
 	.ip {
 		position: fixed;
 		z-index: 99;
@@ -742,7 +744,7 @@
 		</ul>
 	</div>
 </template>
-<script nonce="{{.}}">
+<script nonce="{{.Nonce}}">
 	async function prompter(message, value) {
 		const el = document.getElementById("input-prompt").content.cloneNode(true).querySelector(".ip")
 		el.querySelector("label").innerText += message
@@ -772,7 +774,7 @@
 	-->
 <ref-load id=-ext-txt loader=mime-text-plain />
 <template id=-mime-text-plain loader=mime-text-plain>
-	<style nonce="{{.}}">
+	<style nonce="{{.Nonce}}">
 		div {
 			display: flex;
 			width: calc(100% - 48px);
@@ -818,7 +820,7 @@
 		<button id=upload label="Save changes">&#x1f4be;</button>
 	</div>
 </template>
-<script nonce="{{.}}">
+<script nonce="{{.Nonce}}">
 	customElements.define("mime-text-plain", class extends HTMLElement {
 		constructor() {
 			super()
@@ -861,7 +863,7 @@
 <ref-load id=-ext-gif loader=misc-media />
 <ref-load id=-ext-mp4 loader=misc-media />
 <template id=-misc-media loader=misc-media>
-	<style nonce="{{.}}">
+	<style nonce="{{.Nonce}}">
 		#body.preview,
 		#body>video {
 			width: 100%;
@@ -900,7 +902,7 @@
 		</a>
 	</div>
 </template>
-<script nonce="{{.}}">
+<script nonce="{{.Nonce}}">
 	customElements.define("misc-media", class extends HTMLElement {
 		constructor() {
 			super()
@@ -951,7 +953,7 @@
 			else div.classList.remove("preview")
 		}
 	})
-</script nonce="{{.}}">
+</script nonce="{{.Nonce}}">
 
 
 <!--
@@ -964,7 +966,7 @@
 <template id=-ext-md loader=ext-md>
 	<link rel="stylesheet" href="/static/deps/easymde.min.css"
 		integrity="sha384-uqD/OYCNfagd1EgXMgl5QedTD5K+B3e9b8GYo/41t7+Serf7CBxvl+tU1gHd+qd1"/>
-	<style nonce="{{.}}">
+	<style nonce="{{.Nonce}}">
 		#body {
 			display: flex;
 			width: calc(100% - 48px);
@@ -1042,7 +1044,7 @@
 </template>
 <script src="/static/deps/easymde.min.js"
 	integrity="sha384-KtB38COewxfrhJxoN2d+olxJAeT08LF8cVZ6DQ8Poqu89zIptqO6zAXoIxpGNWYE"></script>
-<script nonce="{{.}}">
+<script nonce="{{.Nonce}}">
 	customElements.define("ext-md", class extends HTMLElement {
 		constructor() {
 			super()
@@ -1110,7 +1112,7 @@
 	-- Uses pdfjs for the rendering. PDF.js is mighty.
 	-->
 <template id=-ext-pdf loader=ext-pdf>
-	<style nonce="{{.}}">
+	<style nonce="{{.Nonce}}">
 		div,
 		canvas {
 			margin: 0;
@@ -1125,7 +1127,7 @@
 	integrity="sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e"></script>
 <script src="/static/deps/pdf.worker.min.js"
 	iintegrity="sha384-SnzOobpRMLXZ52iJvZm/C0fYw0OQemTXzTjIsdsfMcrCtCEe9qgzxTd3RSklO5x2"></script>
-<script nonce="{{.}}">
+<script nonce="{{.Nonce}}">
 	customElements.define("ext-pdf", class extends HTMLElement {
 		constructor() {
 			super()

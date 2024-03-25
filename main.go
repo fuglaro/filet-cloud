@@ -2,7 +2,9 @@ package main
 
 import (
 	"archive/zip"
+	"crypto/hmac"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"html/template"
@@ -229,6 +231,28 @@ func connect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer c.Close()
+	csrfcookie, err := r.Cookie("__Host-CSRFToken")
+	if check(w, err) {
+		return
+	}
+	_, csrf64, err := c.ReadMessage()
+	if err != nil {
+		return
+	}
+	// Validate the CSRF Token
+	csrf, err := base64.URLEncoding.DecodeString(string(csrf64))
+	if err != nil {
+		return
+	}
+	csrfhash, err := base64.URLEncoding.DecodeString(string(csrfcookie.Value))
+	if err != nil {
+		return
+	}
+	hash := hmac.New(sha256.New, privateKey)
+	hash.Write(csrf)
+	if !hmac.Equal([]byte(csrfhash), hash.Sum(nil)) {
+		return
+	}
 	// Authenticate and establish SSH connection.
 	_, user, err := c.ReadMessage()
 	if err != nil {
@@ -339,7 +363,7 @@ func connect(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				return
 			}
-			if c.WriteMessage(websocket.TextMessage, []byte(s)) != nil {
+			if c.WriteJSON(map[string]interface{}{"id": m.Id, "msg": s}) != nil {
 				return
 			}
 
@@ -505,6 +529,7 @@ func main() {
 			w.Header().Set("Cross-Origin-Resource-Policy", "same-origin")
 			w.Header().Set("X-Content-Type-Options", "nosniff")
 			w.Header().Set("Vary", "Sec-Fetch-Dest, Sec-Fetch-Mode, Sec-Fetch-Site")
+			w.Header().Set("Cache-Control", "max-age=36000")
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -564,13 +589,14 @@ func main() {
 	http.Handle("/file:/", SMW(http.HandlerFunc(authServeContent)))
 	http.Handle("/thumb:/", SMW(http.HandlerFunc(authServeContent)))
 	http.Handle("/zip", SMW(http.HandlerFunc(authServeContent)))
-	main := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	mainPage := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Ensure Secure Fetch Metadata validity.
 		if r.Header.Get("Sec-Fetch-Site") != "none" ||
 			r.Header.Get("Sec-Fetch-Dest") != "document" {
 			http.Error(w, "Invalid Secure Fetch Metadata", http.StatusForbidden)
 			return
 		}
+		// Set up security cookies.
 		nonceb := make([]byte, 128/8)
 		_, err = rand.Read(nonceb)
 		if check(w, err) {
@@ -579,9 +605,9 @@ func main() {
 		nonce := base64.URLEncoding.EncodeToString(nonceb)
 		w.Header().Set("Content-Security-Policy", "sandbox allow-downloads allow-forms "+
 			"allow-same-origin allow-scripts; default-src 'none'; frame-ancestors 'none'; "+
-			"form-action 'none'; img-src 'self' https:; media-src 'self' https:; font-src 'self' https:; "+
-			"connect-src 'self' https:; style-src-elem 'self' https: 'nonce-"+nonce+"'; "+
-			"script-src-elem 'self' https: 'nonce-"+nonce+"';")
+			"form-action 'none'; img-src 'self'; media-src 'self'; font-src 'self'; "+
+			"connect-src 'self'; style-src-elem 'self' 'nonce-"+nonce+"'; "+
+			"script-src-elem 'self' 'nonce-"+nonce+"';")
 		w.Header().Set("Cross-Origin-Opener-Policy", "same-origin")
 		w.Header().Set("Cross-Origin-Embedder-Policy", "require-corp")
 		w.Header().Set("Referrer-Policy", "same-origin")
@@ -589,10 +615,31 @@ func main() {
 		if check(w, err) {
 			return
 		}
-		t.Execute(w, nonce)
+		// Prepare a Singed Double Submit Cookie CSRF Token.
+		var hashData = make([]byte, 512/8)
+		_, err = rand.Read(hashData)
+		if err != nil {
+			log.Fatal("Failed to generate cryptographically secure CSRF random identifier.")
+			return
+		}
+		hash := hmac.New(sha256.New, privateKey)
+		hash.Write(hashData)
+		http.SetCookie(w, &http.Cookie{
+			Name:     "__Host-CSRFToken",
+			Value:    base64.URLEncoding.EncodeToString(hash.Sum(nil)),
+			Path:     "/",
+			Secure:   true,
+			HttpOnly: true,
+			SameSite: http.SameSiteStrictMode,
+		})
+		// Restulve template and send.
+		t.Execute(w, struct {
+			Nonce string
+			CSRF  string
+		}{Nonce: nonce, CSRF: base64.URLEncoding.EncodeToString(hashData)})
 	})
-	http.Handle("/browse:/", SMW(main))
-	http.Handle("/open:/", SMW(main))
+	http.Handle("/browse:/", SMW(mainPage))
+	http.Handle("/open:/", SMW(mainPage))
 	http.Handle("/static/", SMW(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Ensure Secure Fetch Metadata validity.
 		if r.Header.Get("Sec-Fetch-Site") != "same-origin" ||

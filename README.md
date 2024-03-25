@@ -9,14 +9,15 @@ Browse files, download, upload, stream videos and music, view images, create and
 * Images
 * Videos
 * Audio
-* PDF documents (via pdfjs)
-* Markdown (with editing via easyMDE)
+* PDF documents
+* Markdown (with editing)
 * Text (with editing)
 
 ## Features
 * Authentication via local user account credentials.
 * Browse folders.
 * View and edit files in supported formats.
+* Embed images in markdown documents with relative paths.
 * Stream video and audio.
 * Create new folders.
 * Upload files.
@@ -71,7 +72,6 @@ Disclaimer: Use at your own risk. The codebase is strikingly small and the depen
 * The backend implements a strict HTTPS ONLY policy.
 * HTTP Strict Transport Security (HSTS) is enabled.
 * All WebSocket connections use WebSocket Secure (WSS).
-* The Content Security Policy is configured to ensure that content is only loaded via HTTPS.
 * The backend supports being provided TLS credentials otherwise it uses an included certbot integration.
 * The webserver connects to the local SFTP/SSH service without verifying the SSH Host Key, therefore the connection between them cannot run across an untrusted network. Connecting to localhost is hardcoded to ensure this is the case. If you change this, ensure the HostKeyCallback is changed to use something secure.
 
@@ -156,12 +156,14 @@ Disclaimer: Use at your own risk. The codebase is strikingly small and the depen
   * The JWT is signed using HS512 with a crytographically secure pseudorandom key generated on launch of the server.
 
 ### Additional Cross-Site Request Forgery (CSRF/XSRF) Protection
+* The login form is protected with a CSRF Token secured by an HMAC-SHA256 Signed Double-Submit Cookie.
 * All backend endpoints which cause any changes or side effects (besides server load or establishing authentication), are only accessible through the WebSocket connection.
 * The WebSocket connection is stored in a private variable, inside the Storage class, and is only accessible via it's restricted API.
 
 ### Third-Party Dependencies
 * All third-party dependencies are servered from the backend and are version controlled and stored locally.
 * All third-party dependencies loaded in the browser are Subresource Integrity checked.
+* Cache-Control is enforced so the browser caches content for no longer than 10 hours.
 
 ## Installation
 * Ensure your machine allows ssh from localhost.
@@ -217,8 +219,6 @@ We stand on the shoulders of giants. They own this, far more than I do.
 * a world of countless open source contributors.
 
 # TODO
-* Auto reload unmodified opened files.
-* Document about embedding resources in Markdown files.
 * Run some standard security test suites.
 * ----
 * Play with the bottom of the viewport having a smaller margin.
