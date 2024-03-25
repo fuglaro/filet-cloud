@@ -219,8 +219,6 @@ We stand on the shoulders of giants. They own this, far more than I do.
 * a world of countless open source contributors.
 
 # TODO
-* Run some standard security test suites.
-* ----
 * Play with the bottom of the viewport having a smaller margin.
 * best practise on inline unicode symbols
 * dark mode try 2.
