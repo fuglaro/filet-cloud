@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"io"
 	"log"
@@ -225,16 +226,16 @@ func connect(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid Secure Fetch Metadata", http.StatusForbidden)
 		return
 	}
+	csrfcookie, err := r.Cookie("__Host-CSRFToken")
+	if check(w, err) {
+		return
+	}
 	// Establish Websocket connection.
 	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		return
 	}
 	defer c.Close()
-	csrfcookie, err := r.Cookie("__Host-CSRFToken")
-	if check(w, err) {
-		return
-	}
 	_, csrf64, err := c.ReadMessage()
 	if err != nil {
 		return
@@ -280,6 +281,75 @@ func connect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer sshConn.Close()
+
+	// Setup for management of the shell sessions.
+	var sessRunning = false
+	var sess *ssh.Session
+	var sessIn io.WriteCloser
+	runSession := func() {
+		if sessRunning { // Reuse existing sessions if available.
+			return
+		}
+		sess, err = sshConn.NewSession()
+		if err != nil {
+			c.Close()
+			return
+		}
+		sessIn, err = sess.StdinPipe()
+		if err != nil {
+			sess.Close()
+			c.Close()
+			return
+		}
+		sessOut, err := sess.StdoutPipe()
+		if err != nil {
+			sess.Close()
+			c.Close()
+			return
+		}
+		sess.Stderr = os.Stderr
+		_ = sess.Setenv("COLORTERM", "truecolor")
+		if sess.RequestPty("xterm-256color", 80, 40, nil) != nil || sess.Shell() != nil {
+			sess.Close()
+			c.Close()
+			return
+		}
+		sessRunning = true
+		go func() {
+			buf := make([]byte, 20000)
+			for {
+				// Ferry data coming out of the ssh shell into the websocket.
+				mw, err := c.NextWriter(websocket.BinaryMessage)
+				if err != nil {
+					sess.Close()
+					c.Close()
+					return
+				}
+				mw.Write([]byte("-1                  ")) // term header
+				n, err := sessOut.Read(buf)
+				mw.Write(buf[:n])
+				if mw.Close() != nil {
+					sess.Close()
+					c.Close()
+					return
+				}
+				if err != nil {
+					sessRunning = false
+					sess.Close()
+					if err != io.EOF {
+						c.Close()
+						return
+					}
+					// Send a term closed message
+					if c.WriteMessage(websocket.BinaryMessage, []byte("-1                  ")) != nil {
+						c.Close()
+					}
+					return
+				}
+			}
+		}()
+	}
+
 	// Wrap SSH connection with SFTP interface.
 	sftp, err := sftp.NewClient(sshConn)
 	if err != nil {
@@ -293,9 +363,12 @@ func connect(w http.ResponseWriter, r *http.Request) {
 	// Handle messages on established authenticated connection.
 	type Msg struct {
 		Action string
+		Data   string
 		Path   string
 		To     string
 		Id     int
+		Rows   int
+		Cols   int
 	}
 	prepath := strings.Replace(os.Getenv("FC_DIR"), "USERNAME", string(user), -1) + "/"
 	for {
@@ -498,6 +571,26 @@ func connect(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
+		case "termData":
+			if m.Rows == -1 {
+				runSession()
+				continue
+			}
+			if !sessRunning {
+				continue // Probaly just ignorable leftover messages in transit after an ended session.
+			}
+			if m.Rows != 0 {
+				sess.WindowChange(m.Rows, m.Cols)
+				continue
+			}
+			_, err = sessIn.Write([]byte(m.Data))
+			if err != nil {
+				if !sessRunning {
+					continue
+				}
+				return
+			}
+
 		default:
 			return
 		}
@@ -516,9 +609,34 @@ func main() {
 	}
 	cert := os.Getenv("FC_CERT_FILE")
 	key := os.Getenv("FC_KEY_FILE")
-	if cert == "" || key == "" {
-		log.Fatal("Provide FC_CERT_FILE and FC_KEY_FILE, or " +
-			"FC_DOMAIN to accept the LetsEncrypt Terms of Service and  use LetsEncrypt.")
+	domain := os.Getenv("FC_DOMAIN")
+	if domain == "" && (cert == "" || key == "") {
+
+		fmt.Print(`
+filet-cloud: The lean and powerful 💪 personal cloud ⛅.
+
+Usage (environment variables):
+
+  FC_CERT_FILE:
+  FC_KEY_FILE:
+    The credentials to use for TLS connections.
+  FC_DIR:
+    The folder path to use when serving storage, rather than the root.
+    Supports a USERNAME token to serve a different tree for each user.
+  FC_DOMAIN:
+    The domain to use with the included Let's Encrypt integration.
+    Use of this implies acceptance of the LetsEncrypt Terms of Service.
+  FC_LISTEN:
+    The address to listen on. Defaults to :443.
+  FC_SSH_PORT:
+    The port to use to connect locally.
+
+This service can only be served over HTTPS connections, requiring
+either FC_CERT_FILE and FC_KEY_FILE to be specified, or,
+if you accept the LetsEncrypt Terms of Service, you can use the
+automatic LetsEncrypt configuration by specifying FC_DOMAIN.
+
+`)
 		return
 	}
 
@@ -580,19 +698,16 @@ func main() {
 			SameSite: http.SameSiteStrictMode,
 		})
 	})))
-	http.Handle("/logout", SMW(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Finalise the logout sequence by clearing all site data.
-		// Note that the WebSocket connection should be closed before calling
-		// this to ensure a full logout.
+	http.Handle("/logout", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Clear-Site-Data", "\"*\"")
-	})))
+		http.Redirect(w, r, "/browse:/", http.StatusSeeOther)
+	}))
 	http.Handle("/file:/", SMW(http.HandlerFunc(authServeContent)))
 	http.Handle("/thumb:/", SMW(http.HandlerFunc(authServeContent)))
 	http.Handle("/zip", SMW(http.HandlerFunc(authServeContent)))
 	mainPage := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Ensure Secure Fetch Metadata validity.
-		if r.Header.Get("Sec-Fetch-Site") != "none" ||
-			r.Header.Get("Sec-Fetch-Dest") != "document" {
+		if r.Header.Get("Sec-Fetch-Dest") != "document" {
 			http.Error(w, "Invalid Secure Fetch Metadata", http.StatusForbidden)
 			return
 		}
@@ -606,7 +721,8 @@ func main() {
 		w.Header().Set("Content-Security-Policy", "sandbox allow-downloads allow-forms "+
 			"allow-same-origin allow-scripts; default-src 'none'; frame-ancestors 'none'; "+
 			"form-action 'none'; img-src 'self'; media-src 'self'; font-src 'self'; "+
-			"connect-src 'self'; style-src-elem 'self' 'nonce-"+nonce+"'; "+
+			"connect-src 'self'; style-src-elem 'self' 'unsafe-inline'; "+
+			"style-src-attr 'unsafe-inline'; "+
 			"script-src-elem 'self' 'nonce-"+nonce+"';")
 		w.Header().Set("Cross-Origin-Opener-Policy", "same-origin")
 		w.Header().Set("Cross-Origin-Embedder-Policy", "require-corp")
@@ -632,7 +748,8 @@ func main() {
 			HttpOnly: true,
 			SameSite: http.SameSiteStrictMode,
 		})
-		// Restulve template and send.
+		w.Header().Set("Cache-Control", "no-cache")
+		// Resolve template and send.
 		t.Execute(w, struct {
 			Nonce string
 			CSRF  string
@@ -644,15 +761,24 @@ func main() {
 		// Ensure Secure Fetch Metadata validity.
 		if r.Header.Get("Sec-Fetch-Site") != "same-origin" ||
 			(r.Header.Get("Sec-Fetch-Dest") != "script" &&
-				r.Header.Get("Sec-Fetch-Dest") != "style") {
+				r.Header.Get("Sec-Fetch-Dest") != "style" &&
+				r.Header.Get("Sec-Fetch-Dest") != "font") {
 			http.Error(w, "Invalid Secure Fetch Metadata", http.StatusForbidden)
 			return
 		}
 		http.StripPrefix("/static/", http.FileServer(http.Dir("static"))).ServeHTTP(w, r)
 	})))
 	http.Handle("/favicon.ico", SMW(http.FileServer(http.Dir("static"))))
+
+	fmt.Fprintf(os.Stderr, "FC_CERT_FILE=%v\n", cert)
+	fmt.Fprintf(os.Stderr, "FC_KEY_FILE=%v\n", key)
+	fmt.Fprintf(os.Stderr, "FC_DIR=%v\n", os.Getenv("FC_DIR"))
+	fmt.Fprintf(os.Stderr, "FC_DOMAIN=%v\n", domain)
+	fmt.Fprintf(os.Stderr, "FC_LISTEN=%v\n", addr)
+	fmt.Fprintf(os.Stderr, "FC_SSH_PORT=%v\n", sshport)
+	fmt.Fprintf(os.Stderr, "\nListening...\n")
 	if os.Getenv("FC_DOMAIN") != "" {
-		log.Fatal(http.Serve(autocert.NewListener(os.Getenv("FC_DOMAIN")), nil))
+		log.Fatal(http.Serve(autocert.NewListener(domain), nil))
 	} else {
 		log.Fatal(http.ListenAndServeTLS(addr, cert, key, nil))
 	}
