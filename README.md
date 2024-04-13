@@ -1,4 +1,4 @@
-# ⛅ Filet Cloud Web
+# ⛅ Filet Cloud
 A minimalistic and powerful personal cloud storage with an elegant web interface, letting you control your data privacy, and leaving you with full ownership over your own data. This has a simple and elegant design that provides a lean web interface to hosted storage via a local ssh connection. You provision the storage host however you like, giving you full freedom on storage capacity.
 
 ![demo video](filet-cloud-demo.gif)
@@ -37,7 +37,7 @@ Browse files, download, upload, stream videos and music, view images, create and
 * 🧩 Active folder action plugins for creating custom commands which can autogenerate files such as photo albums, or disk usage reports.
 
 ## Design
-This design for this solution favors simplicity and minimalism, both inside and out, without losing powerful features. *Filet Cloud Web* pushes a personal cloud solution to its leanest essence. It leaves you fully in control of your own data. It is a joy to use because it does what it needs to, reliably and quickly, and then gets out of the way. The primary design philosophy for this project is: **"complexity must justify itself, ruthlessly"**.
+This design for this solution favors simplicity and minimalism, both inside and out, without losing powerful features. *Filet Cloud* pushes a personal cloud solution to its leanest essence. It leaves you fully in control of your own data. It is a joy to use because it does what it needs to, reliably and quickly, and then gets out of the way. The primary design philosophy for this project is: **"complexity must justify itself, ruthlessly"**.
 
 ```mermaid
 flowchart
@@ -101,7 +101,7 @@ go build
 * Setup a certficate for TLS and ensure your browser respects it.
 * Start server:
 ```bash
-FC_CERT_FILE=my.crt FC_KEY_FILE=my.key ./filet-cloud-web
+FC_CERT_FILE=my.crt FC_KEY_FILE=my.key ./filet-cloud
 ```
 * Open in browser: `https://localhost/`
 
@@ -250,7 +250,7 @@ We stand on the shoulders of giants. They own this, far more than I do.
 * Copy/Paste in the terminal on Linux: Use Ctrl/Shift + Insert.
 
 # TODO
-* Incorporate https://github.com/fuglaro/filet-cloud
+* Incorporate into https://github.com/fuglaro/filet-cloud
 * Installation enhancement pass
   * New RP4 release without hat.
   * Monitor storage interval access (maybe backup interval is an issue - maybe only backup when things change) for allowing the storage to power down.
