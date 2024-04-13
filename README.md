@@ -250,12 +250,10 @@ We stand on the shoulders of giants. They own this, far more than I do.
 * Copy/Paste in the terminal on Linux: Use Ctrl/Shift + Insert.
 
 # TODO
-* Reload button on both mde and text editors (only when save not shown!)
-* Compile binary with self contained content files.
+* Test 2FA
+* Incorporate https://github.com/fuglaro/filet-cloud
 * Installation enhancement pass
-  * Incorporate https://github.com/fuglaro/filet-cloud
-  * Rebrand filet-cloud
-  * Setup and test 2FA
+  * New RP4 release without hat.
   * Monitor storage interval access (maybe backup interval is an issue - maybe only backup when things change) for allowing the storage to power down.
   * Mobile phone version with battery pack and 4G for always on.
   * Swap to RP3A+ for low power and compact.
@@ -265,9 +263,11 @@ We stand on the shoulders of giants. They own this, far more than I do.
   * https - accept certs via env var or auto setup with let's encrypt autocert NewListener (with domain provided by FC_DOMAIN).
     * Remove nginx.
     * Switch to included autocert.
+  * Storage status active folder plugin.
+  * Backup active folder plugin.
 * Retest IOS, Safari, Chrome, Chrome Mobile.
 * Check todo list stored on cloud server.
-* Update demo video.
+* Update demo video (on firefox for mac with darkmode for better styling).
 * Tag easily deployable release for others, and ensure instructions are compatible.
 
 # Wishlist for future work

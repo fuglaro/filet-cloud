@@ -1069,91 +1069,6 @@
 
 
 <!--
-  -- mime-text-plain
-  --
-	-- Loader for viewing and editing text files.
-	-->
-<ref-load id=-ext-txt loader=mime-text-plain />
-<template id=-mime-text-plain loader=mime-text-plain>
-	<style nonce="{{.Nonce}}">
-		div {
-			display: flex;
-			width: calc(100% - 48px);
-			height: calc(100% - 48px);
-			margin: 24px;
-
-			/* leave room for the save button above or to the side appropriately */
-			@media (orientation: portrait) {
-				flex-direction: column-reverse;
-				align-items: flex-end;
-			}
-		}
-
-		.preview {
-			width: 100%;
-			height: 100%;
-			margin: 0px;
-
-			button {
-				display: none;
-			}
-		}
-
-		#text {
-			width: 100%;
-			height: 100%;
-			margin: 0px;
-			resize: none;
-			box-sizing: border-box;
-			outline: none;
-		}
-
-		#upload {
-			visibility: hidden;
-			margin: 0px;
-			right: 0px;
-			font-size: 1.2em;
-			width: 2em;
-			height: 2em;
-		}
-	</style>
-	<div>
-		<textarea id=text>⏳</textarea>
-		<button id=upload label="Save changes">💾</button>
-	</div>
-</template>
-<script nonce="{{.Nonce}}">
-	customElements.define("mime-text-plain", class extends HTMLElement {
-		constructor() {
-			super()
-			this.attachShadow({mode: "open"}).appendChild(
-				document.getElementById("-mime-text-plain").content.cloneNode(true))
-			const text = this.shadowRoot.querySelector("#text")
-			const path = storage.path()
-			// Load the file contents and setup ability to save changes.
-			const upload = this.shadowRoot.querySelector('#upload')
-			storage.readFile(path).then(r => r.text().then(r => {
-				text.value = r
-				text.oninput = () => upload.style.visibility = "visible"
-			}))
-			upload.onclick = async () => {
-				await storage.upload(path, new Blob([text.value]))
-				upload.style.visibility = "hidden"
-			}
-		}
-		// Handle preview and open editable modes.
-		static observedAttributes = ["preview"]
-		attributeChangedCallback(name, oldValue, newValue) {
-			this.shadowRoot.querySelector("#text").readOnly = newValue !== null
-			const div = this.shadowRoot.querySelector("div")
-			if (newValue !== null) div.classList.add("preview")
-			else div.classList.remove("preview")
-		}
-	})
-</script>
-
-
-<!--
   -- misc
   --
 	-- Fallback loader for all files, and browser compatible media.
@@ -1262,6 +1177,99 @@
 
 
 <!--
+  -- mime-text-plain
+  --
+	-- Loader for viewing and editing text files.
+	-->
+<ref-load id=-ext-txt loader=mime-text-plain />
+<template id=-mime-text-plain loader=mime-text-plain>
+	<style nonce="{{.Nonce}}">
+		div {
+			display: flex;
+			width: calc(100% - 48px);
+			height: calc(100% - 48px);
+			margin: 24px;
+
+			/* leave room for the save button above or to the side appropriately */
+			@media (orientation: portrait) {
+				flex-direction: column-reverse;
+				align-items: flex-end;
+			}
+		}
+
+		.preview {
+			width: 100%;
+			height: 100%;
+			margin: 0px;
+
+			button {
+				display: none;
+			}
+		}
+
+		#text {
+			width: 100%;
+			height: 100%;
+			margin: 0px;
+			resize: none;
+			box-sizing: border-box;
+			outline: none;
+		}
+
+		button {
+			margin: 0px;
+			right: 0px;
+			font-size: 1.2em;
+			width: 2em;
+			height: 2em;
+		}
+
+		#upload {
+			display: none;
+		}
+	</style>
+	<div>
+		<textarea id=text>⏳</textarea>
+		<button id=upload label="Save changes">💾</button>
+		<button id=reload label="Reload">🔄</button>
+	</div>
+</template>
+<script nonce="{{.Nonce}}">
+	customElements.define("mime-text-plain", class extends HTMLElement {
+		constructor() {
+			super()
+			this.attachShadow({mode: "open"}).appendChild(
+				document.getElementById("-mime-text-plain").content.cloneNode(true))
+			const text = this.shadowRoot.querySelector("#text")
+			const path = storage.path()
+			// Load the file contents and setup ability to save changes.
+			const upload = this.shadowRoot.querySelector('#upload')
+			const reload = this.shadowRoot.querySelector('#reload')
+			reload.onclick = () => storage.readFile(path).then(r => r.text().then(r => text.value = r))
+			reload.click()
+			text.oninput = () => {
+				reload.style.display = "none"
+				upload.style.display = "block"
+			}
+			upload.onclick = async () => {
+				await storage.upload(path, new Blob([text.value]))
+				upload.style.display = "none"
+				reload.style.display = "block"
+			}
+		}
+		// Handle preview and open editable modes.
+		static observedAttributes = ["preview"]
+		attributeChangedCallback(name, oldValue, newValue) {
+			this.shadowRoot.querySelector("#text").readOnly = newValue !== null
+			const div = this.shadowRoot.querySelector("div")
+			if (newValue !== null) div.classList.add("preview")
+			else div.classList.remove("preview")
+		}
+	})
+</script>
+
+
+<!--
   -- ext-md
   --
 	-- Loader for viewing and editing Markdown files.
@@ -1333,6 +1341,7 @@
 			width: 100%;
 		}
 
+		#reload,
 		#upload {
 			display: none;
 			float: right;
@@ -1365,7 +1374,8 @@
 	</style>
 	<div id=body>
 		<textarea id=text tabindex=-1>⏳</textarea>
-		<button id=upload label="Save changes">💾</button>
+		<button id=upload class=no-disable label="Save changes">💾</button>
+		<button id=reload class=no-disable label="Reload">🔄</button>
 	</div>
 </template>
 <script src="/resources/deps/easymde.min.js"
@@ -1390,20 +1400,30 @@
 				previewRender: (v) => this.mde.markdown(v.replace(/\!\[([^\]\)\n]*)\]\(([^\)\n]+)\)/g,
 					(_, label, img) => `![${label}](${imgH(img)})`)),
 			});
-			// Load the file and setup the save button.
+			// Load the file and setup the save and reload buttons.
 			storage.readFile(path).then(r => r.text().then(r => {
 				const upload = sr.querySelector('#upload')
+				const reload = sr.querySelector('#reload')
 				upload.remove()
-				sr.querySelector(".editor-toolbar").appendChild(upload)
+				reload.remove()
+				sr.querySelector(".editor-toolbar").append(upload, reload)
+				reload.style.display = "inline"
 				this.mde.value(r)
 				this.mde.codemirror.doc.clearHistory()
 				this.mde.codemirror.on("change", () => {
+					reload.style.display = "none"
 					upload.style.display = "inline"
 				})
 				upload.onclick = async () => {
 					await storage.upload(path, new Blob([this.mde.value()]))
 					upload.style.display = "none"
+					reload.style.display = "inline"
 				}
+				reload.onclick = () => storage.readFile(path).then(r => r.text().then(r => {
+					this.mde.value(r)
+					upload.style.display = "none"
+					reload.style.display = "inline"
+				}))
 			}))
 		}
 		diconnectedCallback() {
