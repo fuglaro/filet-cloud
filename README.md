@@ -17,7 +17,6 @@ Browse files, download, upload, stream videos and music, view images, create and
 * Browse folders.
 * View and edit files in supported formats.
 * Fast preview viewing of thumbnail while large JPEG images load.
-* Embed images in markdown documents with relative paths.
 * Stream video and audio.
 * Create new folders.
 * Upload files.
@@ -31,10 +30,12 @@ Browse files, download, upload, stream videos and music, view images, create and
 * Compatible with automatic phone data upload tools like Folder Sync Pro via the STFP/SSH service running on the same server.
 * Be in full control of your own private data.
 * Stores all data in files on the underlying filesystem for unbeatable data longevity.
+* Embed images in markdown documents with relative paths.
 * Dark and light modes.
 * Fast keyboard navigation.
 * Terminal access to the storage host.
 * Hardened security.
+* Active folder action plugins for creating custom commands which can autogenerate files such as photo albums, or disk usage reports.
 
 ## Design
 This design for this solution favors simplicity and minimalism, both inside and out, without losing powerful features. *Filet Cloud Web* pushes a personal cloud solution to its leanest essence. It leaves you fully in control of your own data. It is a joy to use because it does what it needs to, reliably and quickly, and then gets out of the way. The primary design philosophy for this project is: **"complexity must justify itself, ruthlessly"**.
@@ -66,6 +67,19 @@ The code is organised in the following areas:
 No frontend framework is used because adopting one on top of the simple interface design would have introduced unjustified complexity.
 
 Note that auto logout will cause terminal connections to end. Using a terminal multiplexer like zellij or tmux provide persissent sessions across logins.
+
+### Active Folder Action Plugins
+
+Create action commands within your backend storage itself, which autogenerate or update files. These will be displayed as action buttons when navigating to the folder they reside in.
+
+Active folder plugins must:
+* Start with the prefix: ._filetCloudAction_
+* End with the name of the action, separated by underscores (_) followed by the action icon.
+* Either output nothing, or
+* Output the file or folder name, containing the results of the action, that should be redirected to.
+* Be executable.
+
+This can be used for various actions, such as generating a photo album of all photos in a folder, displaying storage statistics, or even triggering a manual backup.
 
 ## Installation
 * Ensure your machine allows ssh from localhost.
@@ -235,9 +249,7 @@ We stand on the shoulders of giants. They own this, far more than I do.
 * Copy/Paste in the terminal on Linux: Use Ctrl/Shift + Insert.
 
 # TODO
-* Active Folder plugins - special file name ._filetCloudAction_* that if exists, shows up as an action button that runs the command and can redirect you to a resulting path. Used to update stats etc.
-* Do another comments pass, including comments in css and html.
-* Retest IOS, Safari, Chrome, Chrome Mobile.
+* Compile binary with self contained content files.
 * Installation enhancement pass
   * Incorporate https://github.com/fuglaro/filet-cloud
   * Rebrand filet-cloud
@@ -247,17 +259,18 @@ We stand on the shoulders of giants. They own this, far more than I do.
   * Swap to RP3A+ for low power and compact.
   * Connect via cable.
   * Android Termix.
+  * Allow COLORTERM env though ssh.
   * https - accept certs via env var or auto setup with let's encrypt autocert NewListener (with domain provided by FC_DOMAIN).
     * Remove nginx.
     * Switch to included autocert.
-  * Compile binary with self contained content files.
+* Retest IOS, Safari, Chrome, Chrome Mobile.
 * Check todo list stored on cloud server.
 * Update demo video.
 
 # Wishlist for future work
 * Improve EasyMDE enabling a simpler integration.
 * Make as a Progressive Web App (PWA).
-* Active folder plugin for generating a photo album by making collection of markdown files for all photos in a folder.
-* Active folder plugin for getting storage statistics and status diagnostics.
+* Active folder action plugin for generating a photo album by making collection of markdown files for all photos in a folder.
+* Active folder action plugin for getting storage statistics and status diagnostics.
 * Improve CSP protection to inline stylesheets when xterm.js supports it. Other renderers or alternate tools could be options. See https://github.com/xtermjs/xterm.js/issues/4445
 * Force selection in the terminal on macOS (https://github.com/xtermjs/xterm.js/issues/4329).

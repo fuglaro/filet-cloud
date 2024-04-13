@@ -4,6 +4,7 @@
 <title>Filet Cloud</title>
 <style nonce="{{.Nonce}}">
 	@font-face {
+		/* terminal font */
 		font-family: NotoMonoNerd;
 		src: url("/static/NotoMonoNerdFontMono-Regular.ttf");
 	}
@@ -18,35 +19,33 @@
 	}
 
 	body>div>span {
-		/*xtermjs fix so font width calculations are correct*/
+		/* xtermjs fix so font width calculations are correct */
 		font-family: var(--term-font);
 	}
 
 	body {
+		/* UI pane with no page scrolling */
 		position: fixed;
-		display: flex;
-		flex-direction: row;
 		margin: 0px;
 		width: 100%;
 		height: 100%;
+		display: flex;
+		flex-direction: row;
 	}
 
 	p,
 	h1 {
+		/* these are always clickable in the main browser page */
 		cursor: default;
 		margin: 2px;
 	}
 
-	h1.status {
-		position: absolute;
-		margin: 24px;
-		right: 0px;
-	}
-
 	.on {
+		/* icon of currenly selected file */
 		filter: contrast(0%);
 	}
 
+	/* horizontal storage management menu */
 	#menu {
 		display: flex;
 		align-items: flex-start;
@@ -92,6 +91,7 @@
 		overflow-y: auto;
 	}
 
+	/* opened file content (fullscreen) */
 	body.open #data {
 		position: fixed;
 		left: 0px;
@@ -105,6 +105,7 @@
 		visibility: hidden;
 	}
 
+	/* selectable files and folders in the browsing pane (dir) and also the cart (data) */
 	#dir>button,
 	#data>button {
 		all: unset;
@@ -151,21 +152,29 @@
 	}
 
 	#contenthider {
+		/* hide the background content when not logged in */
 		position: fixed;
+		width: 100vw;
+		height: 100vh;
 		z-index: 999998;
 		backdrop-filter: contrast(50%) blur(16px) brightness(130%);
 
 		@media (prefers-color-scheme: dark) {
 			backdrop-filter: contrast(50%) blur(16px) brightness(70%);
 		}
-
-		width: 100vw;
-		height: 100vh;
 	}
 
 	#uploader {
 		display: none;
 	}
+
+	p.status {
+		/* uploading status icon */
+		position: absolute;
+		margin: 8px;
+		right: 0px;
+	}
+
 
 	@media (orientation: portrait) {
 		#menu {
@@ -192,10 +201,14 @@
 		}
 	}
 </style>
+
+<!-- Pane for displaying all the clickable folders and files at this level -->
 <div id=dirPane>
 	<div id=dir class=maxer tabindex=0></div>
 	<div id=path></div>
 </div>
+
+<!-- Pane for displaying content or actions relevant for the selected file or folder -->
 <div id=dataPane>
 	<div id=data></div>
 	<div id=menu>
@@ -246,28 +259,35 @@
 		</button>
 	</div>
 </div>
+
 <input id="uploader" type="file" multiple />
 <a id="dwnld" download></a>
 <div id=contenthider></div>
 <div><span><!--terminal font warmer--></span></div>
 
 <!--
-  -- Folder Actions Pane including the Terminal.
+  -- Folder Actions Pane (including any custom actions, the terminal launcher, and logout button).
 	-->
 <template id=-folder-actions>
 	<style nonce="{{.Nonce}}">
-		:host {
+		#actions {
 			display: flex;
 			flex-direction: column;
-			align-items: flex-end;
+			flex-wrap: wrap-reverse;
+			align-items: flex-start;
+			align-content: end;
+			column-gap: 0.8em;
+			row-gap: 0.2em;
 			padding: 10px;
+			height: calc(100% - 20px);
+			overflow: auto;
 		}
 
 		a,
 		button {
 			all: unset;
+			flex-basis: "min-content";
 			float: right;
-			padding: 4px;
 
 			h1 {
 				cursor: default;
@@ -290,7 +310,6 @@
 			top: 0px;
 			width: 100%;
 			height: 100%;
-			margin: 0px;
 			font-family: var(--term-font);
 		}
 
@@ -298,21 +317,23 @@
 			outline: 1px solid;
 		}
 	</style>
-	<a href="/logout">
-		<h1>🔐</h1>
-		<p>logout</p>
-	</a>
-	<button id=term-button>
-		<h1>🖥</h1>
-		<p>terminal</p>
-	</button>
-	<div id=terminal></div>
 	<link rel=stylesheet href="/static/deps/xterm.css"
 		integrity="sha384-LJcOxlx9IMbNXDqJ2axpfEQKkAYbFjJfhXexLfiRJhjDU81mzgkiQq8rkV0j6dVh" />
 	<script src="/static/deps/xterm.js"
 		integrity="sha384-/nfmYPUzWMS6v2atn8hbljz7NE0EI1iGx34lJaNzyVjWGDzMv+ciUZUeJpKA3Glc"></script>
 	<script src="/static/deps/xterm-addon-fit.js"
 		integrity="sha384-AQLWHRKAgdTxkolJcLOELg4E9rE89CPE2xMy3tIRFn08NcGKPTsELdvKomqji+DL"></script>
+	<div id=terminal></div>
+	<div id=actions>
+		<a href="/logout">
+			<h1>🔐</h1>
+			<p>logout</p>
+		</a>
+		<button id=term-button>
+			<h1>🖥</h1>
+			<p>terminal</p>
+		</button>
+	</div>
 </template>
 
 <!--
@@ -388,7 +409,7 @@
 </template>
 <script nonce="{{.Nonce}}">
 	"use strict"
-	var autoLogoutTimer = null
+	let autoLogoutTimer = null
 	const login = () => {
 		clearTimeout(autoLogoutTimer)
 		if (!document.querySelector("login-form") && crossOriginIsolated)
@@ -423,9 +444,8 @@
 					ws.send(this.shadowRoot.querySelector("#username").value)
 					ws.send(this.shadowRoot.querySelector("#password").value)
 					ws.send(this.shadowRoot.querySelector("#code").value)
-					// Give connection to the storage API.
+					// Give connection to the storage API, also to finish up all the async stuff.
 					storage.connect(ws)
-					document.getElementById("contenthider").style.display = 'none'
 				}
 				document.body.removeChild(document.querySelector("login-form"))
 			})
@@ -439,7 +459,8 @@
 	* and only exposes the minimum interface.
 	*/
 	class Storage {
-		path = () => decodeURI(window.location.pathname.replace(/^\/.+:\//, '/'))
+		path = () => decodeURI(window.location.hash.replace(/^#.+:\//, '/'))
+		mode = () => window.location.hash.split(':')[0] + ":"
 
 		// Keep raw connections private, to limit javascript access.
 		#ws = null; // websocket connection to the server.
@@ -451,55 +472,91 @@
 		#onTermMsg = m => { }
 
 		constructor() {
-			// Setup the terminal.
+			// Setup the folder actions pane.
+			// This is all nested inside the storage class to securly protect the terminal data streams.
 			const stThis = this
 			customElements.define("folder-actions", class extends HTMLElement {
 				constructor() {
 					super()
 					this.attachShadow({mode: "open"}).appendChild(
 						document.getElementById("-folder-actions").content.cloneNode(true))
+
+					// Setup the terminal launcher button.
 					const tb = this.shadowRoot.getElementById("term-button")
 					tb.onclick = () => {
-						let terminal = this.shadowRoot.getElementById("terminal")
+						const terminal = this.shadowRoot.getElementById("terminal")
 						terminal.classList.add("fullit")
-						var term = new Terminal({fontFamily: terminal.style.fontFamily})
+						const term = new Terminal({fontFamily: terminal.style.fontFamily})
 						const fitTerm = new window.FitAddon.FitAddon()
 						term.loadAddon(fitTerm)
 						term.open(terminal)
 						window.onresize = () => {
 							fitTerm.fit()
-							stThis.#ws.send(JSON.stringify({action: "termData", cols: term.cols, rows: term.rows}))
+							// Resize the terminal pty session to the new rows and columns size.
+							stThis.#ws.send(JSON.stringify({action: "termdata", cols: term.cols, rows: term.rows}))
 						}
 						stThis.#onTermMsg = m => {
-							if (!term) return
-							term.write(m)
-							if (!m.length) {
+							if (m === null) {
+								// Close terminal.
 								term.dispose()
-								term = undefined
+								stThis.#onTermMsg = m => { }
+								window.onresize = null
 								terminal.classList.remove("fullit")
 							}
+							else term.write(m)
 						}
-						term.onData(d => stThis.#ws.send(JSON.stringify({action: "termData", data: d})))
-						stThis.#ws.send(JSON.stringify({action: "termData", rows: -1})) // Send start-session message.
+						term.onData(d => stThis.#ws.send(JSON.stringify({action: "termdata", data: d})))
+						stThis.#ws.send(JSON.stringify({action: "termdata", rows: -1})) // Send start-session message.
 						window.onresize()
 						term.focus()
 					}
+
+					// Setup the active folder plugin action buttons.
+					stThis.listDir(stThis.path()).then(fs => fs.forEach(f => {
+						if (!f.startsWith("._filetCloudAction_") || [...f].length < 20) return
+						const button = document.createElement("button")
+						const icon = document.createElement("h1")
+						icon.textContent = [...f].slice(-1)
+						const label = document.createElement("p")
+						const wrap = [...f].slice(19, -1).join("").split(/(_)/).map(
+							i => i === '_' ? document.createElement("br") : i)
+						label.append(...wrap)
+						button.append(icon, label)
+						button.onclick = () => {
+							// Launch the action with a wait prompt that will redirect on completion (if not dismissed).
+							let waiting = true
+							prompter("Running...", new Promise(ok => {
+								stThis.runAction(cwd() + f).then(r => {
+									if (r && waiting) nav(r) // redirect if completed, and not yet dismissed
+									ok()
+								})
+							})).then(() => waiting = false)
+						}
+						this.shadowRoot.querySelector("#actions").appendChild(button)
+					}))
 				}
 			})
 		}
 
+		/**
+		 * Finalise the setup of the websocket connection,
+		 * and kick off any pending requests.
+		 */
 		async connect(ws) {
 			ws.onclose = () => {
-				clearInterval(this.#authRefresh)
-				this.#onTermMsg("") // close terminal if open.
+				clearInterval(this.#authRefresh) // cancel ongoing auth refreshing.
+				// close terminal if open.
+				this.#onTermMsg(null)
 				this.#onTermMsg = m => { }
+				// Hide any open content.
 				document.getElementById("contenthider").style.display = 'initial'
-				// Requeue all pending requests, triggering re-login in the process.
+				// Requeue all pending requests.
 				for (const k in this.#reqs) {
 					const v = this.#reqs[k]
 					delete this.#reqs[k]
 					this.#req(v[0], v[1])
 				}
+				// Trigger a re-login prompt.
 				login()
 			}
 			window.onbeforeunload = () => ws.close() // Force logout ASAP
@@ -517,8 +574,9 @@
 					v = d.msg
 				}
 				// Handle terminal data.
-				if (id === -1) {
-					this.#onTermMsg(new Uint8Array(await v.arrayBuffer()))
+				if (id < 0) {
+					if (id === -1) this.#onTermMsg(new Uint8Array(await v.arrayBuffer()))
+					else this.#onTermMsg(null) // Close terminal.
 					return
 				}
 				// Activate the prepared response handler.
@@ -526,7 +584,8 @@
 				delete this.#reqs[id]
 				ok(v)
 			}
-			var msgQueue = Promise.resolve()
+			// Ensure all websocket responses are processed in order.
+			let msgQueue = Promise.resolve()
 			ws.onmessage = m => msgQueue = msgQueue.then(() => onmessage(m)
 			)
 			this.#ws = ws
@@ -543,10 +602,15 @@
 			}
 			await checkAuthenticate()
 			this.#authRefresh = setInterval(checkAuthenticate, 1000) // Check auth refresh every second.
+			document.getElementById("contenthider").style.display = 'none'
 			// Handle all the waiting requests.
 			while (this.#connection.length) this.#connection.pop()()
 		}
 
+		/**
+		 * Send a request to the storage backend,
+		 * via the websocket connection.
+		 */
 		async #req(r, ok) {
 			// Ensure we have an established login connection.
 			if (this.#ws === null || this.#ws.readyState !== WebSocket.OPEN) await new Promise(ok => {
@@ -555,11 +619,13 @@
 			})
 			if (r === undefined) return // Used by authLinks when ensuring authenticated login.
 			// Send request to server, after preparing the response handler.
-			const msgID = this.#msgID += 1
+			const msgID = this.#msgID += 1 // Prepare a way to associate responses to the requests.
 			const resp = new Promise(ok => {
+				// Load up a place holder for handling the response, whenever it comes.
 				this.#reqs[msgID] = [r, ok]
 			})
 			if (ok) this.#reqs[msgID][1] = ok // If in a retry of a previous request, reuse promise.
+			// Fire off the request.
 			if (r instanceof Blob) {
 				if (msgID.toString().length > 20) throw new Error()
 				this.#ws.send(new Blob([msgID.toString().padEnd(20), r]))
@@ -567,18 +633,30 @@
 				r.id = msgID
 				this.#ws.send(JSON.stringify(r))
 			}
-			return resp
+			return resp // Return the promise that will resolve to a response.
 		}
 
+		// Request the mime type for a file.
 		mime = async (path) => await this.#req({action: "mime", path: path})
+		// Request the contents of a file.
 		readFile = async (path) => await this.#req({action: "file", path: path})
+		// Request to make a new dir inside an existing folder.
 		newDir = async (path) => await this.#req({action: "newdir", path: path})
+		// Request to make a new file inside an existing folder.
 		newFile = async (path) => await this.#req({action: "newfile", path: path})
+		// Request to rename or move a file or folder.
 		rename = async (path, to) => await this.#req({action: "rename", path: path, to: to})
+		// Request to delete a file or folder.
 		remove = async (path) => await this.#req({action: "remove", path: path})
+		// Request to run a custom active folder plugin, (expected to be) at the given path.
+		runAction = async (path) => await this.#req({action: "runaction", path: path})
+		// Ensure the connection is still active (for use before using a storage link).
 		authLinks = async () => await this.#req()
+		// Storage link for a file's contents.
 		fileLink = (path) => `/file:${encodeURI(path)}`
+		// Storage link for a thumbnail generated for a file.
 		thumbLink = (path) => `/thumb:${encodeURI(path)}`
+		// Storage link for a generated zip archive for a list of files.
 		zipLink = (paths) => '/zip?' + paths.map(p => `path=${encodeURI(p)}`).join('&')
 
 		/**
@@ -610,11 +688,13 @@
 	 * Browser UI code.
 	 */
 	"use strict"
-
+	// Redirect to a valid starting URL, if a new seesion.
+	if (window.location.hash === "") window.history.replaceState("", "", "/#browse:/")
+	// All the storage menu actions.
 	document.getElementById("reload").onclick = () => nav(storage.path())
 	document.getElementById("makedir").onclick = () => makedir()
 	document.getElementById("newfile").onclick = () => newfile()
-	document.getElementById("tabopen").onclick = () => setPath(storage.path(), '/open:')
+	document.getElementById("tabopen").onclick = () => setPath('#open:', storage.path())
 	document.getElementById("upload").onclick = () => document.getElementById('uploader').click()
 	document.getElementById("download").onclick = () => download()
 	document.getElementById("rename").onclick = () => rename()
@@ -627,13 +707,16 @@
 	document.getElementById("close").onclick = () => nav(storage.path().replace(/[^/]+$/g, ''))
 	document.getElementById("uploader").onchange = () => send()
 
+	// Setup some basic helper functions for navigation and the cart.
 	const cwd = () => storage.path().replace(/[^/]+$/g, '')
-	const setPath = (path, mode) => {
+	const setPath = (mode, path) => {
 		document.getElementById('path').textContent = path
-		const newURL = `${mode}${encodeURI(path)}`
-		if (window.location.pathname !== newURL) window.history.replaceState("", "", newURL)
+		// Replace the history when navigating, but push to it when opening a file.
+		if (mode === storage.mode()) window.history.replaceState("", "", `${mode}${encodeURI(path)}`)
+		else window.location.hash = `${mode}${encodeURI(path)}`
+		// Adjust the UI between the open file mode, and browsing.
 		document.body.classList.remove('open')
-		if (mode === '/open:') {
+		if (mode === '#open:') {
 			document.querySelector('#data>.maxer').children[0]?.removeAttribute('preview');
 			document.body.classList.add('open')
 		}
@@ -642,6 +725,10 @@
 	const cartMode = () => document.getElementById('cart').classList.contains("on")
 	const cartRemove = c => {c ? cart.splice(cart.indexOf(c), 1) : cart.length = 0; cartSel()}
 
+	/**
+	 * Update the dynamic storage menu,
+	 * hiding and showing each menu botton based on the current context.
+	 */
 	function menuMode() {
 		const mode = (storage.path().endsWith("/") ? (
 			cartMode() ? (cart.length ? "cart" : "cartEmpty") :
@@ -662,8 +749,10 @@
 	const dir = document.getElementById('dir')
 	document.querySelector('body').onkeydown = ev => {
 		if (ev.key != "ArrowDown" && ev.key != "ArrowUp") return
+		// Abort if not a parent or child of the dir pane.
 		if (!document.activeElement.contains(dir) && !dir.contains(document.activeElement)) return
 		ev.preventDefault()
+		// Select the first child, or if one is already selected, the previous/next child.
 		if (document.activeElement.parentElement != dir) {
 			const sel = dir.querySelector(".on")
 			sel ? sel.parentElement.focus() : dir.firstChild.focus()
@@ -682,9 +771,9 @@
 	async function nav(path, justOpen) {
 		document.getElementById('data').replaceChildren()
 		if (cartMode()) cartSel()
-		if (!justOpen && window.location.pathname.startsWith("/browse:")) {
+		if (!justOpen && storage.mode() === "#browse:") {
 			// Fill the folder contents
-			setPath(path, '/browse:')
+			setPath('#browse:', path)
 			// Refresh the contents of the directory by querying the server
 			const curFile = storage.path().replace(/^.*[\\/]/, '')
 			storage.listDir(cwd()).then(r => {
@@ -705,16 +794,19 @@
 					}
 					div.onclick = () => {
 						if (!cartMode() || n === "../") {
+							// Handle when cart mode not selected (or clicking ../ which side-steps cart mode).
 							if (n.endsWith('/')) {
+								// Select a folder.
 								highlight()
 								nibIcon.textContent = '⏳'
 								nav(n === "../" ? path.replace(/[^/]+\/[^/]*$/g, '') : path + n)
 							}
-						} else cartSel(path + n)
+						} else cartSel(path + n) // Add to the cart.
 					}
-					div.tabIndex = -1
+					div.tabIndex = -1 // Tab should not go through each file or folder, arrow keys do that.
 					div.onfocus = () => {
 						if (!cartMode() && !n.endsWith('/')) {
+							// Open the selected file.
 							highlight()
 							nav(path + n, justOpen = true)
 						}
@@ -723,26 +815,29 @@
 					return div
 				}))
 				dir.firstChild.focus()
-				if (path.endsWith("/")) {
+				if (!cartMode() && path.endsWith("/")) {
+					// Display all the folder actions relevant to this level (including logout and terminal).
 					document.getElementById('data').replaceChildren(document.createElement("folder-actions"))
 				}
 			})
 			menuMode()
 		}
 		if (!path.endsWith("/")) {
-			// Open any file contents in the data pane
+			// Open any file contents in the data pane.
 			const div = document.createElement("div")
 			div.classList.add("maxer")
 			div.textContent = '⏳'
 			document.getElementById('data').replaceChildren(div)
-			setPath(path, window.location.pathname.split(':')[0] + ':')
+			setPath(storage.mode(), path)
+			// Dynamically load the appropriate file loader depending on file extension and mime type.
 			const reg = (n) => document.getElementById(`-${n}`)?.getAttribute("loader")
 			const nib = document.createElement(
 				reg(`ext-${/(?:\.([^.]+))?$/.exec(path)[1]}`) // try file extension loader
 				|| reg(`mime-${(await storage.mime(path)).replace("/", "-")}`) // try mime type loader
 				|| reg('misc-media')) // fallback loader
-			if (window.location.pathname.startsWith("/open:")) document.getElementById("tabopen").click()
-			else nib.setAttribute("preview", "")
+			// Force full window file open if the URL hash indicates that viewing mode.
+			if (storage.mode() === "#open:") document.getElementById("tabopen").click()
+			else nib.setAttribute("preview", "") // otherwise, just display as a preview.
 			div.replaceChildren(nib)
 			menuMode()
 		}
@@ -798,7 +893,7 @@
 	* and files have been selected.
 	*/
 	function send() {
-		const ico = document.createElement("h1")
+		const ico = document.createElement("p")
 		ico.classList.add("status")
 		ico.textContent = '📤'
 		const existing = new Set(Array.from(
@@ -839,7 +934,7 @@
 	* and folders in the cart.
 	*/
 	async function download() {
-		const paths = cart
+		var paths = cart
 		if (!paths.length && !storage.path().endsWith('/')) paths = [storage.path()]
 		const dwn = document.getElementById('dwnld')
 		dwn.download = 'download.zip'
@@ -889,8 +984,9 @@
 <!--
   -- Prompt
 	--
-	-- Pop-up prompt for general text input, or confirmation questions.
-	-- Pass true as the value for question mode.
+	-- Pop-up prompt for general text input, waiting on a process, or for confirmation questions.
+	-- Pass true as the value for confirmation question mode, or a promise for waiting mode.
+	-- Passing in a string value will use that as a default value for text input mode.
 	-->
 <style nonce="{{.Nonce}}">
 	.ip {
@@ -943,17 +1039,26 @@
 	"use strict"
 	async function prompter(message, value) {
 		const el = document.getElementById("input-prompt").content.cloneNode(true).querySelector(".ip")
-		el.querySelector("label").innerText += message
+		// Setup the default value.
+		el.querySelector("label").textContent += message
+		// Setup the prompt mode.
 		const inp = el.querySelector("#intext")
-		if (value === true) inp.style.display = "none"
-		inp.value = value
+		if (typeof value !== "string") {
+			inp.style.display = "none"
+			if (typeof value !== "boolean") el.querySelector("#cancel").style.display = "none"
+		}
 		document.body.appendChild(el)
 		inp.focus()
 		const val = await new Promise(ok => {
+			// Force resolution when a provided promise resolves.
+			if (typeof value.then === "function") value.then(() => ok(true))
+			// Setup keyboard controls (Enter/Escape).
+			inp.value = value
 			inp.onkeydown = ev => {
 				if (ev.key == "Enter") ok(inp.value)
 				if (ev.key == "Escape") ok(false)
 			}
+			// Setup button actions.
 			el.querySelector("#ok").onclick = () => ok(inp.value)
 			el.querySelector("#cancel").onclick = () => ok(false)
 		})
@@ -977,6 +1082,7 @@
 			height: calc(100% - 48px);
 			margin: 24px;
 
+			/* leave room for the save button above or to the side appropriately */
 			@media (orientation: portrait) {
 				flex-direction: column-reverse;
 				align-items: flex-end;
@@ -1024,6 +1130,7 @@
 				document.getElementById("-mime-text-plain").content.cloneNode(true))
 			const text = this.shadowRoot.querySelector("#text")
 			const path = storage.path()
+			// Load the file contents and setup ability to save changes.
 			const upload = this.shadowRoot.querySelector('#upload')
 			storage.readFile(path).then(r => r.text().then(r => {
 				text.value = r
@@ -1034,6 +1141,7 @@
 				upload.style.visibility = "hidden"
 			}
 		}
+		// Handle preview and open editable modes.
 		static observedAttributes = ["preview"]
 		attributeChangedCallback(name, oldValue, newValue) {
 			this.shadowRoot.querySelector("#text").readOnly = newValue !== null
@@ -1142,7 +1250,7 @@
 				}
 			})()
 		}
-
+		// Handle preview and open modes.
 		static observedAttributes = ["preview"]
 		attributeChangedCallback(name, oldValue, newValue) {
 			const div = this.shadowRoot.querySelector("#body")
@@ -1171,6 +1279,7 @@
 			margin: 24px;
 		}
 
+		/* fix up EasyMDE's trouble with dark mode */
 		@media (prefers-color-scheme: dark) {
 
 			#body button:hover,
@@ -1203,6 +1312,7 @@
 			}
 		}
 
+		/* hide the menu and border in preview mode */
 		#body.preview {
 			width: 100%;
 			height: 100%;
@@ -1228,6 +1338,7 @@
 			float: right;
 		}
 
+		/* Override the icons to unicode equivalents avoiding loading font awesome just for this. */
 		.fa {
 			font-style: normal;
 		}
@@ -1267,7 +1378,9 @@
 				document.getElementById("-ext-md").content.cloneNode(true))
 			const path = storage.path()
 			const sr = this.shadowRoot
+			// Handle images that reference relative storage.
 			const imgH = (img) => img.includes('://') ? img : storage.fileLink(path.replace(/[^/]+$/g, img))
+			// Load EasyMDE.
 			this.mde = new EasyMDE({
 				element: sr.querySelector("#text"),
 				status: false,
@@ -1277,6 +1390,7 @@
 				previewRender: (v) => this.mde.markdown(v.replace(/\!\[([^\]\)\n]*)\]\(([^\)\n]+)\)/g,
 					(_, label, img) => `![${label}](${imgH(img)})`)),
 			});
+			// Load the file and setup the save button.
 			storage.readFile(path).then(r => r.text().then(r => {
 				const upload = sr.querySelector('#upload')
 				upload.remove()
@@ -1295,6 +1409,7 @@
 		diconnectedCallback() {
 			this.mde.cleanup()
 		}
+		// Handle switching between preview and open editable modes.
 		static observedAttributes = ["preview"]
 		attributeChangedCallback(name, oldValue, newValue) {
 			const cl = this.shadowRoot.querySelector("#body").classList
@@ -1307,7 +1422,8 @@
 			}
 		}
 		connectedCallback() {
-			this.classList.add('CodeMirror-sizer') // easyMDE bug with images in shadowRoot
+			// Finish loading EasyMDE.
+			this.classList.add('CodeMirror-sizer') // hack easyMDE bug with images in shadowRoot
 			const cl = this.shadowRoot.querySelector("#body").classList
 			if (cl.contains("preview")) this.mde.togglePreview()
 			else this.shadowRoot.querySelector(".CodeMirror").style.height = 'calc(100% - 48px)'

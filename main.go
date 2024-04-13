@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -218,6 +219,11 @@ func authServeContent(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+/**
+ * Establish a websocket connection,
+ * authenticate against making a new ssh connection,
+ * then start responding to storage, terminal, and action plugin requests.
+ */
 func connect(w http.ResponseWriter, r *http.Request) {
 	// Ensure Secure Fetch Metadata validity.
 	if r.Header.Get("Sec-Fetch-Site") != "same-origin" ||
@@ -282,10 +288,11 @@ func connect(w http.ResponseWriter, r *http.Request) {
 	}
 	defer sshConn.Close()
 
-	// Setup for management of the shell sessions.
+	// Setup for management of the terminal shell sessions.
 	var sessRunning = false
 	var sess *ssh.Session
 	var sessIn io.WriteCloser
+	var mutex sync.Mutex // Websocket writer mutex.
 	runSession := func() {
 		if sessRunning { // Reuse existing sessions if available.
 			return
@@ -315,10 +322,13 @@ func connect(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		sessRunning = true
+		// Proxy data between the websocket and the ssh session, in the background.
 		go func() {
 			buf := make([]byte, 20000)
 			for {
 				// Ferry data coming out of the ssh shell into the websocket.
+				n, rerr := sessOut.Read(buf)
+				mutex.Lock()
 				mw, err := c.NextWriter(websocket.BinaryMessage)
 				if err != nil {
 					sess.Close()
@@ -326,26 +336,25 @@ func connect(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 				mw.Write([]byte("-1                  ")) // term header
-				n, err := sessOut.Read(buf)
 				mw.Write(buf[:n])
 				if mw.Close() != nil {
 					sess.Close()
 					c.Close()
 					return
 				}
-				if err != nil {
+				if rerr != nil {
 					sessRunning = false
 					sess.Close()
-					if err != io.EOF {
+					if rerr != io.EOF {
 						c.Close()
-						return
-					}
-					// Send a term closed message
-					if c.WriteMessage(websocket.BinaryMessage, []byte("-1                  ")) != nil {
+					} else if c.WriteMessage( /* Send a term closed message */
+						websocket.BinaryMessage, []byte("-2                  ")) != nil {
 						c.Close()
 					}
+					mutex.Unlock()
 					return
 				}
+				mutex.Unlock()
 			}
 		}()
 	}
@@ -360,7 +369,7 @@ func connect(w http.ResponseWriter, r *http.Request) {
 	connections[connID] = sshConn
 	// Ensure the connection is cleared when the WebSocket connection closes.
 	defer delete(connections, connID)
-	// Handle messages on established authenticated connection.
+	// Handle messages on the established authenticated connection.
 	type Msg struct {
 		Action string
 		Data   string
@@ -370,16 +379,22 @@ func connect(w http.ResponseWriter, r *http.Request) {
 		Rows   int
 		Cols   int
 	}
-	prepath := strings.Replace(os.Getenv("FC_DIR"), "USERNAME", string(user), -1) + "/"
+	prepath := strings.Replace(os.Getenv("FC_DIR"), "USERNAME", string(user), -1)
+	if prepath[len(prepath)-1:] != "/" {
+		prepath += "/"
+	}
 	for {
+		// Wait for the next message.
 		mtype, re, err := c.NextReader()
 		if err != nil {
 			return
 		}
-		if mtype == websocket.BinaryMessage {
 
-			/* Handle file upload.
-			 * Unpack the message header to get the path name then store the rest. */
+		/* Process the message and respond. */
+
+		// Handle file upload.
+		if mtype == websocket.BinaryMessage {
+			// Unpack the message header to get the path name then store the rest.
 			idbuf := make([]byte, 20)
 			if _, err = io.ReadFull(re, idbuf); err != nil {
 				return
@@ -411,9 +426,11 @@ func connect(w http.ResponseWriter, r *http.Request) {
 			if _, err = io.Copy(dest, re); err != nil {
 				return
 			}
+			mutex.Lock()
 			if c.WriteJSON(map[string]interface{}{"id": id}) != nil {
 				return
 			}
+			mutex.Unlock()
 			continue
 		}
 
@@ -436,9 +453,11 @@ func connect(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				return
 			}
+			mutex.Lock()
 			if c.WriteJSON(map[string]interface{}{"id": m.Id, "msg": s}) != nil {
 				return
 			}
+			mutex.Unlock()
 
 		/* Returns the contents of the given directory,
 		 * including whether each entry is a file. E.g:
@@ -455,9 +474,11 @@ func connect(w http.ResponseWriter, r *http.Request) {
 			for i, c := range contents {
 				fs[i+1] = [2]interface{}{!c.IsDir(), c.Name()}
 			}
+			mutex.Lock()
 			if c.WriteJSON(map[string]interface{}{"id": m.Id, "msg": fs}) != nil {
 				return
 			}
+			mutex.Unlock()
 
 		// Returns the contents of a file as a binary message.
 		case "file":
@@ -467,6 +488,7 @@ func connect(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			defer contents.Close()
+			mutex.Lock()
 			mw, err := c.NextWriter(websocket.BinaryMessage)
 			if err != nil {
 				return
@@ -483,6 +505,7 @@ func connect(w http.ResponseWriter, r *http.Request) {
 			if mw.Close() != nil {
 				return
 			}
+			mutex.Unlock()
 
 		// Returns the mime type of a file.
 		case "mime":
@@ -495,32 +518,40 @@ func connect(w http.ResponseWriter, r *http.Request) {
 			buffer := make([]byte, 512) /* 512 bytes is enough to catch headers */
 			n, err := contents.Read(buffer)
 			mime := strings.Split(http.DetectContentType(buffer[:n]), ";")[0]
+			mutex.Lock()
 			if c.WriteJSON(map[string]interface{}{"id": m.Id, "msg": mime}) != nil {
 				return
 			}
+			mutex.Unlock()
 
 		// Creates a new directory.
 		case "newdir":
 			err = sftp.Mkdir(prepath + m.Path)
+			mutex.Lock()
 			if c.WriteJSON(map[string]interface{}{"id": m.Id, "err": err}) != nil {
 				return
 			}
+			mutex.Unlock()
 
 		// Creates a new file.
 		case "newfile":
 			dest, err := sftp.Create(prepath + m.Path)
 			dest.Close()
+			mutex.Lock()
 			if c.WriteJSON(map[string]interface{}{"id": m.Id, "err": err}) != nil {
 				return
 			}
+			mutex.Unlock()
 
 		/* Move or rename a file or directory.
 		 * From the given path "path" to the given path "to". */
 		case "rename":
 			err = sftp.Rename(prepath+m.Path, prepath+m.To)
+			mutex.Lock()
 			if c.WriteJSON(map[string]interface{}{"id": m.Id, "err": err}) != nil {
 				return
 			}
+			mutex.Unlock()
 
 		/* Deletes a file or a folder including all contents.
 		 * The given "path" identifies what to delete.
@@ -531,9 +562,11 @@ func connect(w http.ResponseWriter, r *http.Request) {
 			if path[len(path)-1:] != "/" {
 				// Delete the file
 				err = sftp.Remove(path)
+				mutex.Lock()
 				if c.WriteJSON(map[string]interface{}{"id": m.Id, "err": err}) != nil {
 					return
 				}
+				mutex.Unlock()
 				break
 			}
 			// Handle folder deletion
@@ -542,9 +575,11 @@ func connect(w http.ResponseWriter, r *http.Request) {
 			var dirs []string
 			for walk.Step() {
 				if walk.Err() != nil {
+					mutex.Lock()
 					if c.WriteJSON(map[string]interface{}{"id": m.Id, "err": err}) != nil {
 						return
 					}
+					mutex.Unlock()
 					break action
 				}
 				if walk.Stat().IsDir() {
@@ -552,26 +587,74 @@ func connect(w http.ResponseWriter, r *http.Request) {
 					continue
 				}
 				if sftp.Remove(walk.Path()) != nil {
+					mutex.Lock()
 					if c.WriteJSON(map[string]interface{}{"id": m.Id, "err": err}) != nil {
 						return
 					}
+					mutex.Unlock()
 					break action
 				}
 			}
 			// Then delete all the dirs (in reverse order)
 			for i := range dirs {
 				if sftp.Remove(dirs[len(dirs)-1-i]) != nil {
+					mutex.Lock()
 					if c.WriteJSON(map[string]interface{}{"id": m.Id, "err": err}) != nil {
 						return
 					}
+					mutex.Unlock()
 					break action
 				}
 			}
+			mutex.Lock()
 			if c.WriteJSON(map[string]interface{}{"id": m.Id}) != nil {
 				return
 			}
+			mutex.Unlock()
 
-		case "termData":
+		/* Run an active folder plugin action command. The path must be a path to an executable
+		 * file with a filename starting with the prefix ._filetCloudAction_ otherwise the command
+		 * will not be run. The path will also be appended to any set FC_DIR folder, and checked
+		 * to ensure the resulting real path remains under the FC_DIR folder.
+		 * If the action command gives standard out, this will be used as a path redirect and sent
+		 * as a response so the frontend can redirect to display the results of the command,
+		 * which should be updated in that file.*/
+		case "runaction":
+			// Sanity check the file name,
+			path := prepath + m.Path
+			if !strings.HasPrefix(filepath.Base(path), "._filetCloudAction_") {
+				return
+			}
+			// Sanity check the path.
+			realpath, _ := sftp.RealPath(path) // Ignore error as empty string fails on prefix check anyway.
+			if !strings.HasPrefix(realpath, prepath) {
+				return
+			}
+			sess, err := sshConn.NewSession()
+			if err != nil {
+				return
+			}
+			go func() {
+				// Launch the action command.
+				outb, err := sess.Output(realpath)
+				if err != nil {
+					return
+				}
+				// Handle the result response redirect.
+				redirect := ""
+				output := string(outb)
+				if output != "" {
+					output = strings.TrimSuffix(output, "\n")
+					redirect = m.Path[:len(m.Path)-len(filepath.Base(m.Path))] + output
+				}
+				mutex.Lock()
+				if c.WriteJSON(map[string]interface{}{"id": m.Id, "msg": redirect}) != nil {
+					return
+				}
+				mutex.Unlock()
+			}()
+
+		case "termdata":
 			if m.Rows == -1 {
 				runSession()
 				continue
@@ -671,10 +754,7 @@ automatic LetsEncrypt configuration by specifying FC_DOMAIN.
 		return
 	}
 
-	// Serve all endpoints.
-	http.Handle("/", SMW(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/browse:/", http.StatusSeeOther)
-	})))
+	// Serve connection endpoints.
 	http.Handle("/connect", SMW(http.HandlerFunc(connect)))
 	http.Handle("/authenticate", SMW(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Ensure Secure Fetch Metadata validity.
@@ -700,12 +780,16 @@ automatic LetsEncrypt configuration by specifying FC_DOMAIN.
 	})))
 	http.Handle("/logout", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Clear-Site-Data", "\"*\"")
-		http.Redirect(w, r, "/browse:/", http.StatusSeeOther)
+		http.Redirect(w, r, "/", http.StatusSeeOther)
 	}))
+
+	// Serve links to storage paths, and dynamic storage paths.
 	http.Handle("/file:/", SMW(http.HandlerFunc(authServeContent)))
 	http.Handle("/thumb:/", SMW(http.HandlerFunc(authServeContent)))
 	http.Handle("/zip", SMW(http.HandlerFunc(authServeContent)))
-	mainPage := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+	// The main page.
+	http.Handle("/", SMW(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Ensure Secure Fetch Metadata validity.
 		if r.Header.Get("Sec-Fetch-Dest") != "document" {
 			http.Error(w, "Invalid Secure Fetch Metadata", http.StatusForbidden)
@@ -754,9 +838,7 @@ automatic LetsEncrypt configuration by specifying FC_DOMAIN.
 			Nonce string
 			CSRF  string
 		}{Nonce: nonce, CSRF: base64.URLEncoding.EncodeToString(hashData)})
-	})
-	http.Handle("/browse:/", SMW(mainPage))
-	http.Handle("/open:/", SMW(mainPage))
+	})))
 	http.Handle("/static/", SMW(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Ensure Secure Fetch Metadata validity.
 		if r.Header.Get("Sec-Fetch-Site") != "same-origin" ||
@@ -770,6 +852,7 @@ automatic LetsEncrypt configuration by specifying FC_DOMAIN.
 	})))
 	http.Handle("/favicon.ico", SMW(http.FileServer(http.Dir("static"))))
 
+	// Display final configuration information and then launch service.
 	fmt.Fprintf(os.Stderr, "FC_CERT_FILE=%v\n", cert)
 	fmt.Fprintf(os.Stderr, "FC_KEY_FILE=%v\n", key)
 	fmt.Fprintf(os.Stderr, "FC_DIR=%v\n", os.Getenv("FC_DIR"))
