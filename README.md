@@ -72,7 +72,7 @@ Note that auto logout will cause terminal connections to end. Using a terminal m
 Create action commands within your backend storage itself, which autogenerate or update files. These will be displayed as action buttons when navigating to the folder they reside in.
 
 Active folder plugins must:
-* Start with the prefix: ._filetCloudAction_
+* Start with the prefix: `._filetCloudAction_`
 * End with the name of the action, separated by underscores (_) followed by the action icon.
 * Either output nothing, or
 * Output the file or folder name, containing the results of the action, that should be redirected to.
@@ -268,7 +268,7 @@ We stand on the shoulders of giants. They own this, far more than I do.
 * Retest IOS, Safari, Chrome, Chrome Mobile.
 * Check todo list stored on cloud server.
 * Update demo video (on firefox for mac with darkmode for better styling).
-* Tag easily deployable release for others, and ensure instructions are compatible.
+* Tag easily deployable release for others, with wide cross compiling ARM/x86/x64/RISC-V Linux/LinuxStaticMusl/Mac/Windows.
 
 # Wishlist for future work
 * Improve EasyMDE enabling a simpler integration.
