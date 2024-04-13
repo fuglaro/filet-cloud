@@ -125,7 +125,7 @@ Disclaimer: Use at your own risk. The codebase is strikingly small and the depen
 * HTTP Strict Transport Security (HSTS) is enabled.
 * All WebSocket connections use WebSocket Secure (WSS).
 * The backend supports being provided TLS credentials otherwise it uses an included certbot integration.
-* The webserver connects to the local SFTP/SSH service without verifying the SSH Host Key, therefore the connection between them cannot run across an untrusted network. Connecting to localhost is hardcoded to ensure this is the case. If you change this, ensure the HostKeyCallback is changed to use something secure.
+* The webserver connects to the local SFTP/SSH service without verifying the SSH Host Key, therefore the connection between them cannot run across an untrusted network. Connecting to localhost is hardcoded to ensure this is the case. If you change this, ensure the HostKeyCallback is changed to use something secure, or reroute through a local connection using SSH port forwarding.
 
 ### Authentication
 * Authentication is made by proxying the SSH credentials through the backend in establishing a local SSH connection managed by the backend.
@@ -250,7 +250,6 @@ We stand on the shoulders of giants. They own this, far more than I do.
 * Copy/Paste in the terminal on Linux: Use Ctrl/Shift + Insert.
 
 # TODO
-* Test 2FA
 * Incorporate https://github.com/fuglaro/filet-cloud
 * Installation enhancement pass
   * New RP4 release without hat.
@@ -263,6 +262,7 @@ We stand on the shoulders of giants. They own this, far more than I do.
   * https - accept certs via env var or auto setup with let's encrypt autocert NewListener (with domain provided by FC_DOMAIN).
     * Remove nginx.
     * Switch to included autocert.
+  * Setup and test 2FA
   * Storage status active folder plugin.
   * Backup active folder plugin.
 * Retest IOS, Safari, Chrome, Chrome Mobile.
