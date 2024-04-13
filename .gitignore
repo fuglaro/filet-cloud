@@ -1,3 +1,9 @@
-filet-cloud-web
-go
-golang.tar.gz
+filet-cloud
+resources/deps
+**.DS_Store
+**.key
+**.csr
+**.crt
+**.cert
+**.pem
+**.p12

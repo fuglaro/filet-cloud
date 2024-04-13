@@ -1,0 +1,1511 @@
+<!doctype html>
+<meta charset=utf-8>
+<meta name="viewport" content="initial-scale=1, interactive-widget=resizes-content" />
+<title>Filet Cloud</title>
+<style nonce="{{.Nonce}}">
+	@font-face {
+		/* terminal font */
+		font-family: NotoMonoNerd;
+		src: url("/resources/NotoMonoNerdFontMono-Regular.ttf");
+	}
+
+	:root {
+		color-scheme: light dark;
+		--term-font: NotoMonoNerd;
+	}
+
+	* {
+		font-family: system-ui;
+	}
+
+	body>div>span {
+		/* xtermjs fix so font width calculations are correct */
+		font-family: var(--term-font);
+	}
+
+	body {
+		/* UI pane with no page scrolling */
+		position: fixed;
+		margin: 0px;
+		width: 100%;
+		height: 100%;
+		display: flex;
+		flex-direction: row;
+	}
+
+	p,
+	h1 {
+		/* these are always clickable in the main browser page */
+		cursor: default;
+		margin: 2px;
+	}
+
+	.on {
+		/* icon of currenly selected file */
+		filter: contrast(0%);
+	}
+
+	/* horizontal storage management menu */
+	#menu {
+		display: flex;
+		align-items: flex-start;
+		flex-direction: row;
+		flex-wrap: wrap;
+		justify-content: center;
+		margin-bottom: 24px;
+		width: 100% - 48px;
+
+		button {
+			all: unset;
+
+			h1 {
+				height: 1.1em;
+				margin-top: 0px;
+				margin-bottom: 0px;
+				text-align: center;
+			}
+
+			p {
+				font-size: 0.5em;
+				margin-top: 0px;
+				margin-bottom: 0px;
+				text-align: center;
+			}
+		}
+
+		:focus-visible {
+			outline: 1px solid;
+		}
+	}
+
+	.maxer {
+		width: 100%;
+		height: 100%;
+		overflow-y: auto;
+	}
+
+	#data {
+		width: calc(100% - 48px);
+		height: calc(100% - 48px);
+		margin: 24px 24px 0px 24px;
+		overflow-y: auto;
+	}
+
+	/* opened file content (fullscreen) */
+	body.open #data {
+		position: fixed;
+		left: 0px;
+		width: 100%;
+		height: 100%;
+		margin: 0px;
+	}
+
+	body.open #dirPane,
+	body.open #menu {
+		visibility: hidden;
+	}
+
+	/* selectable files and folders in the browsing pane (dir) and also the cart (data) */
+	#dir>button,
+	#data>button {
+		all: unset;
+		width: 100%;
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		word-break: break-all;
+		backdrop-filter: invert(8%);
+	}
+
+	#dir>button:nth-child(odd),
+	#data>button:nth-child(odd) {
+		backdrop-filter: invert(4%)
+	}
+
+	#dir>button:nth-child(odd):focus-visible,
+	#dir>button:focus-visible,
+	#data>button:nth-child(odd):focus-visible,
+	#data>button:focus-visible {
+		backdrop-filter: invert(20%);
+	}
+
+	#dirPane {
+		display: flex;
+		flex-direction: column;
+		margin: 24px;
+		margin-right: 0px;
+		width: calc(45% - 24px);
+		height: calc(100% - 48px);
+
+		#path {
+			margin-top: 6px;
+			font-size: 0.7em;
+			filter: invert(20%);
+		}
+	}
+
+	#dataPane {
+		width: 55%;
+		height: 100%;
+		display: flex;
+		flex-direction: column;
+	}
+
+	#contenthider {
+		/* hide the background content when not logged in */
+		position: fixed;
+		width: 100vw;
+		height: 100vh;
+		z-index: 999998;
+		backdrop-filter: contrast(50%) blur(16px) brightness(130%);
+
+		@media (prefers-color-scheme: dark) {
+			backdrop-filter: contrast(50%) blur(16px) brightness(70%);
+		}
+	}
+
+	#uploader {
+		display: none;
+	}
+
+	p.status {
+		/* uploading status icon */
+		position: absolute;
+		margin: 8px;
+		right: 0px;
+	}
+
+
+	@media (orientation: portrait) {
+		#menu {
+			margin-bottom: 0px;
+		}
+
+		#dirPane {
+			margin-top: 0px;
+		}
+
+		body {
+			flex-direction: column-reverse;
+		}
+
+		#dirPane {
+			width: calc(100% - 48px);
+			height: calc(50% - 24px);
+			margin-right: 28px;
+		}
+
+		#dataPane {
+			width: 100%;
+			height: 50%;
+		}
+	}
+</style>
+
+<!-- Pane for displaying all the clickable folders and files at this level -->
+<div id=dirPane>
+	<div id=dir class=maxer tabindex=0></div>
+	<div id=path></div>
+</div>
+
+<!-- Pane for displaying content or actions relevant for the selected file or folder -->
+<div id=dataPane>
+	<div id=data></div>
+	<div id=menu>
+		<button id=reload>
+			<h1>🔄</h1>
+			<p>reload</p>
+		</button>
+		<button id=makedir>
+			<h1>📁</h1>
+			<p>new<br>folder</p>
+		</button>
+		<button id=newfile>
+			<h1>📄</h1>
+			<p>new<br>file</p>
+		</button>
+		<button id=tabopen>
+			<h1>📖</h1>
+			<p>open</p>
+		</button>
+		<button id=upload>
+			<h1>📤</h1>
+			<p>upload</p>
+		</button>
+		<button id=download>
+			<h1>📥</h1>
+			<p>down<br>load</p>
+		</button>
+		<button id=rename>
+			<h1>🖊️</h1>
+			<p>rename</p>
+		</button>
+		<button id=cart>
+			<h1>🛒</h1>
+			<p>cart</p>
+			<p id=cartlen>0</p>
+		</button>
+		<button id=move>
+			<h1>🚚</h1>
+			<p>move</p>
+		</button>
+		<button id=del>
+			<h1>🗑</h1>
+			<p>delete</p>
+		</button>
+		<button id=close>
+			<h1>❌</h1>
+			<p>close</p>
+		</button>
+	</div>
+</div>
+
+<input id="uploader" type="file" multiple />
+<a id="dwnld" download></a>
+<div id=contenthider></div>
+<div><span><!--terminal font warmer--></span></div>
+
+<!--
+  -- Folder Actions Pane (including any custom actions, the terminal launcher, and logout button).
+	-->
+<template id=-folder-actions>
+	<style nonce="{{.Nonce}}">
+		#actions {
+			display: flex;
+			flex-direction: column;
+			flex-wrap: wrap-reverse;
+			align-items: flex-start;
+			align-content: end;
+			column-gap: 0.8em;
+			row-gap: 0.2em;
+			padding: 10px;
+			height: calc(100% - 20px);
+			overflow: auto;
+		}
+
+		a,
+		button {
+			all: unset;
+			flex-basis: "min-content";
+			float: right;
+
+			h1 {
+				cursor: default;
+				height: 1.1em;
+				margin: 0px;
+				text-align: center;
+			}
+
+			p {
+				cursor: default;
+				font-size: 0.5em;
+				margin: 0px;
+				text-align: center;
+			}
+		}
+
+		#terminal.fullit {
+			position: fixed;
+			left: 0px;
+			top: 0px;
+			width: 100%;
+			height: 100%;
+			font-family: var(--term-font);
+		}
+
+		:focus-visible {
+			outline: 1px solid;
+		}
+	</style>
+	<link rel=stylesheet href="/resources/deps/xterm.css"
+		integrity="sha384-LJcOxlx9IMbNXDqJ2axpfEQKkAYbFjJfhXexLfiRJhjDU81mzgkiQq8rkV0j6dVh" />
+	<script src="/resources/deps/xterm.js"
+		integrity="sha384-/nfmYPUzWMS6v2atn8hbljz7NE0EI1iGx34lJaNzyVjWGDzMv+ciUZUeJpKA3Glc"></script>
+	<script src="/resources/deps/xterm-addon-fit.js"
+		integrity="sha384-AQLWHRKAgdTxkolJcLOELg4E9rE89CPE2xMy3tIRFn08NcGKPTsELdvKomqji+DL"></script>
+	<div id=terminal></div>
+	<div id=actions>
+		<a href="/logout">
+			<h1>🔐</h1>
+			<p>logout</p>
+		</a>
+		<button id=term-button>
+			<h1>🖥</h1>
+			<p>terminal</p>
+		</button>
+	</div>
+</template>
+
+<!--
+  -- Login form
+  --
+	-- Form for establishing a login connection and a storage
+	-- class to manage secure queries with the server.
+	-->
+<template id=-login-form>
+	<style nonce="{{.Nonce}}">
+		:host {
+			position: fixed;
+			z-index: 999999;
+		}
+
+		div {
+			display: flex;
+			width: 100vw;
+			height: 100vh;
+			align-items: center;
+			justify-content: center;
+		}
+
+		ul {
+			list-style: none;
+
+			label {
+				display: inline-block;
+				width: 80px;
+				text-align: right;
+			}
+
+			input {
+				padding: 5px;
+			}
+
+			button {
+				float: right;
+				font-size: 2em;
+				border-style: solid;
+				border-color: currentColor;
+			}
+
+			button.loading {
+				filter: blur(3px);
+			}
+		}
+	</style>
+	<div tabindex="-1">
+		<form>
+			<h1>👤 Login</h1>
+			<ul>
+				<li>
+					<label for=username>Username</label>
+					<input type=text id=username name=username required />
+				</li>
+				<li>
+					<label for=password>Password</label>
+					<input type=password id=password name=password required />
+				</li>
+				<li>
+					<label for=code>(Code)</label>
+					<input type=password id=code name=code title="2FA access code (optional on some servers)" size=8 />
+				</li>
+				<br>
+				<li>
+					<button>Connect</button>
+				</li>
+			</ul>
+			<input type=hidden id=CSRFToken value="{{.CSRF}}" />
+		</form>
+	</div>
+</template>
+<script nonce="{{.Nonce}}">
+	"use strict"
+	let autoLogoutTimer = null
+	const login = () => {
+		clearTimeout(autoLogoutTimer)
+		if (!document.querySelector("login-form") && crossOriginIsolated)
+			document.body.appendChild(document.createElement("login-form"))
+	}
+	login()
+	customElements.define("login-form", class extends HTMLElement {
+		constructor() {
+			super()
+			if (location.protocol != 'https:') return // Ensure secure transport.
+			this.attachShadow({mode: "open"}).appendChild(
+				document.getElementById("-login-form").content.cloneNode(true))
+		}
+		connectedCallback() {
+			if (!this.shadowRoot) return
+			this.shadowRoot.querySelector("form").addEventListener("submit", e => {
+				this.shadowRoot.querySelector("button").classList.add("loading")
+				e.preventDefault()
+				// Establish WebSocket connection.
+				const ws = new WebSocket(`wss://${window.location.host}/connect`)
+				ws.onclose = () => login()
+				ws.onerror = () => ws.close()
+				ws.onopen = () => {
+					// Set up auto-logout mechanism.
+					document.onvisibilitychange = () => {
+						if (document.visibilityState === "hidden")
+							autoLogoutTimer = setTimeout(() => ws.close(), 300000)
+						else clearTimeout(autoLogoutTimer)
+					}
+					// Authenticate WebSocket connection.
+					ws.send(this.shadowRoot.querySelector("#CSRFToken").value)
+					ws.send(this.shadowRoot.querySelector("#username").value)
+					ws.send(this.shadowRoot.querySelector("#password").value)
+					ws.send(this.shadowRoot.querySelector("#code").value)
+					// Give connection to the storage API, also to finish up all the async stuff.
+					storage.connect(ws)
+				}
+				document.body.removeChild(document.querySelector("login-form"))
+			})
+			this.shadowRoot.querySelector("div").focus()
+		}
+	})
+
+	/**
+	* Interface for all operations interacting with the storage and server.
+	* Securely manages server connection, with login and session management,
+	* and only exposes the minimum interface.
+	*/
+	class Storage {
+		path = () => decodeURI(window.location.hash.replace(/^#.+:\//, '/'))
+		mode = () => window.location.hash.split(':')[0] + ":"
+
+		// Keep raw connections private, to limit javascript access.
+		#ws = null; // websocket connection to the server.
+		#connection = [] // pending connections awaiting login.
+		#reqs = {} // manage requests awaiting responses (stored by msgID).
+		#msgID = 0 // msgID counter for generating unique message IDs.
+		#authRefresh = null // refresh the authentication cookie on intervals.
+		#actionsUpdater = null
+		#onTermMsg = m => { }
+
+		constructor() {
+			// Setup the folder actions pane.
+			// This is all nested inside the storage class to securly protect the terminal data streams.
+			const stThis = this
+			customElements.define("folder-actions", class extends HTMLElement {
+				constructor() {
+					super()
+					this.attachShadow({mode: "open"}).appendChild(
+						document.getElementById("-folder-actions").content.cloneNode(true))
+
+					// Setup the terminal launcher button.
+					const tb = this.shadowRoot.getElementById("term-button")
+					tb.onclick = () => {
+						const terminal = this.shadowRoot.getElementById("terminal")
+						terminal.classList.add("fullit")
+						const term = new Terminal({fontFamily: terminal.style.fontFamily})
+						const fitTerm = new window.FitAddon.FitAddon()
+						term.loadAddon(fitTerm)
+						term.open(terminal)
+						window.onresize = () => {
+							fitTerm.fit()
+							// Resize the terminal pty session to the new rows and columns size.
+							stThis.#ws.send(JSON.stringify({action: "termdata", cols: term.cols, rows: term.rows}))
+						}
+						stThis.#onTermMsg = m => {
+							if (m === null) {
+								// Close terminal.
+								term.dispose()
+								stThis.#onTermMsg = m => { }
+								window.onresize = null
+								terminal.classList.remove("fullit")
+							}
+							else term.write(m)
+						}
+						term.onData(d => stThis.#ws.send(JSON.stringify({action: "termdata", data: d})))
+						stThis.#ws.send(JSON.stringify({action: "termdata", rows: -1})) // Send start-session message.
+						window.onresize()
+						term.focus()
+					}
+
+					// Setup the active folder plugin action buttons.
+					stThis.listDir(stThis.path()).then(fs => fs.forEach(f => {
+						if (!f.startsWith("._filetCloudAction_") || [...f].length < 20) return
+						const button = document.createElement("button")
+						const icon = document.createElement("h1")
+						icon.textContent = [...f].slice(-1)
+						const label = document.createElement("p")
+						const wrap = [...f].slice(19, -1).join("").split(/(_)/).map(
+							i => i === '_' ? document.createElement("br") : i)
+						label.append(...wrap)
+						button.append(icon, label)
+						button.onclick = () => {
+							// Launch the action with a wait prompt that will redirect on completion (if not dismissed).
+							let waiting = true
+							prompter("Running...", new Promise(ok => {
+								stThis.runAction(cwd() + f).then(r => {
+									if (r && waiting) nav(r) // redirect if completed, and not yet dismissed
+									ok()
+								})
+							})).then(() => waiting = false)
+						}
+						this.shadowRoot.querySelector("#actions").appendChild(button)
+					}))
+				}
+			})
+		}
+
+		/**
+		 * Finalise the setup of the websocket connection,
+		 * and kick off any pending requests.
+		 */
+		async connect(ws) {
+			ws.onclose = () => {
+				clearInterval(this.#authRefresh) // cancel ongoing auth refreshing.
+				// close terminal if open.
+				this.#onTermMsg(null)
+				this.#onTermMsg = m => { }
+				// Hide any open content.
+				document.getElementById("contenthider").style.display = 'initial'
+				// Requeue all pending requests.
+				for (const k in this.#reqs) {
+					const v = this.#reqs[k]
+					delete this.#reqs[k]
+					this.#req(v[0], v[1])
+				}
+				// Trigger a re-login prompt.
+				login()
+			}
+			window.onbeforeunload = () => ws.close() // Force logout ASAP
+			ws.onerror = () => ws.close()
+			// Setup normal message response handling.
+			const onmessage = async m => {
+				let id = null, v = null
+				// Handle binary, or json response mesage.
+				if (m.data instanceof Blob) {
+					id = Number(await m.data.slice(0, 20).text())
+					v = await m.data.slice(20)
+				} else {
+					const d = JSON.parse(m.data)
+					id = d.id
+					v = d.msg
+				}
+				// Handle terminal data.
+				if (id < 0) {
+					if (id === -1) this.#onTermMsg(new Uint8Array(await v.arrayBuffer()))
+					else this.#onTermMsg(null) // Close terminal.
+					return
+				}
+				// Activate the prepared response handler.
+				const ok = this.#reqs[id][1]
+				delete this.#reqs[id]
+				ok(v)
+			}
+			// Ensure all websocket responses are processed in order.
+			let msgQueue = Promise.resolve()
+			ws.onmessage = m => msgQueue = msgQueue.then(() => onmessage(m)
+			)
+			this.#ws = ws
+			// Setup authenticated browser access.
+			let nextAuthTime = Date.now()
+			const checkAuthenticate = async () => {
+				if (Date.now() < nextAuthTime) return
+				if (!(await fetch("/authenticate",
+					{method: "POST", body: await this.#req({action: "token"})})).ok) {
+					ws.close()
+					return
+				}
+				nextAuthTime = Date.now() + 4 * 60000 // Refresh every 4 minutes.
+			}
+			await checkAuthenticate()
+			this.#authRefresh = setInterval(checkAuthenticate, 1000) // Check auth refresh every second.
+			document.getElementById("contenthider").style.display = 'none'
+			// Handle all the waiting requests.
+			while (this.#connection.length) this.#connection.pop()()
+		}
+
+		/**
+		 * Send a request to the storage backend,
+		 * via the websocket connection.
+		 */
+		async #req(r, ok) {
+			// Ensure we have an established login connection.
+			if (this.#ws === null || this.#ws.readyState !== WebSocket.OPEN) await new Promise(ok => {
+				this.#connection.push(ok)
+				login()
+			})
+			if (r === undefined) return // Used by authLinks when ensuring authenticated login.
+			// Send request to server, after preparing the response handler.
+			const msgID = this.#msgID += 1 // Prepare a way to associate responses to the requests.
+			const resp = new Promise(ok => {
+				// Load up a place holder for handling the response, whenever it comes.
+				this.#reqs[msgID] = [r, ok]
+			})
+			if (ok) this.#reqs[msgID][1] = ok // If in a retry of a previous request, reuse promise.
+			// Fire off the request.
+			if (r instanceof Blob) {
+				if (msgID.toString().length > 20) throw new Error()
+				this.#ws.send(new Blob([msgID.toString().padEnd(20), r]))
+			} else {
+				r.id = msgID
+				this.#ws.send(JSON.stringify(r))
+			}
+			return resp // Return the promise that will resolve to a response.
+		}
+
+		// Request the mime type for a file.
+		mime = async (path) => await this.#req({action: "mime", path: path})
+		// Request the contents of a file.
+		readFile = async (path) => await this.#req({action: "file", path: path})
+		// Request to make a new dir inside an existing folder.
+		newDir = async (path) => await this.#req({action: "newdir", path: path})
+		// Request to make a new file inside an existing folder.
+		newFile = async (path) => await this.#req({action: "newfile", path: path})
+		// Request to rename or move a file or folder.
+		rename = async (path, to) => await this.#req({action: "rename", path: path, to: to})
+		// Request to delete a file or folder.
+		remove = async (path) => await this.#req({action: "remove", path: path})
+		// Request to run a custom active folder plugin, (expected to be) at the given path.
+		runAction = async (path) => await this.#req({action: "runaction", path: path})
+		// Ensure the connection is still active (for use before using a storage link).
+		authLinks = async () => await this.#req()
+		// Storage link for a file's contents.
+		fileLink = (path) => `/file:${encodeURI(path)}`
+		// Storage link for a thumbnail generated for a file.
+		thumbLink = (path) => `/thumb:${encodeURI(path)}`
+		// Storage link for a generated zip archive for a list of files.
+		zipLink = (paths) => '/zip?' + paths.map(p => `path=${encodeURI(p)}`).join('&')
+
+		/**
+		* Retrieve the contents of a directory as a list of strings,
+		* where child directories end in (forward) slashes.
+		* Results are returned sorted by name but with folders first.
+		*/
+		async listDir(path) {
+			const r = (await this.#req({action: "dir", path: path})).sort()
+			return r.map(([isFile, name]) => name + (isFile ? "" : "/"))
+		}
+
+		/**
+		* Upload a file to the server into the current directory,
+		* potentially overwriting existing files on the server.
+		*/
+		async upload(path, content) {
+			const plenstr = path.length.toString()
+			if (plenstr.length > 20) throw new Error()
+			await this.#req(new Blob([plenstr.padEnd(20), path, content]))
+		}
+	}
+	const storage = new Storage();
+</script>
+
+
+<script nonce="{{.Nonce}}">
+	/**
+	 * Browser UI code.
+	 */
+	"use strict"
+	// Redirect to a valid starting URL, if a new seesion.
+	if (window.location.hash === "") window.history.replaceState("", "", "/#browse:/")
+	// All the storage menu actions.
+	document.getElementById("reload").onclick = () => nav(storage.path())
+	document.getElementById("makedir").onclick = () => makedir()
+	document.getElementById("newfile").onclick = () => newfile()
+	document.getElementById("tabopen").onclick = () => setPath('#open:', storage.path())
+	document.getElementById("upload").onclick = () => document.getElementById('uploader').click()
+	document.getElementById("download").onclick = () => download()
+	document.getElementById("rename").onclick = () => rename()
+	document.getElementById("cart").onclick = () => {
+		document.getElementById('cart').classList.toggle('on')
+		cartMode() ? cartSel() : nav(storage.path())
+	}
+	document.getElementById("move").onclick = () => move()
+	document.getElementById("del").onclick = () => del()
+	document.getElementById("close").onclick = () => nav(storage.path().replace(/[^/]+$/g, ''))
+	document.getElementById("uploader").onchange = () => send()
+
+	// Setup some basic helper functions for navigation and the cart.
+	const cwd = () => storage.path().replace(/[^/]+$/g, '')
+	const setPath = (mode, path) => {
+		document.getElementById('path').textContent = path
+		// Replace the history when navigating, but push to it when opening a file.
+		if (mode === storage.mode()) window.history.replaceState("", "", `${mode}${encodeURI(path)}`)
+		else window.location.hash = `${mode}${encodeURI(path)}`
+		// Adjust the UI between the open file mode, and browsing.
+		document.body.classList.remove('open')
+		if (mode === '#open:') {
+			document.querySelector('#data>.maxer').children[0]?.removeAttribute('preview');
+			document.body.classList.add('open')
+		}
+	}
+	const cart = []
+	const cartMode = () => document.getElementById('cart').classList.contains("on")
+	const cartRemove = c => {c ? cart.splice(cart.indexOf(c), 1) : cart.length = 0; cartSel()}
+
+	/**
+	 * Update the dynamic storage menu,
+	 * hiding and showing each menu botton based on the current context.
+	 */
+	function menuMode() {
+		const mode = (storage.path().endsWith("/") ? (
+			cartMode() ? (cart.length ? "cart" : "cartEmpty") :
+				cart.length ? "dirWithCart" : "dirEmptyCart") : "file")
+		menuItems.forEach(id => document.getElementById(id).style.display =
+			menuModes[mode].includes(id) ? 'initial' : 'none')
+	}
+	const menuModes = {
+		dirEmptyCart: ["reload", "makedir", "newfile", "upload", "rename", "cart"],
+		dirWithCart: ["reload", "download", "move", "del", "cart"],
+		file: ["reload", "tabopen", "download", "rename", "close"],
+		cart: ["download", "del", "cart"],
+		cartEmpty: ["cart"],
+	}
+	const menuItems = new Set(Object.values(menuModes).flat())
+
+	// Setup keyboard navigation of folders.
+	const dir = document.getElementById('dir')
+	document.querySelector('body').onkeydown = ev => {
+		if (ev.key != "ArrowDown" && ev.key != "ArrowUp") return
+		// Abort if not a parent or child of the dir pane.
+		if (!document.activeElement.contains(dir) && !dir.contains(document.activeElement)) return
+		ev.preventDefault()
+		// Select the first child, or if one is already selected, the previous/next child.
+		if (document.activeElement.parentElement != dir) {
+			const sel = dir.querySelector(".on")
+			sel ? sel.parentElement.focus() : dir.firstChild.focus()
+		}
+		else if (ev.key != "ArrowDown") document.activeElement.previousSibling?.focus()
+		else document.activeElement.nextSibling?.focus()
+	}
+
+	/**
+	* Navigate to, and show, a file or directory.
+	* For folders, path should be terminated in a "/".
+	* Also sets the current files or directories for future actions.
+	* Updates the folder area with interactive tree navigation.
+	* Displays file contents as best it can.
+	*/
+	async function nav(path, justOpen) {
+		document.getElementById('data').replaceChildren()
+		if (cartMode()) cartSel()
+		if (!justOpen && storage.mode() === "#browse:") {
+			// Fill the folder contents
+			setPath('#browse:', path)
+			// Refresh the contents of the directory by querying the server
+			const curFile = storage.path().replace(/^.*[\\/]/, '')
+			storage.listDir(cwd()).then(r => {
+				dir.replaceChildren(...r.map(n => {
+					const nibIcon = document.createElement("h1")
+					const nib = document.createElement("p")
+					nib.textContent = n.replace(/\/$/, '')
+					nibIcon.textContent = n.endsWith('/') ? '📂' : '📄'
+					if (curFile === n) nibIcon.classList.add("on") // highlight selection
+					const div = document.createElement('button')
+					const path = cwd() // resolve here to avoid double click stacking the path
+					const highlight = () => {
+						Array.from(dir.getElementsByClassName("on")).forEach(n => {
+							n.textContent = '📄' // clear previous loading icons
+							n.classList.remove("on")
+						})
+						nibIcon.classList.add("on") // highlight selection
+					}
+					div.onclick = () => {
+						if (!cartMode() || n === "../") {
+							// Handle when cart mode not selected (or clicking ../ which side-steps cart mode).
+							if (n.endsWith('/')) {
+								// Select a folder.
+								highlight()
+								nibIcon.textContent = '⏳'
+								nav(n === "../" ? path.replace(/[^/]+\/[^/]*$/g, '') : path + n)
+							}
+						} else cartSel(path + n) // Add to the cart.
+					}
+					div.tabIndex = -1 // Tab should not go through each file or folder, arrow keys do that.
+					div.onfocus = () => {
+						if (!cartMode() && !n.endsWith('/')) {
+							// Open the selected file.
+							highlight()
+							nav(path + n, justOpen = true)
+						}
+					}
+					div.replaceChildren(nibIcon, nib)
+					return div
+				}))
+				dir.firstChild.focus()
+				if (!cartMode() && path.endsWith("/")) {
+					// Display all the folder actions relevant to this level (including logout and terminal).
+					document.getElementById('data').replaceChildren(document.createElement("folder-actions"))
+				}
+			})
+			menuMode()
+		}
+		if (!path.endsWith("/")) {
+			// Open any file contents in the data pane.
+			const div = document.createElement("div")
+			div.classList.add("maxer")
+			div.textContent = '⏳'
+			document.getElementById('data').replaceChildren(div)
+			setPath(storage.mode(), path)
+			// Dynamically load the appropriate file loader depending on file extension and mime type.
+			const reg = (n) => document.getElementById(`-${n}`)?.getAttribute("loader")
+			const nib = document.createElement(
+				reg(`ext-${/(?:\.([^.]+))?$/.exec(path)[1]}`) // try file extension loader
+				|| reg(`mime-${(await storage.mime(path)).replace("/", "-")}`) // try mime type loader
+				|| reg('misc-media')) // fallback loader
+			// Force full window file open if the URL hash indicates that viewing mode.
+			if (storage.mode() === "#open:") document.getElementById("tabopen").click()
+			else nib.setAttribute("preview", "") // otherwise, just display as a preview.
+			div.replaceChildren(nib)
+			menuMode()
+		}
+	}
+
+	/**
+	* Add the given path to the cart, if provided.
+	* Refresh the display of the cart and count.
+	* Cart enties remove themselves when clicked.
+	*/
+	function cartSel(path) {
+		if (path && !cart.includes(path)) cart.push(path)
+		document.getElementById('cartlen').textContent = cart.length.toString()
+		document.getElementById('data').replaceChildren(...cart.map(c => {
+			const nibIcon = document.createElement("h1")
+			const nib = document.createElement("p")
+			nib.textContent = c
+			nibIcon.textContent = c.endsWith('/') ? '📂' : '📄'
+			const div = document.createElement('button')
+			div.onclick = () => cartRemove(c)
+			div.replaceChildren(nibIcon, nib)
+			return div
+		}))
+		menuMode()
+	}
+
+	/**
+	* Make a directory on the server.
+	* The user is prompted for the name of the new directory and
+	* it is made inside the current directory.
+	*/
+	async function makedir() {
+		const newDir = await prompter("New Folder:", "")
+		if (!newDir) return
+		storage.newDir(cwd() + newDir).then(() => nav(cwd()))
+	}
+
+	/**
+	* Make a new file on the server.
+	* The user is prompted for the name of the new file and
+	* it is made inside the current directory.
+	*/
+	async function newfile() {
+		const newFile = await prompter("New File:", "")
+		if (!newFile) return
+		storage.newFile(cwd() + newFile).then(() => nav(cwd() + newFile))
+	}
+
+	/**
+	* Upload selected files to the server.
+	* Files are uploaded into the current directory.
+	* This is called after the file selection popup has been loaded
+	* and files have been selected.
+	*/
+	function send() {
+		const ico = document.createElement("p")
+		ico.classList.add("status")
+		ico.textContent = '📤'
+		const existing = new Set(Array.from(
+			document.querySelectorAll("#dir>div>p")).map(p => p.textContent))
+		Array.from(document.getElementById('uploader').files).forEach(f => {
+			const ico2 = ico.cloneNode(true)
+			document.getElementById("dataPane").appendChild(ico2) // Show upload status icon
+			// Ensure filename for upload is unique
+			let filename = f.name
+			let n = 2
+			while (existing.has(filename)) filename = f.name.replace(/((?:\.|$)[^\.]*)/, `(${n++})$1`)
+			// Upload the file
+			storage.upload(cwd() + filename, f).then((ico3 => () => {
+				nav(cwd());
+				document.getElementById("dataPane").removeChild(ico3) // Clear upload status icon
+			})(ico2))
+		})
+	}
+
+	/**
+	* Rename a file or directory on the server.
+	* The user is prompted for the new name.
+	*/
+	async function rename() {
+		const suffix = storage.path().endsWith('/') ? '/' : ''
+		const folder = storage.path().replace(/[^/]+\/?$/g, '')
+		const oldName = storage.path().replace(/\/?$/g, '').split('/').pop()
+		const newName = await prompter("Rename:", oldName)
+		if (!newName || newName === oldName) return
+		storage.rename(folder + oldName, folder + newName).then(
+			() => nav(folder + newName + suffix))
+	}
+
+	/**
+	* Download a file or a zip of multiple items.
+	* Supports downloading the selected file (if a file),
+	* a single file from the cart, or zipping multiple files
+	* and folders in the cart.
+	*/
+	async function download() {
+		var paths = cart
+		if (!paths.length && !storage.path().endsWith('/')) paths = [storage.path()]
+		const dwn = document.getElementById('dwnld')
+		dwn.download = 'download.zip'
+		await storage.authLinks()
+		dwn.href = storage.zipLink(paths)
+		if (paths.length === 1 && !paths[0].endsWith('/')) {
+			dwn.download = paths[0].split('/').pop()
+			dwn.href = storage.fileLink(paths[0])
+		}
+		dwn.click()
+		if (cart.length) cartRemove()
+	}
+
+	/**
+	* Moves everything in the cart to the current folder,
+	* after confirmation.
+	*/
+	async function move() {
+		const checkMsg = `Move ${cart.length} item${cart.length > 1 ? 's' : ''} to ${cwd()} ?`
+		if (! await prompter(checkMsg, true)) return
+		/* Loop through the paths in the cart sorted backwards so sub-items
+			 are moved before parent items */
+		cart.sort().reverse().forEach(item => {
+			const dest = cwd() + item.replace(/\/?$/g, '').split('/').pop()
+			storage.rename(item, dest).then(() => {cartRemove(item); nav(cwd())})
+		})
+	}
+
+	/**
+	* Deletes everything in the cart,
+	* after confirmation.
+	*/
+	async function del() {
+		const checkMsg = `Delete ${cart.length} cart item${cart.length > 1 ? 's' : ''}?`
+		if (! await prompter(checkMsg, true)) return
+		/* Loop through the paths in the cart sorted backwards so sub-items
+			 are removed before parent items */
+		cart.sort().reverse().forEach(item => {
+			storage.remove(item).then(() => {cartRemove(item); nav(cwd())})
+		})
+	}
+
+	window.onload = window.onpopstate = () => nav(storage.path())
+</script>
+
+
+<!--
+  -- Prompt
+	--
+	-- Pop-up prompt for general text input, waiting on a process, or for confirmation questions.
+	-- Pass true as the value for confirmation question mode, or a promise for waiting mode.
+	-- Passing in a string value will use that as a default value for text input mode.
+	-->
+<style nonce="{{.Nonce}}">
+	.ip {
+		position: fixed;
+		z-index: 99;
+		backdrop-filter: blur(18px);
+		background-color: rgba(255, 255, 255, 0.2);
+		width: 100vw;
+		height: 100vh;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+
+		ul {
+			list-style-type: none;
+
+			input {
+				width: min(80vw, 400px);
+				padding: 5px;
+				margin: 5px
+			}
+
+			button {
+				font-size: 1.6em;
+				border-style: solid;
+				border-color: currentColor;
+				float: right;
+				margin: 5px;
+			}
+		}
+	}
+</style>
+<template id=input-prompt>
+	<div class=ip>
+		<ul>
+			<li>
+				<label for=intext></label>
+			</li>
+			<li>
+				<input type=text id=intext />
+			</li>
+			<li>
+				<button id=ok>OK</button>
+				<button id=cancel>Cancel</button>
+			</li>
+		</ul>
+	</div>
+</template>
+<script nonce="{{.Nonce}}">
+	"use strict"
+	async function prompter(message, value) {
+		const el = document.getElementById("input-prompt").content.cloneNode(true).querySelector(".ip")
+		// Setup the default value.
+		el.querySelector("label").textContent += message
+		// Setup the prompt mode.
+		const inp = el.querySelector("#intext")
+		if (typeof value !== "string") {
+			inp.style.display = "none"
+			if (typeof value !== "boolean") el.querySelector("#cancel").style.display = "none"
+		}
+		document.body.appendChild(el)
+		inp.focus()
+		const val = await new Promise(ok => {
+			// Force resolution when a provided promise resolves.
+			if (typeof value.then === "function") value.then(() => ok(true))
+			// Setup keyboard controls (Enter/Escape).
+			inp.value = value
+			inp.onkeydown = ev => {
+				if (ev.key == "Enter") ok(inp.value)
+				if (ev.key == "Escape") ok(false)
+			}
+			// Setup button actions.
+			el.querySelector("#ok").onclick = () => ok(inp.value)
+			el.querySelector("#cancel").onclick = () => ok(false)
+		})
+		document.body.removeChild(el)
+		return val
+	}
+</script>
+
+
+<!--
+  -- misc
+  --
+	-- Fallback loader for all files, and browser compatible media.
+	-- Displays the file contents as best it can using inbuilt
+	-- browser image and video elements, otherwise fall back to
+	-- a basic page. Video elements will also support compatible audio.
+	-->
+<ref-load id=-ext-jpg loader=misc-media />
+<ref-load id=-ext-png loader=misc-media />
+<ref-load id=-ext-svg loader=misc-media />
+<ref-load id=-ext-gif loader=misc-media />
+<ref-load id=-ext-mp4 loader=misc-media />
+<template id=-misc-media loader=misc-media>
+	<style nonce="{{.Nonce}}">
+		#body.preview,
+		#body>video {
+			width: 100%;
+			height: 100%;
+			margin: 0px;
+		}
+
+		video,
+		img {
+			display: block;
+			margin: auto;
+			width: 100%;
+			max-height: 100%;
+			object-fit: contain;
+		}
+
+		#fail {
+			display: none;
+		}
+
+		h1,
+		p {
+			text-align: center;
+			margin: 0
+		}
+	</style>
+	<div id=body>
+		<p>⏳</p>
+	</div>
+	<div id=fail>
+		<h1 id=titlename></h1>
+		<p id=details></p>
+		<a id="download">
+			<h1>📥</h1>
+			<p>Download</p>
+		</a>
+	</div>
+</template>
+<script nonce="{{.Nonce}}">
+	customElements.define("misc-media", class extends HTMLElement {
+		constructor() {
+			super()
+			this.attachShadow({mode: "open"}).appendChild(
+				document.getElementById("-misc-media").content.cloneNode(true))
+		}
+		connectedCallback() {
+			const path = storage.path()
+			const sr = this.shadowRoot
+			const wait = sr.querySelector("#body > *")
+			// Prepare the thumbnail loader.
+			const thm = document.createElement("img")
+			thm.onload = () => wait.replaceWith(thm)
+			// Ready an attempted load of an img.
+			const img = document.createElement("img")
+			img.onload = () => wait.replaceWith(img)
+			img.onerror = () => {
+				// Fallback to attempting to load as a video (or audio).
+				const vid = document.createElement("video")
+				vid.controls = "controls"
+				vid.oncanplay = () => wait.replaceWith(vid)
+				vid.onerror = () => {
+					// Fallback to dowload link.
+					const filename = path.split('/').pop()
+					sr.querySelector("#download").download = filename
+					sr.querySelector("#titlename").textContent = filename
+					sr.querySelector("#details").textContent = path
+					sr.querySelector("#download").href = storage.fileLink(path)
+					wait.replaceWith(sr.querySelector("#fail"))
+					sr.querySelector("#fail").style.display = "block"
+				}
+				vid.src = storage.fileLink(path)
+			}
+			(async () => {
+				await storage.authLinks()
+				img.src = storage.fileLink(path)
+				// Set off a thumbnail preview to ensure fast loads, if appropriate.
+				if (this.getAttribute("preview") !== null && !img.complete && (
+					path.endsWith(".jpg") || path.endsWith(".jpeg"))) {
+					thm.src = storage.thumbLink(path)
+				}
+			})()
+		}
+		// Handle preview and open modes.
+		static observedAttributes = ["preview"]
+		attributeChangedCallback(name, oldValue, newValue) {
+			const div = this.shadowRoot.querySelector("#body")
+			if (newValue !== null) div.classList.add("preview")
+			else div.classList.remove("preview")
+		}
+	})
+</script>
+
+
+<!--
+  -- mime-text-plain
+  --
+	-- Loader for viewing and editing text files.
+	-->
+<ref-load id=-ext-txt loader=mime-text-plain />
+<template id=-mime-text-plain loader=mime-text-plain>
+	<style nonce="{{.Nonce}}">
+		div {
+			display: flex;
+			width: calc(100% - 48px);
+			height: calc(100% - 48px);
+			margin: 24px;
+
+			/* leave room for the save button above or to the side appropriately */
+			@media (orientation: portrait) {
+				flex-direction: column-reverse;
+				align-items: flex-end;
+			}
+		}
+
+		.preview {
+			width: 100%;
+			height: 100%;
+			margin: 0px;
+
+			button {
+				display: none;
+			}
+		}
+
+		#text {
+			width: 100%;
+			height: 100%;
+			margin: 0px;
+			resize: none;
+			box-sizing: border-box;
+			outline: none;
+		}
+
+		button {
+			margin: 0px;
+			right: 0px;
+			font-size: 1.2em;
+			width: 2em;
+			height: 2em;
+		}
+
+		#upload {
+			display: none;
+		}
+	</style>
+	<div>
+		<textarea id=text>⏳</textarea>
+		<button id=upload label="Save changes">💾</button>
+		<button id=reload label="Reload">🔄</button>
+	</div>
+</template>
+<script nonce="{{.Nonce}}">
+	customElements.define("mime-text-plain", class extends HTMLElement {
+		constructor() {
+			super()
+			this.attachShadow({mode: "open"}).appendChild(
+				document.getElementById("-mime-text-plain").content.cloneNode(true))
+			const text = this.shadowRoot.querySelector("#text")
+			const path = storage.path()
+			// Load the file contents and setup ability to save changes.
+			const upload = this.shadowRoot.querySelector('#upload')
+			const reload = this.shadowRoot.querySelector('#reload')
+			reload.onclick = () => storage.readFile(path).then(r => r.text().then(r => text.value = r))
+			reload.click()
+			text.oninput = () => {
+				reload.style.display = "none"
+				upload.style.display = "block"
+			}
+			upload.onclick = async () => {
+				await storage.upload(path, new Blob([text.value]))
+				upload.style.display = "none"
+				reload.style.display = "block"
+			}
+		}
+		// Handle preview and open editable modes.
+		static observedAttributes = ["preview"]
+		attributeChangedCallback(name, oldValue, newValue) {
+			this.shadowRoot.querySelector("#text").readOnly = newValue !== null
+			const div = this.shadowRoot.querySelector("div")
+			if (newValue !== null) div.classList.add("preview")
+			else div.classList.remove("preview")
+		}
+	})
+</script>
+
+
+<!--
+  -- ext-md
+  --
+	-- Loader for viewing and editing Markdown files.
+  -- View the md file content with EasyMDE,
+  -- and allow editing and saving back to the server.
+	-->
+<template id=-ext-md loader=ext-md>
+	<link rel=stylesheet href="/resources/deps/easymde.min.css"
+		integrity="sha384-uqD/OYCNfagd1EgXMgl5QedTD5K+B3e9b8GYo/41t7+Serf7CBxvl+tU1gHd+qd1" />
+	<style nonce="{{.Nonce}}">
+		#body {
+			display: flex;
+			width: calc(100% - 48px);
+			height: calc(100% - 48px);
+			margin: 24px;
+		}
+
+		/* fix up EasyMDE's trouble with dark mode */
+		@media (prefers-color-scheme: dark) {
+
+			#body button:hover,
+			#body .active,
+			#body .editor-preview pre,
+			#body .editor-preview,
+			#body .CodeMirror,
+			#body .CodeMirror-cursor {
+				color: currentColor;
+				background-color: field;
+				border-left-color: currentColor;
+			}
+
+			#body .editor-preview pre {
+				background-color: black;
+			}
+
+			#body .fullscreen {
+				background-color: inherit;
+			}
+		}
+
+		.editor-toolbar {
+			padding: 0px;
+
+			button {
+				height: 40px;
+				font-size: 1.2em;
+				width: 2em;
+			}
+		}
+
+		/* hide the menu and border in preview mode */
+		#body.preview {
+			width: 100%;
+			height: 100%;
+			margin: 0px;
+
+			*.editor-toolbar {
+				display: none;
+			}
+
+			*.CodeMirror {
+				height: 100%
+			}
+		}
+
+		img,
+		textarea,
+		div.EasyMDEContainer {
+			width: 100%;
+		}
+
+		#reload,
+		#upload {
+			display: none;
+			float: right;
+		}
+
+		/* Override the icons to unicode equivalents avoiding loading font awesome just for this. */
+		.fa {
+			font-style: normal;
+		}
+
+		.fa-undo:before {
+			content: "↶";
+		}
+
+		.fa-redo:before {
+			content: "↷";
+		}
+
+		.fa-eye:before {
+			content: "👁";
+		}
+
+		.fa-columns:before {
+			content: "◫";
+		}
+
+		.fa-arrows-alt:before {
+			content: "⛶";
+		}
+	</style>
+	<div id=body>
+		<textarea id=text tabindex=-1>⏳</textarea>
+		<button id=upload class=no-disable label="Save changes">💾</button>
+		<button id=reload class=no-disable label="Reload">🔄</button>
+	</div>
+</template>
+<script src="/resources/deps/easymde.min.js"
+	integrity="sha384-KtB38COewxfrhJxoN2d+olxJAeT08LF8cVZ6DQ8Poqu89zIptqO6zAXoIxpGNWYE"></script>
+<script nonce="{{.Nonce}}">
+	customElements.define("ext-md", class extends HTMLElement {
+		constructor() {
+			super()
+			this.attachShadow({mode: "open"}).appendChild(
+				document.getElementById("-ext-md").content.cloneNode(true))
+			const path = storage.path()
+			const sr = this.shadowRoot
+			// Handle images that reference relative storage.
+			const imgH = (img) => img.includes('://') ? img : storage.fileLink(path.replace(/[^/]+$/g, img))
+			// Load EasyMDE.
+			this.mde = new EasyMDE({
+				element: sr.querySelector("#text"),
+				status: false,
+				toolbar: ["undo", "redo", "preview", "side-by-side", "fullscreen"],
+				spellChecker: false,
+				autoDownloadFontAwesome: false,
+				previewRender: (v) => this.mde.markdown(v.replace(/\!\[([^\]\)\n]*)\]\(([^\)\n]+)\)/g,
+					(_, label, img) => `![${label}](${imgH(img)})`)),
+			});
+			// Load the file and setup the save and reload buttons.
+			storage.readFile(path).then(r => r.text().then(r => {
+				const upload = sr.querySelector('#upload')
+				const reload = sr.querySelector('#reload')
+				upload.remove()
+				reload.remove()
+				sr.querySelector(".editor-toolbar").append(upload, reload)
+				reload.style.display = "inline"
+				this.mde.value(r)
+				this.mde.codemirror.doc.clearHistory()
+				this.mde.codemirror.on("change", () => {
+					reload.style.display = "none"
+					upload.style.display = "inline"
+				})
+				upload.onclick = async () => {
+					await storage.upload(path, new Blob([this.mde.value()]))
+					upload.style.display = "none"
+					reload.style.display = "inline"
+				}
+				reload.onclick = () => storage.readFile(path).then(r => r.text().then(r => {
+					this.mde.value(r)
+					upload.style.display = "none"
+					reload.style.display = "inline"
+				}))
+			}))
+		}
+		diconnectedCallback() {
+			this.mde.cleanup()
+		}
+		// Handle switching between preview and open editable modes.
+		static observedAttributes = ["preview"]
+		attributeChangedCallback(name, oldValue, newValue) {
+			const cl = this.shadowRoot.querySelector("#body").classList
+			if (newValue !== null) cl.add("preview")
+			else cl.remove("preview")
+			if (!cl.contains('preview') && cl.contains('connected')) {
+				this.mde.togglePreview()
+				this.shadowRoot.querySelector(".CodeMirror").style.height = 'calc(100% - 48px)'
+				setTimeout(() => this.mde.codemirror.refresh(), 1) // EasyMDE needs a forced refresh.
+			}
+		}
+		connectedCallback() {
+			// Finish loading EasyMDE.
+			this.classList.add('CodeMirror-sizer') // hack easyMDE bug with images in shadowRoot
+			const cl = this.shadowRoot.querySelector("#body").classList
+			if (cl.contains("preview")) this.mde.togglePreview()
+			else this.shadowRoot.querySelector(".CodeMirror").style.height = 'calc(100% - 48px)'
+			cl.add('connected')
+		}
+	})
+</script>
+
+
+<!--
+  -- ext-pdf
+  --
+	-- Loader for viewing PDF files.
+	-- Creates a canvas in the body for each page of the
+	-- pdf and renders all pages onto them.
+	-- Uses pdfjs for the rendering. PDF.js is mighty.
+	-->
+<template id=-ext-pdf loader=ext-pdf>
+	<style nonce="{{.Nonce}}">
+		div,
+		canvas {
+			margin: 0;
+			width: calc(100% - 1px);
+		}
+
+		canvas {
+			border: solid;
+			border-width: 1px;
+		}
+	</style>
+	<div>
+		<h1 id=wait>⏳</h1>
+	</div>
+</template>
+<script src="/resources/deps/pdf.min.js"
+	integrity="sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e"></script>
+<script src="/resources/deps/pdf.worker.min.js"
+	iintegrity="sha384-SnzOobpRMLXZ52iJvZm/C0fYw0OQemTXzTjIsdsfMcrCtCEe9qgzxTd3RSklO5x2"></script>
+<script nonce="{{.Nonce}}">
+	customElements.define("ext-pdf", class extends HTMLElement {
+		constructor() {
+			super()
+			this.attachShadow({mode: "open"}).appendChild(
+				document.getElementById("-ext-pdf").content.cloneNode(true))
+			const path = storage.path();
+			(async () => {
+				const data = await (await storage.readFile(path)).arrayBuffer()
+				const pdf = await pdfjsLib.getDocument(data).promise
+				for (let i = 0; i < pdf.numPages; i++) {
+					pdf.getPage(i + 1).then(page => {
+						const nib = document.createElement('canvas')
+						const ctx = nib.getContext("2d");
+						const vp = page.getViewport({scale: 1});
+						nib.height = vp.height;
+						nib.width = vp.width;
+						page.render({canvasContext: ctx, viewport: vp})
+						this.shadowRoot.querySelector("#wait").style.display = "none"
+						this.shadowRoot.querySelector("div").appendChild(nib)
+					})
+				}
+			})()
+		}
+		static observedAttributes = ["preview"]
+	})
+</script>
