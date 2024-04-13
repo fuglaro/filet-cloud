@@ -1,5 +1,5 @@
 filet-cloud-web
-static/deps
+resources/deps
 **.DS_Store
 **.key
 **.csr

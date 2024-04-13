@@ -5,6 +5,7 @@ import (
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
+	"embed"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -26,6 +27,10 @@ import (
 	"golang.org/x/crypto/acme/autocert"
 	"golang.org/x/crypto/ssh"
 )
+
+//go:embed resources
+//go:embed favicon.ico
+var res embed.FS
 
 var sshport = "22"
 var upgrader = websocket.Upgrader{}
@@ -811,7 +816,7 @@ automatic LetsEncrypt configuration by specifying FC_DOMAIN.
 		w.Header().Set("Cross-Origin-Opener-Policy", "same-origin")
 		w.Header().Set("Cross-Origin-Embedder-Policy", "require-corp")
 		w.Header().Set("Referrer-Policy", "same-origin")
-		t, err := template.ParseFiles("static/main.html")
+		t, err := template.ParseFS(res, "resources/main.html")
 		if check(w, err) {
 			return
 		}
@@ -839,7 +844,7 @@ automatic LetsEncrypt configuration by specifying FC_DOMAIN.
 			CSRF  string
 		}{Nonce: nonce, CSRF: base64.URLEncoding.EncodeToString(hashData)})
 	})))
-	http.Handle("/static/", SMW(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	http.Handle("/resources/", SMW(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Ensure Secure Fetch Metadata validity.
 		if r.Header.Get("Sec-Fetch-Site") != "same-origin" ||
 			(r.Header.Get("Sec-Fetch-Dest") != "script" &&
@@ -848,9 +853,9 @@ automatic LetsEncrypt configuration by specifying FC_DOMAIN.
 			http.Error(w, "Invalid Secure Fetch Metadata", http.StatusForbidden)
 			return
 		}
-		http.StripPrefix("/static/", http.FileServer(http.Dir("static"))).ServeHTTP(w, r)
+		http.FileServerFS(res).ServeHTTP(w, r)
 	})))
-	http.Handle("/favicon.ico", SMW(http.FileServer(http.Dir("static"))))
+	http.Handle("/favicon.ico", SMW(http.FileServerFS(res)))
 
 	// Display final configuration information and then launch service.
 	fmt.Fprintf(os.Stderr, "FC_CERT_FILE=%v\n", cert)

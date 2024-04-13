@@ -6,7 +6,7 @@
 	@font-face {
 		/* terminal font */
 		font-family: NotoMonoNerd;
-		src: url("/static/NotoMonoNerdFontMono-Regular.ttf");
+		src: url("/resources/NotoMonoNerdFontMono-Regular.ttf");
 	}
 
 	:root {
@@ -317,11 +317,11 @@
 			outline: 1px solid;
 		}
 	</style>
-	<link rel=stylesheet href="/static/deps/xterm.css"
+	<link rel=stylesheet href="/resources/deps/xterm.css"
 		integrity="sha384-LJcOxlx9IMbNXDqJ2axpfEQKkAYbFjJfhXexLfiRJhjDU81mzgkiQq8rkV0j6dVh" />
-	<script src="/static/deps/xterm.js"
+	<script src="/resources/deps/xterm.js"
 		integrity="sha384-/nfmYPUzWMS6v2atn8hbljz7NE0EI1iGx34lJaNzyVjWGDzMv+ciUZUeJpKA3Glc"></script>
-	<script src="/static/deps/xterm-addon-fit.js"
+	<script src="/resources/deps/xterm-addon-fit.js"
 		integrity="sha384-AQLWHRKAgdTxkolJcLOELg4E9rE89CPE2xMy3tIRFn08NcGKPTsELdvKomqji+DL"></script>
 	<div id=terminal></div>
 	<div id=actions>
@@ -1269,7 +1269,7 @@
   -- and allow editing and saving back to the server.
 	-->
 <template id=-ext-md loader=ext-md>
-	<link rel=stylesheet href="/static/deps/easymde.min.css"
+	<link rel=stylesheet href="/resources/deps/easymde.min.css"
 		integrity="sha384-uqD/OYCNfagd1EgXMgl5QedTD5K+B3e9b8GYo/41t7+Serf7CBxvl+tU1gHd+qd1" />
 	<style nonce="{{.Nonce}}">
 		#body {
@@ -1368,7 +1368,7 @@
 		<button id=upload label="Save changes">💾</button>
 	</div>
 </template>
-<script src="/static/deps/easymde.min.js"
+<script src="/resources/deps/easymde.min.js"
 	integrity="sha384-KtB38COewxfrhJxoN2d+olxJAeT08LF8cVZ6DQ8Poqu89zIptqO6zAXoIxpGNWYE"></script>
 <script nonce="{{.Nonce}}">
 	customElements.define("ext-md", class extends HTMLElement {
@@ -1458,9 +1458,9 @@
 		<h1 id=wait>⏳</h1>
 	</div>
 </template>
-<script src="/static/deps/pdf.min.js"
+<script src="/resources/deps/pdf.min.js"
 	integrity="sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e"></script>
-<script src="/static/deps/pdf.worker.min.js"
+<script src="/resources/deps/pdf.worker.min.js"
 	iintegrity="sha384-SnzOobpRMLXZ52iJvZm/C0fYw0OQemTXzTjIsdsfMcrCtCEe9qgzxTd3RSklO5x2"></script>
 <script nonce="{{.Nonce}}">
 	customElements.define("ext-pdf", class extends HTMLElement {

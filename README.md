@@ -1,4 +1,4 @@
-# Filet Cloud Web
+# ⛅ Filet Cloud Web
 A minimalistic and powerful personal cloud storage with an elegant web interface, letting you control your data privacy, and leaving you with full ownership over your own data. This has a simple and elegant design that provides a lean web interface to hosted storage via a local ssh connection. You provision the storage host however you like, giving you full freedom on storage capacity.
 
 ![demo video](filet-cloud-demo.gif)
@@ -14,28 +14,27 @@ Browse files, download, upload, stream videos and music, view images, create and
 * Text (with editing)
 
 ## Features
-* Browse folders.
-* View and edit files in supported formats.
-* Fast preview viewing of thumbnail while large JPEG images load.
-* Stream video and audio.
-* Create new folders.
-* Upload files.
-* Rename files and folders.
-* Download files.
-* Download multiple files or folders in a zip.
-* Move multiple files and folders.
-* Delete files and folders.
-* Authentication via local SSH user account credentials.
-* Maintains file-system ownership integrity consistent with local access.
-* Compatible with automatic phone data upload tools like Folder Sync Pro via the STFP/SSH service running on the same server.
-* Be in full control of your own private data.
-* Stores all data in files on the underlying filesystem for unbeatable data longevity.
-* Embed images in markdown documents with relative paths.
-* Dark and light modes.
-* Fast keyboard navigation.
-* Terminal access to the storage host.
-* Hardened security.
-* Active folder action plugins for creating custom commands which can autogenerate files such as photo albums, or disk usage reports.
+* 📂 Browse folders.
+* 📄 View and edit files in supported formats.
+* 🖼 Fast preview viewing of thumbnail while large JPEG images load.
+* ♫  Stream video and audio.
+* 📂 Create new folders.
+* 📄 Upload files.
+* 🖊️ Rename files and folders.
+* 📥 Download files.
+* 🗄 Download multiple files or folders in a zip.
+* 🚚 Move multiple files and folders.
+* 🗑 Delete files and folders.
+* 👤 Authentication via local SSH user account credentials.
+* 📱 Compatible with automatic phone data upload tools like Folder Sync Pro via the STFP/SSH service running on the same server.
+* 🔐 Be in full control of your own private data.
+* 💾 Maintains file-system ownership integrity consistent with local access, and stores all data in files on the underlying filesystem for superior data longevity.
+* 🖼 Embed images in markdown documents with relative paths.
+* 🌓 Dark and light modes.
+* ⌨ Fast keyboard navigation.
+* 🖥 Terminal access to the storage host.
+* 💪 Hardened security.
+* 🧩 Active folder action plugins for creating custom commands which can autogenerate files such as photo albums, or disk usage reports.
 
 ## Design
 This design for this solution favors simplicity and minimalism, both inside and out, without losing powerful features. *Filet Cloud Web* pushes a personal cloud solution to its leanest essence. It leaves you fully in control of your own data. It is a joy to use because it does what it needs to, reliably and quickly, and then gets out of the way. The primary design philosophy for this project is: **"complexity must justify itself, ruthlessly"**.
@@ -62,7 +61,7 @@ flowchart
 
 The code is organised in the following areas:
 * [main.go](main.go) - the primary server.
-* [static/main.html](static/main.html) - the main frontend browser page.
+* [resources/main.html](resources/main.html) - the main frontend browser page.
 
 No frontend framework is used because adopting one on top of the simple interface design would have introduced unjustified complexity.
 
@@ -81,23 +80,25 @@ Active folder plugins must:
 
 This can be used for various actions, such as generating a photo album of all photos in a folder, displaying storage statistics, or even triggering a manual backup.
 
-## Installation
-* Ensure your machine allows ssh from localhost.
-* Setup a certficate for TLS and ensure your browser respects it.
-* Build:
+## Build
+
+Install dependencies and build:
+
 ```bash
+wget https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js -O resources/deps/pdf.min.js
+wget https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js -O resources/deps/pdf.worker.min.js
+wget https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.css -O resources/deps/easymde.min.css
+wget https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.js -O resources/deps/easymde.min.js
+wget https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js -O resources/deps/xterm.js
+wget https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css -O resources/deps/xterm.css
+wget https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js -O resources/deps/xterm-addon-fit.js
 go build
 ```
-* Install dependencies:
-```bash
-wget https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js -O static/deps/pdf.min.js
-wget https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js -O static/deps/pdf.worker.min.js
-wget https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.css -O static/deps/easymde.min.css
-wget https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.js -O static/deps/easymde.min.js
-wget https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js -O static/deps/xterm.js
-wget https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css -O static/deps/xterm.css
-wget https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js -O static/deps/xterm-addon-fit.js
-```
+
+## Install
+
+* Ensure your machine allows ssh from localhost.
+* Setup a certficate for TLS and ensure your browser respects it.
 * Start server:
 ```bash
 FC_CERT_FILE=my.crt FC_KEY_FILE=my.key ./filet-cloud-web
@@ -191,7 +192,7 @@ Disclaimer: Use at your own risk. The codebase is strikingly small and the depen
 * The backend requires the browser to provide Secure Fetch Metadata Request Headers, and denies access to content unless the following policies are met:
   * For the main page:
     * The request destination is a document, preventing embedding.
-  * For the `/static/` URL path:
+  * For the `/resources/` URL path:
     * The request site is same-origin.
     * The request destination is a script, style or font element.
   * For the `/connect` endpoint:
@@ -249,6 +250,7 @@ We stand on the shoulders of giants. They own this, far more than I do.
 * Copy/Paste in the terminal on Linux: Use Ctrl/Shift + Insert.
 
 # TODO
+* Reload button on both mde and text editors (only when save not shown!)
 * Compile binary with self contained content files.
 * Installation enhancement pass
   * Incorporate https://github.com/fuglaro/filet-cloud
@@ -266,6 +268,7 @@ We stand on the shoulders of giants. They own this, far more than I do.
 * Retest IOS, Safari, Chrome, Chrome Mobile.
 * Check todo list stored on cloud server.
 * Update demo video.
+* Tag easily deployable release for others, and ensure instructions are compatible.
 
 # Wishlist for future work
 * Improve EasyMDE enabling a simpler integration.
@@ -274,3 +277,4 @@ We stand on the shoulders of giants. They own this, far more than I do.
 * Active folder action plugin for getting storage statistics and status diagnostics.
 * Improve CSP protection to inline stylesheets when xterm.js supports it. Other renderers or alternate tools could be options. See https://github.com/xtermjs/xterm.js/issues/4445
 * Force selection in the terminal on macOS (https://github.com/xtermjs/xterm.js/issues/4329).
+* Support for diagram editing and viewing.
