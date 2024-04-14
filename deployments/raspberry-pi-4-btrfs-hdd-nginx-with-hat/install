@@ -1,5 +1,8 @@
 #!/bin/bash
 
+read -p 'Please enter the domain: ' domain
+[ -z "${domain}" ] && exit
+
 # Install dependencies
 apt update
 apt install -y ddclient btrfs-tools unattended-upgrades certbot python-certbot-nginx
@@ -16,28 +19,17 @@ mkdir -p /mnt/usb/.snapshots
 sed -i 's:Debian:Raspbian:g' /etc/apt/apt.conf.d/50unattended-upgrades
 
 # Install filet-cloud-tools
-make -C filet-cloud/filetcloudtools
-dpkg -i filet-cloud/filetcloudtools/filetcloudtools.deb
+make -C filetcloudtools
+dpkg -i filetcloudtools/filetcloudtools.deb
 systemctl enable filet-cloud-actions
 systemctl restart filet-cloud-actions
 
-# Install filet-cloud-web
-# Need newer golang
-if [ ! -e filet-cloud/go ]; then
-	cd filet-cloud
-	wget https://go.dev/dl/$(curl https://go.dev/dl/ | grep armv6l | grep -v beta | head -n 1 | awk -F'[<>]' {'print $5'}) -O golang.tar.gz
-	tar zxf golang.tar.gz
-	cd -
-fi
-# Now get and build filet-cloud-web
-ls -1d filet-cloud/filet-cloud-web || git clone https://github.com/fuglaro/filet-cloud-web.git filet-cloud/filet-cloud-web
-git -C filet-cloud/filet-cloud-web/ pull
-cd filet-cloud/filet-cloud-web
-../go/bin/go build
-grep 'wget https://' README.md | sh # grab dependencies
-cd -
+# Install filet-cloud
+wget https://github.com/fuglaro/filet-cloud/releases/download/1.0.0/filet-cloud-raspberry-pi -O /usr/bin/filet-cloud
+chmod a+x /usr/bin/filet-cloud
 # Register and enable the service
-cp filet-cloud/filet-cloud-web.service /etc/systemd/system/
+cp filet-cloud-web.service /etc/systemd/system/
+sed -i -e "s:{{DOMAIN}}:${domain}:g" /etc/systemd/system/filet-cloud-web.service
 systemctl enable filet-cloud-web
 systemctl restart filet-cloud-web
 
@@ -47,3 +39,22 @@ crontab -u pi -l | grep filet-cloud-snapshot || (crontab -u pi -l; echo '5 4 * *
 # Update the display
 crontab -u pi -l | grep filet-cloud-status || (crontab -u pi -l; echo '*/5 * * * * filet-cloud-status') | crontab -u pi -
 filet-cloud-status
+
+# Generate the initial nginx config
+cp nginx.conf /etc/nginx/conf.d/filet-cloud.conf
+sed -i -e "s:{{DOMAIN}}:${domain}:g" /etc/nginx/conf.d/filet-cloud.conf
+
+# Start nginx
+nginx -s reload
+
+# Setup lets encrypt
+certbot --nginx -d ${domain}
+
+# Daily crontab for cert renewal
+crontab -l | grep 'certbot renew' || (crontab -l; echo '12 13 * * * /usr/bin/certbot renew --quiet') | crontab -
+
+# Register and enable the service to renew certificates on startup
+cp cert-renewal.service /etc/systemd/system/
+systemctl enable cert-renewal
+systemctl restart cert-renewal
+

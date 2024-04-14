@@ -1,31 +1,22 @@
-# filet-cloud
-A lean slice of Cloud Storage
+# ⛅ Filet Cloud: Deployment on Raspberry Pi 4 with BTRFS HDD and an E-Ink Hat
+
+The original deployment of Filet Cloud. This deployment is now, after many later improvements to Filet Cloud, unneccessarily complex, but still serves as a good example for deeper customisation.
 
 ![](filet-cloud-pic.jpg)
 
-This project attempts to make a sophisticated personal cloud storage solution similar to the google-drive ecosystem, using the design philosophies of the filet project series. This project, like others in the series, aggressively pushes for code minimalism and the essence of simplicity.
+## Original Goals
+This deployment attempted to make a sophisticated personal cloud storage solution similar to the google-drive ecosystem, using the design philosophies of the filet project series. This project, like others in the series, aggressively pushed for code minimalism and the essence of simplicity. The success of the project led to further features and enhancements, but with all added complexity having to justify itself, ruthlessly.
 
 How is this different to existing services like Google Drive or solutions like NextCloud?
 * Take control of your privacy.
 * Storage sizes are only limitted by your hardware.
 * Solution that favours reliability and simplicity over feature-creep.
 * Fast, featured, and simple web interface that runs over a standard filesystem and never gets out of sync.
-* Supports multiple accounts within an organisation without the complexity of web-admin interfaces.
+* Supports multiple accounts within an organisation without the complexity of web-admin interfaces. Account management is as simple as using Linux user accounts and SSH authentication.
 
-This main interface to the data is via an SFTP server over a standard SSH connection. A surprising number of clients support this interface and it's a big productivity win to be able to use things like rsync and ssh. Account management is as simple as using Linux user accounts and SSH authentication. A core part of this project is the SFTP webserver also from the filet project series (https://github.com/fuglaro/filet-cloud-web) which gives access via a webpage.
+It targets a build running on a Raspberry Pi 4 with an E-ink display hat that displays status information.
 
-![](https://github.com/fuglaro/filet-cloud-web/blob/main/filet-cloud-demo.gif?raw=true)
-
-It targets a build running on a Raspberry Pi.
-
-## Features
-* Web interface (see https://github.com/fuglaro/filet-cloud-web):
-  * Authentication.
-  * Browse, view, and, edit many supported file formats.
-  * Browse images and stream video and audio.
-  * Create new folders, upload files, rename entries.
-  * Download files (or multiple in a zip file).
-  * Move or delete multiple files and folders.
+## Additional Features
 * Maintains filesystem ownership integrity consistent with local access.
 * SFTP compatibility.
   * Compatibility with many phone syncronisation apps which support SFTP.
@@ -40,7 +31,7 @@ It targets a build running on a Raspberry Pi.
   * Create snaphot.
   * Trigger update and restart.
 * Daily snapshots (with Btrfs).
-* No hardware resiliant backup redundancy - please set up a strategy for resiliency against hardware failure which suits your needs.
+* Note there is no hardware resiliant backup redundancy - please set up a strategy for resiliency against hardware failure which suits your needs.
 
 ## Hardware
 The following hardware was used for this build:
@@ -55,8 +46,8 @@ The following hardware was used for this build:
 * Enable ssh on your Pi (https://www.raspberrypi.org/documentation/remote-access/ssh/)
 * Make a better password for the pi user (https://www.raspberrypi.org/documentation/configuration/security.md)
 * Set up WiFi if needed (https://www.raspberrypi.org/documentation/configuration/wireless/).
-* If you intend to connect from outside your local network, setup port forwarding for resired ports (https://en.wikipedia.org/wiki/Port_forwarding), static DHCP, and dynamic DNS, if needed (https://wiki.archlinux.org/title/Dynamic_DNS).
-  * Port 22: SFTP and full SSH access - it is possible to restrict to just SFTP but this is not covered in this guide (https://wiki.archlinux.org/title/SFTP_chroot)
+* If you intend to connect from outside your local network, setup port forwarding for desired ports (https://en.wikipedia.org/wiki/Port_forwarding), static DHCP, and dynamic DNS, if needed (https://wiki.archlinux.org/title/Dynamic_DNS).
+  * Port 22: SFTP and full SSH access (https://wiki.archlinux.org/title/SFTP_chroot)
   * Port 80 and 443: Web UI access via TLS - Port 80 is only open for TLS certificate renewal.
 * Ensure you have connected power, network, an empty USB drive to store the data, inserted the SD Card, and disconnected all other USB drives, then power on.
 
@@ -67,54 +58,15 @@ The following hardware was used for this build:
 ```bash
 ssh pi@raspberrypi.local
 git clone https://github.com/fuglaro/filet-cloud.git
-sudo filet-cloud/install
-```
-Stay logged in for the remaining setup.
-
-### Encrypted Connections - TLS (HTTPS) Setup
-If you intend to connect from outside a trusted network including through port forwarding, you will need to set up digital certificates for HTTPS connections.
-```bash
-sudo filet-cloud/install_certs
+cd filet-cloud/deployments/raspberry-pi-4-btrfs-hdd-nginx-with-hat
+sudo ./install
 ```
 
 ### Create New Login Account:
 ```bash
 filet-cloud-new-user
 ```
-## Compatible Clients
-* Android filebrowser - Solid Explorer
-* Android filebrowser (opensource) - Ghost Commander (with SFTP plugin)
-* Android filesyncer - FolderSync
-* Linux filebrowser client - Filezilla
+## Phone Cloud Syncing
+Setup nightly media and photo backups from your mobile device.
 
-## Design and Engineering Philosophies
-
-This project explores how far a software product can be pushed in terms of simplicity and minimalism, both inside and out, without losing powerful features. Web programs and cloud tools tends to be bloated and buggy, as all software tends to be. *filetcloud* pushes a personal cloud solution to its leanest essence. It is a joy to use because it does what it needs to, reliably and quickly, and tries to do nothing else. The opinions that drove the project are:
-
-* **Complexity must justify itself**.
-* Lightweight is better than heavyweight.
-* Select your dependencies wisely: they are complexity, but not using them, or using the wrong ones, can lead to worse complexity.
-* Powerful features are good, but simplicity and clarity are essential.
-* Adding layers of simplicity, to avoid understanding something useful, only adds complexity, and is a trap for learning trivia instead of knowledge.
-* Steep learning curves are dangerous, but don't just push a vertical wall deeper; learning is good, so make the incline gradual for as long as possible.
-* Allow other tools to thrive - e.g: terminals don't need tabs or scrollback, that's what tmux is for.
-* Fix where fixes belong - don't work around bugs in other applications, contribute to them, or make something better.
-* Improvement via reduction is sometimes what a project desperately needs, because we do so tend to just add. (https://www.theregister.com/2021/04/09/people_complicate_things/, https://www.nature.com/articles/s41586-021-03380-y)
-
-# Thanks to, grateful forks, and contributions
-
-We stand on the shoulders of giants. They own this, far more than I do.
-
-* https://github.com/fuglaro/filet-cloud-web
-* https://www.raspberrypi.org
-* https://www.python.org/
-* https://www.gnu.org/software/bash/
-* https://www.transcend-info.com
-* https://www.seagate.com
-* https://www.waveshare.com
-* https://wiki.archlinux.org
-* https://certbot.eff.org/
-* https://letsencrypt.org/
-* https://en.wikipedia.org
-* https://www.theregister.com
-* https://www.nature.com/articles/s41586-021-03380-y
+* Android filesyncer - Folder Sync or Folder Sync Pro

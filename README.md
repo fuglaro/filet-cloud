@@ -250,7 +250,7 @@ We stand on the shoulders of giants. They own this, far more than I do.
 * Copy/Paste in the terminal on Linux: Use Ctrl/Shift + Insert.
 
 # TODO
-* Incorporate into https://github.com/fuglaro/filet-cloud
+* Retest IOS, Safari, Chrome, Chrome Mobile.
 * Installation enhancement pass
   * New RP4 release without hat.
   * Monitor storage interval access (maybe backup interval is an issue - maybe only backup when things change) for allowing the storage to power down.
@@ -265,10 +265,10 @@ We stand on the shoulders of giants. They own this, far more than I do.
   * Setup and test 2FA
   * Storage status active folder plugin.
   * Backup active folder plugin.
-* Retest IOS, Safari, Chrome, Chrome Mobile.
+  * Full diagnostics active folder plugin (temp etc).
 * Check todo list stored on cloud server.
 * Update demo video (on firefox for mac with darkmode for better styling).
-* Tag easily deployable release for others, with wide cross compiling ARM/x86/x64/RISC-V Linux/LinuxStaticMusl/Mac/Windows.
+* Tag easily deployable release for others, with wide cross compiling ARM/x86/x64/RISC-V Linux/LinuxStaticMusl/Mac/Windows. Must have a 1.0.0
 
 # Wishlist for future work
 * Improve EasyMDE enabling a simpler integration.

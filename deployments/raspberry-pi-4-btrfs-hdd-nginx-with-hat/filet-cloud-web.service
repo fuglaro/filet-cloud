@@ -1,12 +1,15 @@
 [Unit]
-Description=Filet Cloud WebUI
+Description=Filet Cloud
 
 [Service]
-User=pi
-Environment="FILETCLOUDDIR=/mnt/usb/filetclouddata"
-ExecStart=/home/pi/filet-cloud/filet-cloud-web/filet-cloud-web
-WorkingDirectory=/home/pi/filet-cloud/filet-cloud-web
+User=root
+Environment="FC_CERT_FILE=/etc/letsencrypt/live/{{DOMAIN}}/fullchain.pem"
+Environment="FC_KEY_FILE=/etc/letsencrypt/live/{{DOMAIN}}/privkey.pem"
+Environment="FC_DIR=/mnt/usb/filetclouddata/USERNAME"
+Environment="FC_LISTEN=:8443"
+ExecStart=/usr/bin/filet-cloud
 Restart=always
 
 [Install]
 WantedBy=multi-user.target
+
