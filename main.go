@@ -78,7 +78,8 @@ func authServeContent(w http.ResponseWriter, r *http.Request) {
 		(r.Header.Get("Sec-Fetch-Dest") != "audio" &&
 			r.Header.Get("Sec-Fetch-Dest") != "image" &&
 			r.Header.Get("Sec-Fetch-Dest") != "video" &&
-			r.Header.Get("Sec-Fetch-Dest") != "document") {
+			r.Header.Get("Sec-Fetch-Dest") != "document" &&
+			r.Header.Get("Sec-Fetch-Dest") != "empty") {
 		http.Error(w, "Invalid Secure Fetch Metadata", http.StatusForbidden)
 		return
 	}
@@ -230,10 +231,32 @@ func authServeContent(w http.ResponseWriter, r *http.Request) {
  * then start responding to storage, terminal, and action plugin requests.
  */
 func connect(w http.ResponseWriter, r *http.Request) {
+	// Ensure the __Host-SecSiteSameOrigin cookie previously fetched from /preconnect
+	// validly indicates that the request is coming from the same origin, in case
+	// some browsers don't send Secure Fetch Metadata headers with websocket connections.
+	ts, err := r.Cookie("__Host-SecSiteSameOrigin")
+	if check(w, err) {
+		return
+	}
+	_, err = jwt.Parse(ts.Value,
+		func(token *jwt.Token) (interface{}, error) {
+			return privateKey, nil
+		},
+		jwt.WithValidMethods([]string{"HS512"}),
+		jwt.WithAudience(clientIP(r)),
+		jwt.WithExpirationRequired())
+	if check(w, err) {
+		return
+	}
 	// Ensure Secure Fetch Metadata validity.
-	if r.Header.Get("Sec-Fetch-Site") != "same-origin" ||
+	if (r.Header.Get("Sec-Fetch-Site") != "same-origin" ||
 		r.Header.Get("Sec-Fetch-Mode") != "websocket" ||
-		r.Header.Get("Sec-Fetch-Dest") != "empty" {
+		(r.Header.Get("Sec-Fetch-Dest") != "empty" && r.Header.Get("Sec-Fetch-Dest") != "websocket")) &&
+		// Ignore these if they are missing, which is safe only because we have checked
+		// the validity of the __Host-SecSiteSameOrigin cookie proving the request is same origin.
+		(0 != len(r.Header.Values("Sec-Fetch-Site"))+
+			len(r.Header.Values("Sec-Fetch-Mode"))+
+			len(r.Header.Values("Sec-Fetch-Dest"))) {
 		http.Error(w, "Invalid Secure Fetch Metadata", http.StatusForbidden)
 		return
 	}
@@ -761,6 +784,35 @@ automatic LetsEncrypt configuration by specifying FC_DOMAIN.
 
 	// Serve connection endpoints.
 	http.Handle("/connect", SMW(http.HandlerFunc(connect)))
+	http.Handle("/preconnect", SMW(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Ensure Secure Fetch Metadata validity.
+		if r.Header.Get("Sec-Fetch-Site") != "same-origin" ||
+			r.Header.Get("Sec-Fetch-Dest") != "empty" {
+			http.Error(w, "Invalid Secure Fetch Metadata", http.StatusForbidden)
+			return
+		}
+		// Prepare the JWT for the brief __Host-SecSiteSameOrigin cookie so,
+		// the /connect endpoint can validate the request is same-origin,
+		// even when the browser doesn't bother to send Secure Fetch Metadata
+		// with websocket requests. (I'm looking at you Chrome as of Version 123.0.6312.124)
+		t := jwt.NewWithClaims(jwt.SigningMethodHS512, &jwt.RegisteredClaims{
+			Audience:  jwt.ClaimStrings{clientIP(r)},
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Second * 3))})
+		s, err := t.SignedString(privateKey)
+		if check(w, err) {
+			return
+		}
+		w.Header().Set("Cache-Control", "no-cache")
+		http.SetCookie(w, &http.Cookie{
+			Name:     "__Host-SecSiteSameOrigin",
+			Value:    s,
+			MaxAge:   3,
+			Path:     "/",
+			Secure:   true,
+			HttpOnly: true,
+			SameSite: http.SameSiteStrictMode,
+		})
+	})))
 	http.Handle("/authenticate", SMW(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Ensure Secure Fetch Metadata validity.
 		if r.Header.Get("Sec-Fetch-Site") != "same-origin" ||
@@ -778,6 +830,7 @@ automatic LetsEncrypt configuration by specifying FC_DOMAIN.
 			Name:     "__Host-Auth",
 			Value:    string(b),
 			MaxAge:   300,
+			Path:     "/",
 			Secure:   true,
 			HttpOnly: true,
 			SameSite: http.SameSiteStrictMode,

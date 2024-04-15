@@ -429,25 +429,27 @@
 				this.shadowRoot.querySelector("button").classList.add("loading")
 				e.preventDefault()
 				// Establish WebSocket connection.
-				const ws = new WebSocket(`wss://${window.location.host}/connect`)
-				ws.onclose = () => login()
-				ws.onerror = () => ws.close()
-				ws.onopen = () => {
-					// Set up auto-logout mechanism.
-					document.onvisibilitychange = () => {
-						if (document.visibilityState === "hidden")
-							autoLogoutTimer = setTimeout(() => ws.close(), 300000)
-						else clearTimeout(autoLogoutTimer)
+				fetch("/preconnect").then(() => {
+					const ws = new WebSocket(`wss://${window.location.host}/connect`)
+					ws.onclose = () => login()
+					ws.onerror = () => ws.close()
+					ws.onopen = () => {
+						// Set up auto-logout mechanism.
+						document.onvisibilitychange = () => {
+							if (document.visibilityState === "hidden")
+								autoLogoutTimer = setTimeout(() => ws.close(), 300000)
+							else clearTimeout(autoLogoutTimer)
+						}
+						// Authenticate WebSocket connection.
+						ws.send(this.shadowRoot.querySelector("#CSRFToken").value)
+						ws.send(this.shadowRoot.querySelector("#username").value)
+						ws.send(this.shadowRoot.querySelector("#password").value)
+						ws.send(this.shadowRoot.querySelector("#code").value)
+						// Give connection to the storage API.
+						storage.connect(ws)
 					}
-					// Authenticate WebSocket connection.
-					ws.send(this.shadowRoot.querySelector("#CSRFToken").value)
-					ws.send(this.shadowRoot.querySelector("#username").value)
-					ws.send(this.shadowRoot.querySelector("#password").value)
-					ws.send(this.shadowRoot.querySelector("#code").value)
-					// Give connection to the storage API, also to finish up all the async stuff.
-					storage.connect(ws)
-				}
-				document.body.removeChild(document.querySelector("login-form"))
+					document.body.removeChild(document.querySelector("login-form"))
+				})
 			})
 			this.shadowRoot.querySelector("div").focus()
 		}
@@ -690,22 +692,6 @@
 	"use strict"
 	// Redirect to a valid starting URL, if a new seesion.
 	if (window.location.hash === "") window.history.replaceState("", "", "/#browse:/")
-	// All the storage menu actions.
-	document.getElementById("reload").onclick = () => nav(storage.path())
-	document.getElementById("makedir").onclick = () => makedir()
-	document.getElementById("newfile").onclick = () => newfile()
-	document.getElementById("tabopen").onclick = () => setPath('#open:', storage.path())
-	document.getElementById("upload").onclick = () => document.getElementById('uploader').click()
-	document.getElementById("download").onclick = () => download()
-	document.getElementById("rename").onclick = () => rename()
-	document.getElementById("cart").onclick = () => {
-		document.getElementById('cart').classList.toggle('on')
-		cartMode() ? cartSel() : nav(storage.path())
-	}
-	document.getElementById("move").onclick = () => move()
-	document.getElementById("del").onclick = () => del()
-	document.getElementById("close").onclick = () => nav(storage.path().replace(/[^/]+$/g, ''))
-	document.getElementById("uploader").onchange = () => send()
 
 	// Setup some basic helper functions for navigation and the cart.
 	const cwd = () => storage.path().replace(/[^/]+$/g, '')
@@ -744,6 +730,27 @@
 		cartEmpty: ["cart"],
 	}
 	const menuItems = new Set(Object.values(menuModes).flat())
+
+	// All the storage menu actions.
+	document.getElementById("reload").onclick = () => nav(storage.path())
+	document.getElementById("makedir").onclick = () => makedir()
+	document.getElementById("newfile").onclick = () => newfile()
+	document.getElementById("tabopen").onclick = () => setPath('#open:', storage.path())
+	document.getElementById("upload").onclick = () => document.getElementById('uploader').click()
+	document.getElementById("download").onclick = () => download()
+	document.getElementById("rename").onclick = () => rename()
+	document.getElementById("cart").onclick = () => {
+		document.getElementById('cart').classList.toggle('on')
+		cartMode() ? cartSel() : nav(storage.path())
+	}
+	document.getElementById("move").onclick = () => move()
+	document.getElementById("del").onclick = () => del()
+	document.getElementById("close").onclick = () => {
+		setPath("#browse:", cwd())
+		document.getElementById('data').replaceChildren(document.createElement("folder-actions"))
+		menuMode()
+	}
+	document.getElementById("uploader").onchange = () => send()
 
 	// Setup keyboard navigation of folders.
 	const dir = document.getElementById('dir')

@@ -195,16 +195,21 @@ Disclaimer: Use at your own risk. The codebase is strikingly small and the depen
   * For the `/resources/` URL path:
     * The request site is same-origin.
     * The request destination is a script, style or font element.
-  * For the `/connect` endpoint:
+  * For the `/preconnect` endpoint:
     * The request site is same-origin.
-    * The request mode is a websocket.
-    * The request destination is empty.
+    * The request destination is set to the word empty.
+  * For the `/connect` endpoint:
+    * If any site, mode, or destination Secure Fetch Metadata Headers are provided, then they must match the policy:
+      * The request site is same-origin.
+      * The request mode is a websocket.
+      * The request destination is set to the word empty (Firefox) or websocket (Safari).
+    * Unfortunately, Chromium based browsers do not send any Secure Fetch Metadata Headers (as of Chrome Version 123.0.6312.124) when establishing WebSocket connetions. To ensure the /connect endpoint is still protected by a same-origin site check, this endpoint expects a __Host-SecSiteSameOrigin cookie to contain a valid JWT with valid expiration and audience claims, which can only be obtained from the /preconnect endpoint, which checks the site is same origin. The JWT provided by the /preconnect endpoint is given an audience claim of the client IP, and an expiration claim of 3 seconds after the time of creation.
   * For the `/authenticate` endpoint:
     * The request site is same-origin.
-    * The request destination is empty.
+    * The request destination is set to the word empty.
   * For `/file:/` `/thumb:/` and `/zip` URL paths:
     * The request site is same-origin.
-    * The request destination is audio, an image, a video, or a document.
+    * The request destination is audio, an image, a video, a document, or is set to the word empty.
 * The backend enforces a browser cache policy which ensures cached content access adheres to the above Secure Fetch Metadata Request Header policy, including when the headers vary across subsequent requests.
 * A Referrer Policy of same-origin is enforced.
 
