@@ -27,6 +27,7 @@ Browse files, download, upload, stream videos and music, view images, create and
 * 🗑 Delete files and folders.
 * 👤 Authentication via local SSH user account credentials.
 * 📱 Compatible with automatic phone data upload tools like Folder Sync Pro via the STFP/SSH service running on the same server.
+* 📱 Mobile friendly.
 * 🔐 Be in full control of your own private data.
 * 💾 Maintains file-system ownership integrity consistent with local access, and stores all data in files on the underlying filesystem for superior data longevity.
 * 🖼 Embed images in markdown documents with relative paths.
@@ -199,17 +200,19 @@ Disclaimer: Use at your own risk. The codebase is strikingly small and the depen
     * The request site is same-origin.
     * The request destination is set to the word empty.
   * For the `/connect` endpoint:
-    * If any site, mode, or destination Secure Fetch Metadata Headers are provided, then they must match the policy:
+    * If any site, mode, or destination Secure Fetch Metadata Headers are provided, then they must all match the policy:
       * The request site is same-origin.
       * The request mode is a websocket.
       * The request destination is set to the word empty (Firefox) or websocket (Safari).
-    * Unfortunately, Chromium based browsers do not send any Secure Fetch Metadata Headers (as of Chrome Version 123.0.6312.124) when establishing WebSocket connetions. To ensure the /connect endpoint is still protected by a same-origin site check, this endpoint expects a __Host-SecSiteSameOrigin cookie to contain a valid JWT with valid expiration and audience claims, which can only be obtained from the /preconnect endpoint, which checks the site is same origin. The JWT provided by the /preconnect endpoint is given an audience claim of the client IP, and an expiration claim of 3 seconds after the time of creation.
+    * Unfortunately, Chromium based browsers do not send any Secure Fetch Metadata Headers (as of Chrome Version 123.0.6312.124) when establishing WebSocket connections. To ensure the /connect endpoint is still protected by a same-origin site check, this endpoint expects a __Host-SecSiteSameOrigin cookie to contain a valid JWT with valid expiration and audience claims, which can only be obtained from the /preconnect endpoint as a SameSite=Strict cookie after its own checks that the site is same origin. The JWT provided by the /preconnect endpoint is given an audience claim of the client IP, and an expiration claim of 3 seconds after the time of creation.
   * For the `/authenticate` endpoint:
     * The request site is same-origin.
     * The request destination is set to the word empty.
   * For `/file:/` `/thumb:/` and `/zip` URL paths:
-    * The request site is same-origin.
-    * The request destination is audio, an image, a video, a document, or is set to the word empty.
+    * If any site, mode, or destination Secure Fetch Metadata Headers are provided, then they must all match the policy:
+      * The request site is same-origin.
+      * The request destination is audio, an image, a video, a document, or is set to the word empty.
+    * Unfortunately, Safari based browsers do not send any Secure Fetch Metadata Headers (as of Safari Version 17.4.1 (19618.1.15.11.14)) when downloading files. To ensure these endpoints are still protected by a same-origin site check, these endpoints each expect a __Host-SecSiteSameOrigin cookie to contain a valid JWT with valid expiration and audience claims, which can only be obtained from the /preconnect endpoint as a SameSite=Strict cookie after its own checks that the site is same origin. The JWT provided by the /preconnect endpoint is given an audience claim of the client IP, and an expiration claim of 3 seconds after the time of creation.
 * The backend enforces a browser cache policy which ensures cached content access adheres to the above Secure Fetch Metadata Request Header policy, including when the headers vary across subsequent requests.
 * A Referrer Policy of same-origin is enforced.
 
@@ -229,6 +232,8 @@ To set up TLS you could use a Self Signed Certificate with tools such as:
 openssl req -x509 -newkey rsa:4096 -sha256 -days 1 -nodes -keyout my.key -out my.crt -subj "/CN=localhost" -addext "subjectAltName=DNS:localhost,IP:127.0.0.1"
 openssl pkcs12 -export -in my.crt -inkey my.key -out my.p12
 ```
+
+Filet-Cloud supports Firefox, Firefox mobile, Safari, Safari mobile, Chrome, Chrome mobile, and other Chromium based browsers, so testing across all is highly encouraged.
 
 # Thanks to
 We stand on the shoulders of giants. They own this, far more than I do.
@@ -255,7 +260,7 @@ We stand on the shoulders of giants. They own this, far more than I do.
 * Copy/Paste in the terminal on Linux: Use Ctrl/Shift + Insert.
 
 # TODO
-* Retest IOS, Safari, Chrome, Chrome Mobile.
+* Retest IOS, Safari, Chrome, Chrome Mobile, Firefox, Firefox Mobile.
 * Installation enhancement pass
   * New RP4 release without hat.
   * Monitor storage interval access (maybe backup interval is an issue - maybe only backup when things change) for allowing the storage to power down.
@@ -273,6 +278,7 @@ We stand on the shoulders of giants. They own this, far more than I do.
   * Full diagnostics active folder plugin (temp etc).
 * Check todo list stored on cloud server.
 * Update demo video (on firefox for mac with darkmode for better styling).
+* Add brief demo video of portrait.
 * Tag easily deployable release for others, with wide cross compiling ARM/x86/x64/RISC-V Linux/LinuxStaticMusl/Mac/Windows. Must have a 1.0.0
 
 # Wishlist for future work

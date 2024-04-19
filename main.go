@@ -80,8 +80,33 @@ func authServeContent(w http.ResponseWriter, r *http.Request) {
 			r.Header.Get("Sec-Fetch-Dest") != "video" &&
 			r.Header.Get("Sec-Fetch-Dest") != "document" &&
 			r.Header.Get("Sec-Fetch-Dest") != "empty") {
-		http.Error(w, "Invalid Secure Fetch Metadata", http.StatusForbidden)
-		return
+		// If Fetch Metadats is not provided at all, it may be because it is a
+		// download from Safari, which omits them as of Version 17.4.1 (19618.1.15.11.14).
+		// Double check thes headers were provided at all.
+		if 0 != len(r.Header.Values("Sec-Fetch-Site"))+
+			len(r.Header.Values("Sec-Fetch-Mode"))+
+			len(r.Header.Values("Sec-Fetch-Dest")) {
+			http.Error(w, "Invalid Secure Fetch Metadata", http.StatusForbidden)
+			return
+		}
+		// Fetch Metadata headers weren't provided, so fallback to alternative proof of same-origin.
+		// Ensure the __Host-SecSiteSameOrigin cookie previously fetched from /preconnect
+		// validly indicates that the request is coming from the same origin, in case
+		// some browsers don't send Secure Fetch Metadata headers with websocket connections.
+		ts, err := r.Cookie("__Host-SecSiteSameOrigin")
+		if check(w, err) {
+			return
+		}
+		_, err = jwt.Parse(ts.Value,
+			func(token *jwt.Token) (interface{}, error) {
+				return privateKey, nil
+			},
+			jwt.WithValidMethods([]string{"HS512"}),
+			jwt.WithAudience(clientIP(r)),
+			jwt.WithExpirationRequired())
+		if check(w, err) {
+			return
+		}
 	}
 	// Ensure authentication is successfull and get storage connection.
 	ts, err := r.Cookie("__Host-Auth")
@@ -864,7 +889,7 @@ automatic LetsEncrypt configuration by specifying FC_DOMAIN.
 			"allow-same-origin allow-scripts; default-src 'none'; frame-ancestors 'none'; "+
 			"form-action 'none'; img-src 'self'; media-src 'self'; font-src 'self'; "+
 			"connect-src 'self'; style-src-elem 'self' 'unsafe-inline'; "+
-			"style-src-attr 'unsafe-inline'; "+
+			"style-src-attr 'unsafe-inline'; style-src 'self'; "+
 			"script-src-elem 'self' 'nonce-"+nonce+"';")
 		w.Header().Set("Cross-Origin-Opener-Policy", "same-origin")
 		w.Header().Set("Cross-Origin-Embedder-Policy", "require-corp")
