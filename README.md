@@ -75,7 +75,7 @@ This can be used for various actions, such as generating a photo album of all ph
 * Text (with editing)
 
 ### Security
-Since this service proxies SSH credentials, and both serves and modifies personal data, hardened security policies have been implemented. Please use a modern and up-to-date browser and device to make full use of these protections. For full details, see [SECURITY.md](SECURITY.md).
+Since this service proxies SSH credentials, and both serves and modifies personal data, hardened security policies have been implemented. Please use a modern up-to-date browser and device to make full use of these protections. For full details, see [SECURITY.md](SECURITY.md).
 
 Disclaimer: Use at your own risk. The codebase is strikingly small and the dependencies few, so the aim is that a security audit, for whosoever wishes to do it, should be as easy as possible. Nothing is secure until it is audited and reviewed by peers.
 
