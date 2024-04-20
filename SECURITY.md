@@ -1,5 +1,5 @@
 # Security Design
-Since this service proxies SSH credentials, and both serves and modifies personal data, hardened security policies have been implemented. Please use a modern and up-to-date browser and device to make full use of these protections.
+Since this service proxies SSH credentials, and both serves and modifies personal data, hardened security policies have been implemented.
 
 ## Transport Security
 * The login form will not open unless the connection protocol is HTTPS.
