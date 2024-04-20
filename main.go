@@ -142,15 +142,15 @@ func authServeContent(w http.ResponseWriter, r *http.Request) {
 	user := sshConn.Conn.User()
 	prepath := strings.Replace(os.Getenv("FC_DIR"), "USERNAME", string(user), -1) + "/"
 
-	components := strings.SplitN(r.URL.Path, ":", 2)
-	switch components[0] {
+	mode, subpath, _ := strings.Cut(r.URL.Path, ":")
+	switch mode {
 
 	/*
 	 * Retrieves a file and sends it to the client.
 	 * The 'path' query parameter identifies the file to send.
 	 */
 	case "/file":
-		path := prepath + components[1]
+		path := prepath + subpath
 		// get the file stat information
 		stat, err := sftp.Stat(path)
 		if check(w, err) {
@@ -167,13 +167,30 @@ func authServeContent(w http.ResponseWriter, r *http.Request) {
 	/*
 	 * Serve a thumbnail image of the file.
 	 * This does not support all formats.
+	 * The URL is expected to be in the form of:
+	 *   /thumb:/{{WIDTH}}:{{COMPRESSION}}/{{PATH}}
 	 */
 	case "/thumb":
 		w.Header().Set("Content-Type", "image/jpeg")
 		// Single quoted POSIX command argument input sanitisation,
 		// necessary due to needing to travel through the ssh stream.
-		ppath := strings.Replace(prepath+components[1], "'", "'\\''", -1)
-		cmd := "ffmpeg -i '" + ppath + "' -q:v 16 -vf scale=240:-1 -update 1 -f image2 -vcodec mjpeg -"
+		_, subpath, _ := strings.Cut(subpath, "/")
+		widStr, subpath, _ := strings.Cut(subpath, ":")
+		comprStr, subpath, _ := strings.Cut(subpath, "/")
+		ppath := strings.Replace(prepath+subpath, "'", "'\\''", -1)
+		width, err := strconv.Atoi(widStr)
+		if check(w, err) {
+			return
+		}
+		if width > 1080 { // Don't allow giant thumbnails.
+			width = 1080
+		}
+		compr, err := strconv.Atoi(comprStr)
+		if check(w, err) {
+			return
+		}
+		cmd := ("ffmpeg -i '" + ppath + "' -q:v " + strconv.Itoa(compr) +
+			" -vf scale=" + strconv.Itoa(width) + ":-1 -update 1 -f image2 -vcodec mjpeg -")
 		session, err := sshConn.NewSession()
 		if check(w, err) {
 			return

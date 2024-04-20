@@ -15,7 +15,7 @@
 	}
 
 	* {
-		font-family: system-ui;
+		font-family: system-ui, NotoMonoNerd;
 	}
 
 	body>div>span {
@@ -1195,11 +1195,8 @@
 			(async () => {
 				await storage.authLinks()
 				img.src = storage.fileLink(path)
-				// Set off a thumbnail preview to ensure fast loads, if appropriate.
-				if (this.getAttribute("preview") !== null && !img.complete && (
-					path.endsWith(".jpg") || path.endsWith(".jpeg"))) {
-					thm.src = storage.thumbLink(path)
-				}
+				// Also set off a thumbnail preview to ensure fast loads.
+				thm.src = storage.thumbLink("/720:6" + path)
 			})()
 		}
 		// Handle preview and open modes.
@@ -1322,6 +1319,11 @@
 			width: calc(100% - 48px);
 			height: calc(100% - 48px);
 			margin: 24px;
+
+			.EasyMDEContainer.sided--no-fullscreen .editor-preview-active-side {
+				height: calc(100% - 48px);
+				/* fix for side preview height when not fullscreened */
+			}
 		}
 
 		/* fix up EasyMDE's trouble with dark mode */
@@ -1378,6 +1380,10 @@
 			width: 100%;
 		}
 
+		#body>.EasyMDEContainer {
+			visibility: hidden;
+		}
+
 		#reload,
 		#upload {
 			display: none;
@@ -1413,6 +1419,7 @@
 		<textarea id=text tabindex=-1>⏳</textarea>
 		<button id=upload class=no-disable label="Save changes">💾</button>
 		<button id=reload class=no-disable label="Reload">🔄</button>
+		<button id=browse class=no-disable label="Browse">📂</button>
 	</div>
 </template>
 <script src="/resources/deps/easymde.min.js"
@@ -1423,30 +1430,52 @@
 			super()
 			this.attachShadow({mode: "open"}).appendChild(
 				document.getElementById("-ext-md").content.cloneNode(true))
+		}
+		diconnectedCallback() {
+			this.mde?.cleanup()
+		}
+		// Handle switching between preview and open editable modes.
+		static observedAttributes = ["preview"]
+		attributeChangedCallback(name, oldValue, newValue) {
+			const cl = this.shadowRoot.querySelector("#body").classList
+			if (newValue !== null) cl.add("preview")
+			else cl.remove("preview")
+		}
+		connectedCallback() {
 			const path = storage.path()
 			const sr = this.shadowRoot
-			// Handle images that reference relative storage.
-			const imgH = (img) => img.includes('://') ? img : storage.fileLink(path.replace(/[^/]+$/g, img))
-			// Load EasyMDE.
-			this.mde = new EasyMDE({
-				element: sr.querySelector("#text"),
-				status: false,
-				toolbar: ["undo", "redo", "preview", "side-by-side", "fullscreen"],
-				spellChecker: false,
-				autoDownloadFontAwesome: false,
-				previewRender: (v) => this.mde.markdown(v.replace(/\!\[([^\]\)\n]*)\]\(([^\)\n]+)\)/g,
-					(_, label, img) => `![${label}](${imgH(img)})`)),
-			});
+			// Handle images and thumbnails that reference relative storage.
+			const imgH = (img, format) => {
+				if (img.includes('://')) return img // Skip links including ://
+				// Handle thumbnails if image was in format ![NAME](PATH =WIDTH:COMPRESSION)
+				if (format) return storage.thumbLink("/" + format.substring(2) + path.replace(/[^/]+$/g, img))
+				// Generate standard image storage link from relative path.
+				return storage.fileLink(path.replace(/[^/]+$/g, img))
+			}
 			// Load the file and setup the save and reload buttons.
 			storage.readFile(path).then(r => r.text().then(r => {
+				// Load EasyMDE.
+				sr.querySelector("#text").value = r
+				this.mde = new EasyMDE({
+					element: sr.querySelector("#text"),
+					status: false,
+					toolbar: ["undo", "redo", "preview", "side-by-side", "fullscreen"],
+					spellChecker: false,
+					sideBySideFullscreen: false,
+					autoDownloadFontAwesome: false,
+					previewRender: v => this.mde.markdown(v
+						// Resolve relative image links into storage links.
+						.replace(/\!\[([^\]\)\n]*)\]\(((?:(?! =[0-9]+:[0-9]+\))[^\)\n])+)(| =[0-9]+:[0-9]+)\)/g,
+							(_, label, img, format) => `![${label}](${imgH(img, format)})`)
+						// Resolve relative links to other markdown documents (skipping links including ://).
+						.replace(/([^\!]|^)\[([^\]\)\n]*)\]\(((?:(?!:\/\/)[^\)\n])+)\)/g,
+							(_, p, label, file) => `[${p}${label}](${storage.mode()}/${file})`))
+				})
+				this.mde.togglePreview()
 				const upload = sr.querySelector('#upload')
 				const reload = sr.querySelector('#reload')
-				upload.remove()
-				reload.remove()
 				sr.querySelector(".editor-toolbar").append(upload, reload)
 				reload.style.display = "inline"
-				this.mde.value(r)
-				this.mde.codemirror.doc.clearHistory()
 				this.mde.codemirror.on("change", () => {
 					reload.style.display = "none"
 					upload.style.display = "inline"
@@ -1461,30 +1490,16 @@
 					upload.style.display = "none"
 					reload.style.display = "inline"
 				}))
+				const browse = sr.querySelector('#browse')
+				sr.querySelector(".editor-toolbar").prepend(browse)
+				browse.onclick = () => {setPath("#browse:", storage.path()); nav(storage.path())}
+				if (!this.shadowRoot.querySelector("#body").classList.contains("preview"))
+					this.shadowRoot.querySelector(".CodeMirror").style.height = 'calc(100% - 48px)'
+				this.mde.codemirror.refresh()
+				setTimeout(// Allow EasyMDE to finish rendering before displaying it .
+					() => sr.querySelector('#body>.EasyMDEContainer').style.visibility = 'visible', 1)
 			}))
-		}
-		diconnectedCallback() {
-			this.mde.cleanup()
-		}
-		// Handle switching between preview and open editable modes.
-		static observedAttributes = ["preview"]
-		attributeChangedCallback(name, oldValue, newValue) {
-			const cl = this.shadowRoot.querySelector("#body").classList
-			if (newValue !== null) cl.add("preview")
-			else cl.remove("preview")
-			if (!cl.contains('preview') && cl.contains('connected')) {
-				this.mde.togglePreview()
-				this.shadowRoot.querySelector(".CodeMirror").style.height = 'calc(100% - 48px)'
-				setTimeout(() => this.mde.codemirror.refresh(), 1) // EasyMDE needs a forced refresh.
-			}
-		}
-		connectedCallback() {
-			// Finish loading EasyMDE.
 			this.classList.add('CodeMirror-sizer') // hack easyMDE bug with images in shadowRoot
-			const cl = this.shadowRoot.querySelector("#body").classList
-			if (cl.contains("preview")) this.mde.togglePreview()
-			else this.shadowRoot.querySelector(".CodeMirror").style.height = 'calc(100% - 48px)'
-			cl.add('connected')
 		}
 	})
 </script>
