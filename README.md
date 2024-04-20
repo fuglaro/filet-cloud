@@ -86,6 +86,8 @@ The code is organised across a minimal number files as a result of a heavily opi
 
 No frontend framework is used because adopting one on top of the simple interface design would have introduced unjustified complexity.
 
+No database is used, in favor of the simplicity and data longevity provided by a file-system-only solution.
+
 ## Deployment
 You can use the basic deployment guide below, or simply use one of the provided template deployments:
 * Advanced Configuration: [Raspberry Pi 4 with BTRFS snapshotted 4TB HDD, Nginx, and an information control E-ink HAT](deployments/raspberry-pi-4-btrfs-hdd-nginx-with-hat/README.md).
