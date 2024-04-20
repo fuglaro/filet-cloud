@@ -60,12 +60,9 @@ flowchart
 Create action plugins within your backend storage folders to run commands which can generate, update and open files. These will be displayed as action buttons when navigating to the folder they reside in.
 
 Active folder plugins must:
-* Start with the prefix: `._filetCloudAction_`
-* End with the name of the action (with words separated by underscores `_`), followed by an action icon (any character, unicode, or symbol).
-* Either output nothing, or
-* Output the file or folder name containing the results of the action, which should be redirected to.
+* Start with the prefix: `._filetCloudAction_` and end with the name of the action (with words separated by underscores `_`), followed by an action icon (any character, unicode, or symbol). E.g: `._filetCloudAction_full_backup🗄`
+* Either output nothing, or output the file or folder name containing the results of the action, which should be redirected to.
 * Be executable.
-E.g: `._filetCloudAction_full_backup🗄`
 
 This can be used for various actions, such as generating a photo album of all photos in a folder, displaying storage statistics, or even triggering a backup.
 
