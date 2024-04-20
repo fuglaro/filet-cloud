@@ -166,6 +166,7 @@ openssl req -x509 -newkey rsa:4096 -sha256 -days 1 -nodes -keyout my.key -out my
 * Update demo video (on firefox for mac with darkmode for better styling).
 * Add brief demo video of portrait.
 * Tag easily deployable release for others, with wide cross compiling ARM/x86/x64/RISC-V Linux/LinuxStaticMusl/Mac/Windows. Must have a 1.0.0
+* Add to xtermjs tools list.
 
 # Wishlist for Future Work
 * Improve EasyMDE enabling a simpler integration, better parsing so images and links inside literals aren't resolved, add link and image manipulation via callbacks, and fix its bug when deactivating the preview button on refresh.
