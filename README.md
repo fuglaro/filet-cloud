@@ -1,7 +1,7 @@
 # ⛅ Filet Cloud
-A simple and powerful personal cloud storage solution with an elegant web interface.
+A simple and powerful personal cloud storage solution, with an elegant web interface.
 
-Simple to host yourself, and adhering to the [file-over-app](https://stephango.com/file-over-app) philosophy, letting you control your data privacy, and leaving you with full ownership over your own data. This has a simple and elegant design that provides a lean web interface to hosted storage via a local ssh connection. You provision the storage host however you like, giving you full freedom on storage capacity.
+Simple to self host, and adhering to the [file-over-app](https://stephango.com/file-over-app) philosophy, this gives you complete data privacy and full ownership over your own data. Its simple design provides a lean and fast web interface which connects via Websocket proxied SSH to the host's storage. You provision the storage host however you like, giving you full freedom on storage capacity.
 
 ![demo video](filet-cloud-demo.gif)
 
@@ -25,7 +25,7 @@ Browse files, download, upload, stream videos and music, view images, create and
 * 🔐 Be in full control of your own private data.
 * 💾 Maintains file-system ownership integrity consistent with local access, and stores all data in files on the underlying filesystem for superior data longevity.
 * 🖼 Embed images and thumbnails in markdown documents using relative paths.
-* 🔗 Link to files other documents in markdown documents using relative paths.
+* 🔗 Link to other content from markdown documents using relative paths.
 * 🌓 Dark and light modes.
 * ⌨ Fast keyboard navigation.
 * 🖥 Terminal access to the storage host.
