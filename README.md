@@ -65,6 +65,7 @@ Active folder plugins must:
 * Either output nothing, or
 * Output the file or folder name containing the results of the action, which should be redirected to.
 * Be executable.
+E.g: `._filetCloudAction_full_backup🗄`
 
 This can be used for various actions, such as generating a photo album of all photos in a folder, displaying storage statistics, or even triggering a backup.
 
