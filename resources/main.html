@@ -1167,6 +1167,7 @@
 			const img = document.createElement("img")
 			img.onload = () => {
 				wait.replaceWith(img)
+				thm.replaceWith(img)
 				// Safari weirdly loads videos into image elements, so try to update to video playback,
 				// but don't upgrade for known image formats.
 				if (ext === "jpg" || ext === "png" || ext === "svg" || ext === "gif" || ext === "webp") return
@@ -1179,7 +1180,7 @@
 				// Fallback to attempting to load as a video (or audio).
 				const vid = document.createElement("video")
 				vid.controls = "controls"
-				vid.oncanplay = () => wait.replaceWith(vid)
+				vid.oncanplay = () => {wait.replaceWith(vid); thm.replaceWith(vid)}
 				vid.onerror = () => {
 					// Fallback to dowload link.
 					const filename = path.split('/').pop()

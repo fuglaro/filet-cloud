@@ -143,8 +143,7 @@ openssl req -x509 -newkey rsa:4096 -sha256 -days 1 -nodes -keyout my.key -out my
 * You can rescale the quality value in the custom thumbnail generator command, if the command does not accept a normalised 1-100 quality range, like with ffmpeg: `ffmpeg -i PATH -q:v $((35-QUALITY/3)) -vf scale=WIDTH:-1 -update 1 -f image2 -vcodec mjpeg -`
 
 # TODO (Current WIP)
-* ffmpeg doesn't respect rotated images when generating thumbnails -> seems to be fixed in latest version so test it on RP4!
-* thumbnails not automatically switching to full image (RP4 on older version - test and fix)
+* try thumbnail performance optimisation with gstreamer hardware accelerated.
 * Retest IOS.
 * Installation enhancement pass:
   * Check if encryiption, hash, and crypto random fit hardward accelleration options on chosen devices.
