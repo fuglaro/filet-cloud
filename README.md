@@ -32,7 +32,7 @@ Browse files, download, upload, stream videos and music, view images, create and
 * 💪 Hardened security.
 * 🧩 Active folder action plugins for creating custom commands which can autogenerate files such as photo albums, or disk usage reports.
 * 🌏 Access from Firefox, Firefox mobile, Safari, Safari mobile, Chrome, Chrome mobile, and other Chromium based browsers.
-* 👁 Customisable thumbnail generation command, with an ffmpeg default.
+* 👁 Customisable thumbnail generation command.
 
 ## Design
 This design for this solution favors simplicity and minimalism, both inside and out, without losing powerful features. *Filet Cloud* pushes a personal cloud solution to its leanest essence. It leaves you fully in control of your own data. It is a joy to use because it does what it needs to, reliably and quickly, and then gets out of the way. The primary design philosophy for this project is: **"complexity must justify itself, ruthlessly"**.
@@ -124,7 +124,7 @@ Supported environment variables:
 * `FC_DOMAIN`: The domain to use with the included Let's Encrypt integration. Use of this implies acceptance of the LetsEncrypt Terms of Service.
 * `FC_LISTEN`: The address to listen on. Defaults to ':443'.
 * `FC_SSH_PORT`: The port to use to connect locally.
-* `FC_JPEG_CMD`: The command to make jpeg thumbnails by injecting parameters into PATH, WIDTH, and QUALITY placeholder values. `PATH` is the path to the source file and will be auto-quoted. `WIDTH` is the output JPEG width value. `QUALITY` is the output JPEG quality value (1-100). The command should write the output JPEG to standard out. The default value uses ffmpeg.
+* `FC_JPEG_CMD`: The command to make jpeg thumbnails by injecting parameters into PATH, WIDTH, and QUALITY placeholder values. `PATH` is the path to the source file and will be auto-quoted. `WIDTH` is the output JPEG width value. `QUALITY` is the output JPEG quality value (1-100). The command should write the output JPEG to standard out. The default value uses ImageMagick.
 
 ### Certificate
 If you don't have your own domain, you can set up TLS using a Self Signed Certificate with tools such as minica or openssl.
@@ -140,6 +140,7 @@ openssl req -x509 -newkey rsa:4096 -sha256 -days 1 -nodes -keyout my.key -out my
 * Auto logout will cause terminal connections to end. Use a terminal multiplexer like zellij to provide persisent sessions across logins.
 * NerdFont icons are fully supported and can be used for active folder plugin icons.
 * Embed dynamically generated thumbnails inside markdown documents with the format suffix after the image path: `![LABEL](IMAGE =WIDTH:QUALITY)`. E.g: `![My Thumbnail](image1.png =360:100)`.
+* You can rescale the quality value in the custom thumbnail generator command, if the command does not accept a normalised 1-100 quality range, like with ffmpeg: `ffmpeg -i PATH -q:v $((35-QUALITY/3)) -vf scale=WIDTH:-1 -update 1 -f image2 -vcodec mjpeg -`
 
 # TODO (Current WIP)
 * ffmpeg doesn't respect rotated images when generating thumbnails -> seems to be fixed in latest version so test it on RP4!

@@ -37,8 +37,7 @@ var upgrader = websocket.Upgrader{}
 var privateKey = make([]byte, 512/8)
 var connectionID atomic.Uint64 // sequential ID generator making keys for connections.
 var connections = map[uint64]*ssh.Client{}
-var jpegcmdtemplate = ("ffmpeg -i PATH -q:v $((35-QUALITY/3)) -vf scale=WIDTH:-1" +
-	" -update 1 -f image2 -vcodec mjpeg -")
+var jpegcmdtemplate = "convert PATH -sample \\>WIDTHx -quality QUALITY -"
 
 // Attempt to find the Client IP (without the port) for an incomming request.
 func clientIP(r *http.Request) string {

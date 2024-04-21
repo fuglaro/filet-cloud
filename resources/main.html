@@ -1195,7 +1195,7 @@
 				await storage.authLinks()
 				img.src = storage.fileLink(path)
 				// Also set off a thumbnail preview to ensure fast loads.
-				thm.src = storage.thumbLink("/720:80" + path)
+				thm.src = storage.thumbLink("/480:80" + path)
 			})()
 		}
 		// Handle preview and open modes.
