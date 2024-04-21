@@ -140,7 +140,7 @@ openssl req -x509 -newkey rsa:4096 -sha256 -days 1 -nodes -keyout my.key -out my
 * Embed dynamically generated thumbnails inside markdown documents with the format suffix after the image path: `![LABEL](IMAGE =WIDTH:COMPRESSION)`. E.g: `![My Thumbnail](image1.png =360:6)`.
 
 # TODO (Current WIP)
-* Retest IOS, Chrome Mobile, Firefox Mobile.
+* Retest IOS.
 * Installation enhancement pass:
   * Check if encryiption, hash, and crypto random fit hardward accelleration options on chosen devices.
   * Allow COLORTERM env though ssh.
@@ -148,20 +148,20 @@ openssl req -x509 -newkey rsa:4096 -sha256 -days 1 -nodes -keyout my.key -out my
     * Setup and test 2FA (and add to docs)
     * Storage status active folder plugin.
     * Full diagnostics active folder plugin (temp etc).
-  * https - accept certs via env var or auto setup with let's encrypt autocert NewListener (with domain provided by FC_DOMAIN).
   * Make (zig?) lightweight optimised fcgenthumb command (libjpeg-turbo) & test speed opimisation.
   * Low Cost Simple deployment:
     * RP Zero W + 32GB MicroSD + Self Signed Certs + DynamicIP-fixer/0-cost + fcgenthumb.
     * Optional Additions: Case and Heatsink.
   * Energy Efficient High Capacity deployment:
     * RP Zero 2 W + Heatsink + 32GB MicroSD + Crucial X9 Pro 4TB + fcgenthumb + Basic Power Optimisation (disable things - https://picockpit.com/raspberry-pi/raspberry-pi-zero-2-battery/).
-  * Wee-Mighty Deployment:
-    * Radxa ZERO 3W + BEEFY custom heatsink + 512 MicroSD + Crucial X9 Pro 4TB + fcgenthumb + Power Optimisation.
-    * Add RockChip Hardware acceleration variation of fcgenthumb (see https://github.com/Fruit-Pi/gstreamer-rockchip)
   * Commodity Hardware Repurpose Deployment:
     * Mobile phone version and 4G for always on.
     * Android Termix.
-  * Backup active-folder plugin.
+  * Wee-Mighty Deployment:
+    * Radxa ZERO 3W + BEEFY custom heatsink + 512 MicroSD + Crucial X9 Pro 4TB + fcgenthumb + Power Optimisation.
+    * Add RockChip Hardware acceleration variation of fcgenthumb (see https://github.com/Fruit-Pi/gstreamer-rockchip)
+    * https - accept certs via env var or auto setup with let's encrypt autocert NewListener (with domain provided by FC_DOMAIN).
+    * Backup active-folder plugin.
 * Check todo list stored on cloud server.
 * Update demo video (on firefox for mac with darkmode for better styling).
 * Add brief demo video of portrait.

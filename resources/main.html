@@ -407,7 +407,6 @@
 					<label for=code>(Code)</label>
 					<input type=password id=code name=code title="2FA access code (optional on some servers)" size=8 />
 				</li>
-				<br>
 				<li>
 					<button>Connect</button>
 				</li>
@@ -460,7 +459,7 @@
 					document.body.removeChild(document.querySelector("login-form"))
 				})
 			})
-			this.shadowRoot.querySelector("div").focus()
+			this.shadowRoot.querySelector("#username").focus()
 		}
 	})
 
@@ -1390,6 +1389,10 @@
 			float: right;
 		}
 
+		#browse {
+			display: none;
+		}
+
 		/* Override the icons to unicode equivalents avoiding loading font awesome just for this. */
 		.fa {
 			font-style: normal;
@@ -1493,6 +1496,7 @@
 				const browse = sr.querySelector('#browse')
 				sr.querySelector(".editor-toolbar").prepend(browse)
 				browse.onclick = () => {setPath("#browse:", storage.path()); nav(storage.path())}
+				browse.style.display = "inline"
 				if (!this.shadowRoot.querySelector("#body").classList.contains("preview"))
 					this.shadowRoot.querySelector(".CodeMirror").style.height = 'calc(100% - 48px)'
 				this.mde.codemirror.refresh()
