@@ -70,3 +70,13 @@ filet-cloud-new-user
 Setup nightly media and photo backups from your mobile device.
 
 * Android filesyncer - Folder Sync or Folder Sync Pro
+
+## Metrics
+
+* Idle power consumption: ~ 3.2W (this has not been optimised and could be improved by managing an idle state including spinning down the HDD)
+* List folder speed: 11ms (tested with 5 entries over WiFi)
+* Retrieve small file speed: 11ms (tested with 5KB file over WiFi)
+* Retrieve big file wait time: 170ms (tested with 4.2MB JPEG over WiFi)
+* Retrieve big file retrieval time: 713ms (tested with 4.2MB JPEG over WiFi)
+* Retrieve big file thumbnail wait time: TODO (tested with 4.2MB JPEG over WiFi)
+* Retrieve big file thumbnail time: TODO (tested with 4.2MB JPEG over WiFi)

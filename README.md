@@ -32,6 +32,7 @@ Browse files, download, upload, stream videos and music, view images, create and
 * 💪 Hardened security.
 * 🧩 Active folder action plugins for creating custom commands which can autogenerate files such as photo albums, or disk usage reports.
 * 🌏 Access from Firefox, Firefox mobile, Safari, Safari mobile, Chrome, Chrome mobile, and other Chromium based browsers.
+* 👁 Customisable thumbnail generation command, with an ffmpeg default.
 
 ## Design
 This design for this solution favors simplicity and minimalism, both inside and out, without losing powerful features. *Filet Cloud* pushes a personal cloud solution to its leanest essence. It leaves you fully in control of your own data. It is a joy to use because it does what it needs to, reliably and quickly, and then gets out of the way. The primary design philosophy for this project is: **"complexity must justify itself, ruthlessly"**.
@@ -123,6 +124,7 @@ Supported environment variables:
 * `FC_DOMAIN`: The domain to use with the included Let's Encrypt integration. Use of this implies acceptance of the LetsEncrypt Terms of Service.
 * `FC_LISTEN`: The address to listen on. Defaults to ':443'.
 * `FC_SSH_PORT`: The port to use to connect locally.
+* `FC_JPEG_CMD`: The command to make jpeg thumbnails by injecting parameters into PATH, WIDTH, and COMPRESSION placeholder values. `PATH` is the path to the source file and will be auto-quoted. `WIDTH` is the output JPEG width value. `COMPRESSION` is the output JPEG quality value. The command should write the output JPEG to standard out. The default value uses ffmpeg.
 
 ### Certificate
 If you don't have your own domain, you can set up TLS using a Self Signed Certificate with tools such as minica or openssl.
@@ -140,6 +142,8 @@ openssl req -x509 -newkey rsa:4096 -sha256 -days 1 -nodes -keyout my.key -out my
 * Embed dynamically generated thumbnails inside markdown documents with the format suffix after the image path: `![LABEL](IMAGE =WIDTH:COMPRESSION)`. E.g: `![My Thumbnail](image1.png =360:6)`.
 
 # TODO (Current WIP)
+* ffmpeg doesn't respect rotated images when generating thumbnails -> seems to be fixed in latest version so test it on RP4!
+* thumbnails not automatically switching to full image (RP4 on older version - test and fix)
 * Retest IOS.
 * Installation enhancement pass:
   * Check if encryiption, hash, and crypto random fit hardward accelleration options on chosen devices.
@@ -148,20 +152,29 @@ openssl req -x509 -newkey rsa:4096 -sha256 -days 1 -nodes -keyout my.key -out my
     * Setup and test 2FA (and add to docs)
     * Storage status active folder plugin.
     * Full diagnostics active folder plugin (temp etc).
+    * Record idle power consumption - 3.2W
+    * Record folder and file retrieval speed: https://cloud.convex.cc/#browse:/TODO/1TODO.txt
   * Make (zig?) lightweight optimised fcgenthumb command (libjpeg-turbo) & test speed opimisation.
   * Low Cost Simple deployment:
     * RP Zero W + 32GB MicroSD + Self Signed Certs + DynamicIP-fixer/0-cost + fcgenthumb.
     * Optional Additions: Case and Heatsink.
+    * Record idle power consumption.
+    * Record folder and file retrieval speed: https://cloud.convex.cc/#browse:/TODO/1TODO.txt
   * Energy Efficient High Capacity deployment:
     * RP Zero 2 W + Heatsink + 32GB MicroSD + Crucial X9 Pro 4TB + fcgenthumb + Basic Power Optimisation (disable things - https://picockpit.com/raspberry-pi/raspberry-pi-zero-2-battery/).
+    * Record idle power consumption.
+    * Record folder and file retrieval speed: https://cloud.convex.cc/#browse:/TODO/1TODO.txt
   * Commodity Hardware Repurpose Deployment:
     * Mobile phone version and 4G for always on.
     * Android Termix.
+    * Record folder and file retrieval speed: https://cloud.convex.cc/#browse:/TODO/1TODO.txt
   * Wee-Mighty Deployment:
     * Radxa ZERO 3W + BEEFY custom heatsink + 512 MicroSD + Crucial X9 Pro 4TB + fcgenthumb + Power Optimisation.
     * Add RockChip Hardware acceleration variation of fcgenthumb (see https://github.com/Fruit-Pi/gstreamer-rockchip)
     * https - accept certs via env var or auto setup with let's encrypt autocert NewListener (with domain provided by FC_DOMAIN).
     * Backup active-folder plugin.
+    * Record idle power consumption.
+    * Record folder and file retrieval speed: https://cloud.convex.cc/#browse:/TODO/1TODO.txt
 * Check todo list stored on cloud server.
 * Update demo video (on firefox for mac with darkmode for better styling).
 * Add brief demo video of portrait.

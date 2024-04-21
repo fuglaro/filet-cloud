@@ -1472,7 +1472,7 @@
 							(_, label, img, format) => `![${label}](${imgH(img, format)})`)
 						// Resolve relative links to other markdown documents (skipping links including ://).
 						.replace(/([^\!]|^)\[([^\]\)\n]*)\]\(((?:(?!:\/\/)[^\)\n])+)\)/g,
-							(_, p, label, file) => `[${p}${label}](${storage.mode()}/${file})`))
+							(_, p, label, file) => `[${p}${label}](${storage.mode()}${path.replace(/[^/]+$/g, file)})`))
 				})
 				this.mde.togglePreview()
 				const upload = sr.querySelector('#upload')

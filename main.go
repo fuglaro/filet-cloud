@@ -37,6 +37,8 @@ var upgrader = websocket.Upgrader{}
 var privateKey = make([]byte, 512/8)
 var connectionID atomic.Uint64 // sequential ID generator making keys for connections.
 var connections = map[uint64]*ssh.Client{}
+var jpegcmdtemplate = ("ffmpeg -i PATH -q:v COMPRESSION -vf scale=WIDTH:-1" +
+	" -update 1 -f image2 -vcodec mjpeg -")
 
 // Attempt to find the Client IP (without the port) for an incomming request.
 func clientIP(r *http.Request) string {
@@ -178,6 +180,7 @@ func authServeContent(w http.ResponseWriter, r *http.Request) {
 		widStr, subpath, _ := strings.Cut(subpath, ":")
 		comprStr, subpath, _ := strings.Cut(subpath, "/")
 		ppath := strings.Replace(prepath+subpath, "'", "'\\''", -1)
+		ppath = "'" + ppath + "'"
 		width, err := strconv.Atoi(widStr)
 		if check(w, err) {
 			return
@@ -189,15 +192,21 @@ func authServeContent(w http.ResponseWriter, r *http.Request) {
 		if check(w, err) {
 			return
 		}
-		cmd := ("ffmpeg -i '" + ppath + "' -q:v " + strconv.Itoa(compr) +
-			" -vf scale=" + strconv.Itoa(width) + ":-1 -update 1 -f image2 -vcodec mjpeg -")
+		// Disallow ' single quotes in command for safety with command escaping.
+		if strings.Contains(jpegcmdtemplate, "'") {
+			log.Println("FC_JPEG_CMD should not contain single quotes.")
+			return
+		}
+		jpegcmd := strings.Replace(jpegcmdtemplate, "PATH", ppath, -1)
+		jpegcmd = strings.Replace(jpegcmd, "WIDTH", strconv.Itoa(width), -1)
+		jpegcmd = strings.Replace(jpegcmd, "COMPRESSION", strconv.Itoa(compr), -1)
 		session, err := sshConn.NewSession()
 		if check(w, err) {
 			return
 		}
 		defer session.Close()
 		session.Stdout = w
-		err = session.Run(cmd)
+		err = session.Run(jpegcmd)
 		if check(w, err) {
 			return
 		}
@@ -752,19 +761,20 @@ func connect(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	// Handle options.
-	p := os.Getenv("FC_SSH_PORT")
-	if p != "" {
+	if p := os.Getenv("FC_SSH_PORT"); p != "" {
 		sshport = p
 	}
 	addr := os.Getenv("FC_LISTEN")
 	if addr == "" {
 		addr = ":443"
 	}
+	if jpt := os.Getenv("FC_JPEG_CMD"); jpt != "" {
+		jpegcmdtemplate = jpt
+	}
 	cert := os.Getenv("FC_CERT_FILE")
 	key := os.Getenv("FC_KEY_FILE")
 	domain := os.Getenv("FC_DOMAIN")
 	if domain == "" && (cert == "" || key == "") {
-
 		fmt.Print(`
 filet-cloud: The lean and powerful 💪 personal cloud ⛅.
 
@@ -783,6 +793,12 @@ Usage (environment variables):
     The address to listen on. Defaults to :443.
   FC_SSH_PORT:
     The port to use to connect locally.
+  FC_JPEG_CMD:
+    The command to make jpeg thumbnails with these placeholder values:
+      PATH - the path to the source file (this will be auto-quoted).
+      WIDTH - output JPEG width value.
+      COMPRESSION - output JPEG quality value.
+    The command should write the output JPEG to standard out.
 
 This service can only be served over HTTPS connections, requiring
 either FC_CERT_FILE and FC_KEY_FILE to be specified, or,
@@ -959,6 +975,7 @@ automatic LetsEncrypt configuration by specifying FC_DOMAIN.
 	fmt.Fprintf(os.Stderr, "FC_DOMAIN=%v\n", domain)
 	fmt.Fprintf(os.Stderr, "FC_LISTEN=%v\n", addr)
 	fmt.Fprintf(os.Stderr, "FC_SSH_PORT=%v\n", sshport)
+	fmt.Fprintf(os.Stderr, "FC_JPEG_CMD=%v\n", jpegcmdtemplate)
 	fmt.Fprintf(os.Stderr, "\nListening...\n")
 	if os.Getenv("FC_DOMAIN") != "" {
 		log.Fatal(http.Serve(autocert.NewListener(domain), nil))
