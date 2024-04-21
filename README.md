@@ -124,7 +124,7 @@ Supported environment variables:
 * `FC_DOMAIN`: The domain to use with the included Let's Encrypt integration. Use of this implies acceptance of the LetsEncrypt Terms of Service.
 * `FC_LISTEN`: The address to listen on. Defaults to ':443'.
 * `FC_SSH_PORT`: The port to use to connect locally.
-* `FC_JPEG_CMD`: The command to make jpeg thumbnails by injecting parameters into PATH, WIDTH, and COMPRESSION placeholder values. `PATH` is the path to the source file and will be auto-quoted. `WIDTH` is the output JPEG width value. `COMPRESSION` is the output JPEG quality value. The command should write the output JPEG to standard out. The default value uses ffmpeg.
+* `FC_JPEG_CMD`: The command to make jpeg thumbnails by injecting parameters into PATH, WIDTH, and QUALITY placeholder values. `PATH` is the path to the source file and will be auto-quoted. `WIDTH` is the output JPEG width value. `QUALITY` is the output JPEG quality value (1-100). The command should write the output JPEG to standard out. The default value uses ffmpeg.
 
 ### Certificate
 If you don't have your own domain, you can set up TLS using a Self Signed Certificate with tools such as minica or openssl.
@@ -139,7 +139,7 @@ openssl req -x509 -newkey rsa:4096 -sha256 -days 1 -nodes -keyout my.key -out my
 * To use Copy/Paste in the terminal from a Linux client, use Ctrl/Shift+Insert rather than Ctr+c/v.
 * Auto logout will cause terminal connections to end. Use a terminal multiplexer like zellij to provide persisent sessions across logins.
 * NerdFont icons are fully supported and can be used for active folder plugin icons.
-* Embed dynamically generated thumbnails inside markdown documents with the format suffix after the image path: `![LABEL](IMAGE =WIDTH:COMPRESSION)`. E.g: `![My Thumbnail](image1.png =360:6)`.
+* Embed dynamically generated thumbnails inside markdown documents with the format suffix after the image path: `![LABEL](IMAGE =WIDTH:QUALITY)`. E.g: `![My Thumbnail](image1.png =360:100)`.
 
 # TODO (Current WIP)
 * ffmpeg doesn't respect rotated images when generating thumbnails -> seems to be fixed in latest version so test it on RP4!

@@ -1195,7 +1195,7 @@
 				await storage.authLinks()
 				img.src = storage.fileLink(path)
 				// Also set off a thumbnail preview to ensure fast loads.
-				thm.src = storage.thumbLink("/720:6" + path)
+				thm.src = storage.thumbLink("/720:80" + path)
 			})()
 		}
 		// Handle preview and open modes.
@@ -1450,7 +1450,7 @@
 			// Handle images and thumbnails that reference relative storage.
 			const imgH = (img, format) => {
 				if (img.includes('://')) return img // Skip links including ://
-				// Handle thumbnails if image was in format ![NAME](PATH =WIDTH:COMPRESSION)
+				// Handle thumbnails if image was in format ![NAME](PATH =WIDTH:QUALITY)
 				if (format) return storage.thumbLink("/" + format.substring(2) + path.replace(/[^/]+$/g, img))
 				// Generate standard image storage link from relative path.
 				return storage.fileLink(path.replace(/[^/]+$/g, img))

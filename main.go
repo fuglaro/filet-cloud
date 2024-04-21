@@ -37,7 +37,7 @@ var upgrader = websocket.Upgrader{}
 var privateKey = make([]byte, 512/8)
 var connectionID atomic.Uint64 // sequential ID generator making keys for connections.
 var connections = map[uint64]*ssh.Client{}
-var jpegcmdtemplate = ("ffmpeg -i PATH -q:v COMPRESSION -vf scale=WIDTH:-1" +
+var jpegcmdtemplate = ("ffmpeg -i PATH -q:v $((35-QUALITY/3)) -vf scale=WIDTH:-1" +
 	" -update 1 -f image2 -vcodec mjpeg -")
 
 // Attempt to find the Client IP (without the port) for an incomming request.
@@ -170,7 +170,7 @@ func authServeContent(w http.ResponseWriter, r *http.Request) {
 	 * Serve a thumbnail image of the file.
 	 * This does not support all formats.
 	 * The URL is expected to be in the form of:
-	 *   /thumb:/{{WIDTH}}:{{COMPRESSION}}/{{PATH}}
+	 *   /thumb:/{{WIDTH}}:{{QUALITY}}/{{PATH}}
 	 */
 	case "/thumb":
 		w.Header().Set("Content-Type", "image/jpeg")
@@ -199,7 +199,7 @@ func authServeContent(w http.ResponseWriter, r *http.Request) {
 		}
 		jpegcmd := strings.Replace(jpegcmdtemplate, "PATH", ppath, -1)
 		jpegcmd = strings.Replace(jpegcmd, "WIDTH", strconv.Itoa(width), -1)
-		jpegcmd = strings.Replace(jpegcmd, "COMPRESSION", strconv.Itoa(compr), -1)
+		jpegcmd = strings.Replace(jpegcmd, "QUALITY", strconv.Itoa(compr), -1)
 		session, err := sshConn.NewSession()
 		if check(w, err) {
 			return
@@ -797,7 +797,7 @@ Usage (environment variables):
     The command to make jpeg thumbnails with these placeholder values:
       PATH - the path to the source file (this will be auto-quoted).
       WIDTH - output JPEG width value.
-      COMPRESSION - output JPEG quality value.
+      QUALITY - output JPEG quality value (1-100).
     The command should write the output JPEG to standard out.
 
 This service can only be served over HTTPS connections, requiring
