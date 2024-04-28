@@ -132,11 +132,11 @@ FC_CERT_FILE=my.crt FC_KEY_FILE=my.key ./filet-cloud
 ### Launch Options
 Supported environment variables:
 * `FC_CERT_FILE` & `FC_KEY_FILE`: The credentials to use for TLS connections.
-* `FC_DIR`: The folder path to use when serving storage, rather than the root. Supports a USERNAME token to serve a different tree for each user.
+* `FC_DIR`: The folder path to use when serving storage, rather than the root. Supports a USERNAME placeholder to serve a different tree for each user.
 * `FC_DOMAIN`: The domain to use with the included Let's Encrypt integration. Use of this implies acceptance of the LetsEncrypt Terms of Service.
 * `FC_LISTEN`: The address to listen on. Defaults to ':443'.
 * `FC_SSH_PORT`: The port to use to connect locally.
-* `FC_JPEG_CMD`: The command to make jpeg thumbnails by injecting parameters into PATH, WIDTH, and QUALITY placeholder values. `PATH` is the path to the source file and will be auto-quoted. `WIDTH` is the output JPEG width value. `QUALITY` is the output JPEG quality value (1-100). The command should write the output JPEG to standard out. The default value uses ImageMagick.
+* `FC_JPEG_CMD`: The command to make jpeg thumbnails by injecting parameters into PATH, WIDTH, and QUALITY placeholder values. PATH is the path to the source file and will be auto-quoted. WIDTH is the output JPEG width value. QUALITY is the output JPEG quality value (1-100). The command should write the output JPEG to standard out. The default value uses ImageMagick.
 
 ### Certificate
 If you don't have your own domain, you can set up TLS using a Self Signed Certificate with tools such as minica or openssl.
