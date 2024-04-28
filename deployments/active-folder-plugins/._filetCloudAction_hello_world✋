@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+# Toy example demostrating a simple hello word script that will
+# write messages to the redirected output file.
+
+echo "Hello World"
+echo "on $(date)"
+echo "from $(pwd)"

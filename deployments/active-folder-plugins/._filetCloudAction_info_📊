@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# Prepare the redirect to the generated file, if it hasn't already been prepared.
+REDIRECT=StatusInfo.md
+OUT=$(basename "$0")_
+if [ ! -L $OUT ]; then
+  mv $OUT $REDIRECT
+  ln -s $REDIRECT $OUT
+fi
+
+now=$(date '+%Y-%m-%d %H:%M:%S')
+
+update=$(date --date "$(stat -c %y /var/lib/apt/periodic/unattended-upgrades-stamp)" '+%Y-%m-%d %H:%M:%S')
+
+temp=$(sudo /usr/bin/vcgencmd measure_temp | sed -e 's:^.*=::')
+
+cat <<EOF
+# Status Information
+* Date: $now
+
+## Server Status
+* Last Software Update: $update
+* Core Temperature: $temp
+EOF
+

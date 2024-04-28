@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+
+# Toy example demonstrating a script which launches a process in the background,
+# and then immediately redirects the browser to the output file.
+# The output file can then be reloaded to monitor the progress of the script.
+# On successful completion of the script, DONE will be written to the output file,
+# and if the script fails, FAIL will be written instead.
+
+echo "Running in background - reload to monitor..."
+OUT=$(basename "$0")_
+screen -dm bash -c "bash -e <<EOF >>$OUT &&echo DONE>>$OUT ||echo FAIL>>$OUT"'
+
+
+
+# Custom background script (add customisations here)
+sleep 1
+date
+sleep 1
+date
+sleep 1
+date
+sleep 1
+date
+sleep 1
+date
+sleep 1
+date
+sleep 1
+date
+sleep 1
+date
+sleep 1
+
+
+
+exit
+EOF'

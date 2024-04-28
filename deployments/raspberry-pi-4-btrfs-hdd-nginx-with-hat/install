@@ -5,7 +5,7 @@ read -p 'Please enter the domain: ' domain
 
 # Install dependencies
 apt update
-apt install -y ddclient btrfs-tools unattended-upgrades certbot python-certbot-nginx imagemagick
+apt install -y ddclient btrfs-tools unattended-upgrades certbot python-certbot-nginx imagemagick libpam-google-authenticator
 
 # Prepare USB (data) storage
 mkdir -p /mnt/usb/
@@ -23,7 +23,10 @@ make -C filetcloudtools
 dpkg -i filetcloudtools/filetcloudtools.deb
 systemctl enable filet-cloud-actions
 systemctl restart filet-cloud-actions
-
+cat <<EOF | sudo tee /etc/sudoers.d/000_filetcloud
+ALL ALL=(root) NOPASSWD: /usr/bin/btrfs subvolume list *
+ALL ALL=(root) NOPASSWD: /usr/bin/vcgencmd measure_temp
+EOF
 # Install filet-cloud
 wget https://github.com/fuglaro/filet-cloud/releases/download/1.0.0/filet-cloud-raspberry-pi -O /usr/bin/filet-cloud
 chmod a+x /usr/bin/filet-cloud
@@ -58,3 +61,15 @@ cp cert-renewal.service /etc/systemd/system/
 systemctl enable cert-renewal
 systemctl restart cert-renewal
 
+# Allow COLORTERM env var to be passed in by filet-cloud
+echo | sudo tee -a /etc/ssh/sshd_config
+echo "AcceptEnv COLORTERM" | sudo tee -a /etc/ssh/sshd_config
+
+# Setup 2FA
+echo "Setting up Two Factor Authentication"
+echo "" | sudo tee -a /etc/pam.d/sshd
+echo "auth required pam_google_authenticator.so nullok" | sudo tee -a /etc/pam.d/sshd
+echo "auth required pam_permit.so" | sudo tee -a /etc/pam.d/sshd
+sudo sed -i 's/^ChallengeResponseAuthentication no$/ChallengeResponseAuthentication yes/' /etc/ssh/sshd_config
+echo | sudo tee -a /etc/ssh/sshd_config
+echo "AuthenticationMethods publickey password keyboard-interactive" | sudo tee -a /etc/ssh/sshd_config

@@ -4,3 +4,11 @@ read -p 'Login name: ' usr
 sudo adduser $usr
 sudo mkdir -m 0700 /mnt/usb/filetclouddata/$usr
 sudo chown $usr:$usr /mnt/usb/filetclouddata/$usr
+sudo -u $usr google-authenticator
+
+# Add active folder plugins
+sudo -u $usr mkdir /mnt/usb/filetclouddata/$usr/actions/
+sudo -u $usr wget https://raw.githubusercontent.com/fuglaro/filet-cloud/main/deployments/active-folder-plugins/._filetCloudAction_storage_status🗄 -0 /mnt/usb/filetclouddata/$usr/actions/._filetCloudAction_storage_status🗄
+sudo -u $usr wget https://raw.githubusercontent.com/fuglaro/filet-cloud/main/deployments/active-folder-plugins/._filetCloudAction_info_📊 -0 /mnt/usb/filetclouddata/$usr/actions/._filetCloudAction_info_📊
+sudo chmod a+x /mnt/usb/filetclouddata/$usr/actions/._filetCloudAction_storage_status🗄
+sudo chmod a+x /mnt/usb/filetclouddata/$usr/actions/._filetCloudAction_info_📊

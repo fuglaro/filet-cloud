@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+# Toy script that exemplifies generating a file.
+# This will create a markdown file with simple example
+# contents. The generated file will be made with a filename
+# that has the appropriate extension to ensure the browser
+# displays it correctly.
+
+
+
+# The redirection to the file we are generating (add customisation here)
+REDIRECT=TestMarkdown.md
+
+
+
+# Prepare the redirect to the generated file, if it hasn't already been prepared.
+OUT=$(basename "$0")_
+if [ ! -L $OUT ]; then
+  mv $OUT $REDIRECT
+  ln -s $REDIRECT $OUT
+fi
+
+
+
+# Custom script populating the redirected file (add customisation here)
+echo '# Hello World'
+echo "* $(date)"
+echo "* $(pwd)"

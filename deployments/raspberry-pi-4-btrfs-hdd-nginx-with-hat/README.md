@@ -32,6 +32,8 @@ It targets a build running on a Raspberry Pi 4 with an E-ink display hat that di
   * Trigger update and restart.
 * Daily snapshots (with Btrfs).
 * Note there is no hardware resiliant backup redundancy - please set up a strategy for resiliency against hardware failure which suits your needs.
+* COLORTERM environment variable is passed through from filet-cloud terminal connections, setting the value to `truecolor`.
+* 2FA with google-authenticator.
 
 ## Hardware
 The following hardware was used for this build:

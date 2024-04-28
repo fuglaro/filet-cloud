@@ -135,13 +135,13 @@ func authServeContent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Wrap SSH connection with SFTP interface.
-	sftp, err := sftp.NewClient(sshConn)
+	sftpc, err := sftp.NewClient(sshConn)
 	if check(w, err) {
 		return
 	}
-	defer sftp.Close()
+	defer sftpc.Close()
 	user := sshConn.Conn.User()
-	prepath := strings.Replace(os.Getenv("FC_DIR"), "USERNAME", string(user), -1) + "/"
+	prepath := strings.Replace(os.Getenv("FC_DIR"), "USERNAME", string(user), -1)
 
 	mode, subpath, _ := strings.Cut(r.URL.Path, ":")
 	switch mode {
@@ -149,16 +149,20 @@ func authServeContent(w http.ResponseWriter, r *http.Request) {
 	/*
 	 * Retrieves a file and sends it to the client.
 	 * The 'path' query parameter identifies the file to send.
+	 * Also handles download mode.
 	 */
+	case "/download":
+		w.Header().Set("Content-Disposition", "attachment")
+		fallthrough
 	case "/file":
 		path := prepath + subpath
 		// get the file stat information
-		stat, err := sftp.Stat(path)
+		stat, err := sftpc.Stat(path)
 		if check(w, err) {
 			return
 		}
 		// stream the file contents
-		contents, err := sftp.Open(path)
+		contents, err := sftpc.Open(path)
 		if check(w, err) {
 			return
 		}
@@ -230,7 +234,7 @@ func authServeContent(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 			// expand directories to the files inside
-			walk := sftp.Walk(path)
+			walk := sftpc.Walk(path)
 			for walk.Step() {
 				if check(w, walk.Err()) {
 					return
@@ -256,7 +260,7 @@ func authServeContent(w http.ResponseWriter, r *http.Request) {
 		defer zipper.Close()
 		for _, path := range files {
 			// get the contents of the file from the server
-			contents, err := sftp.Open(path)
+			contents, err := sftpc.Open(path)
 			if check(w, err) {
 				return
 			}
@@ -351,20 +355,34 @@ func connect(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
+	var codeUsed = false
 	sshConn, err := ssh.Dial("tcp", "localhost:"+sshport, &ssh.ClientConfig{
 		User: string(user),
 		Auth: []ssh.AuthMethod{
-			ssh.Password(string(pass)),
 			ssh.KeyboardInteractive(
-				func(name, instruction string, question []string, echos []bool) (answers []string, err error) {
-					return []string{string(code)}, nil
-				})},
+				func(name, instruction string, questions []string, echos []bool) (answers []string, err error) {
+					answ := make([]string, len(questions))
+					for i, q := range questions {
+						answ[i] = string(pass)
+						if strings.Contains(strings.ToLower(q), "code") {
+							answ[i] = string(code)
+							codeUsed = true
+						}
+					}
+					return answ, nil
+				}),
+			ssh.Password(string(pass))},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(), // trust localhost
 	})
 	if err != nil {
 		return
 	}
 	defer sshConn.Close()
+	if len(code) != 0 && !codeUsed {
+		// If code was given, but code was not used in authentication, assume malice and abort.
+		time.Sleep(3 * time.Second) // Frustrate urge to reattempt.
+		return
+	}
 
 	// Setup for management of the terminal shell sessions.
 	var sessRunning = false
@@ -438,7 +456,7 @@ func connect(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Wrap SSH connection with SFTP interface.
-	sftp, err := sftp.NewClient(sshConn)
+	sftpc, err := sftp.NewClient(sshConn)
 	if err != nil {
 		return
 	}
@@ -458,9 +476,6 @@ func connect(w http.ResponseWriter, r *http.Request) {
 		Cols   int
 	}
 	prepath := strings.Replace(os.Getenv("FC_DIR"), "USERNAME", string(user), -1)
-	if prepath[len(prepath)-1:] != "/" {
-		prepath += "/"
-	}
 	for {
 		// Wait for the next message.
 		mtype, re, err := c.NextReader()
@@ -495,7 +510,7 @@ func connect(w http.ResponseWriter, r *http.Request) {
 			}
 			path := strings.TrimSpace(string(pathbuf))
 			// create new file on server
-			dest, err := sftp.Create(prepath + path)
+			dest, err := sftpc.Create(prepath + path)
 			if err != nil {
 				return
 			}
@@ -542,7 +557,7 @@ func connect(w http.ResponseWriter, r *http.Request) {
 		 * [[true, "file1"], [false, "dir1"]] */
 		case "dir":
 			// find contents of the directory
-			contents, err := sftp.ReadDir(prepath + m.Path)
+			contents, err := sftpc.ReadDir(prepath + m.Path)
 			if err != nil {
 				return
 			}
@@ -561,7 +576,7 @@ func connect(w http.ResponseWriter, r *http.Request) {
 		// Returns the contents of a file as a binary message.
 		case "file":
 			// stream the file contents
-			contents, err := sftp.Open(prepath + m.Path)
+			contents, err := sftpc.Open(prepath + m.Path)
 			if err != nil {
 				return
 			}
@@ -588,7 +603,7 @@ func connect(w http.ResponseWriter, r *http.Request) {
 		// Returns the mime type of a file.
 		case "mime":
 			// find the mime type of the file
-			contents, err := sftp.Open(prepath + m.Path)
+			contents, err := sftpc.Open(prepath + m.Path)
 			if err != nil {
 				return
 			}
@@ -604,7 +619,7 @@ func connect(w http.ResponseWriter, r *http.Request) {
 
 		// Creates a new directory.
 		case "newdir":
-			err = sftp.Mkdir(prepath + m.Path)
+			err = sftpc.Mkdir(prepath + m.Path)
 			mutex.Lock()
 			if c.WriteJSON(map[string]interface{}{"id": m.Id, "err": err}) != nil {
 				return
@@ -613,7 +628,7 @@ func connect(w http.ResponseWriter, r *http.Request) {
 
 		// Creates a new file.
 		case "newfile":
-			dest, err := sftp.Create(prepath + m.Path)
+			dest, err := sftpc.Create(prepath + m.Path)
 			dest.Close()
 			mutex.Lock()
 			if c.WriteJSON(map[string]interface{}{"id": m.Id, "err": err}) != nil {
@@ -624,7 +639,7 @@ func connect(w http.ResponseWriter, r *http.Request) {
 		/* Move or rename a file or directory.
 		 * From the given path "path" to the given path "to". */
 		case "rename":
-			err = sftp.Rename(prepath+m.Path, prepath+m.To)
+			err = sftpc.Rename(prepath+m.Path, prepath+m.To)
 			mutex.Lock()
 			if c.WriteJSON(map[string]interface{}{"id": m.Id, "err": err}) != nil {
 				return
@@ -639,7 +654,7 @@ func connect(w http.ResponseWriter, r *http.Request) {
 			path := prepath + m.Path
 			if path[len(path)-1:] != "/" {
 				// Delete the file
-				err = sftp.Remove(path)
+				err = sftpc.Remove(path)
 				mutex.Lock()
 				if c.WriteJSON(map[string]interface{}{"id": m.Id, "err": err}) != nil {
 					return
@@ -648,7 +663,7 @@ func connect(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 			// Handle folder deletion
-			walk := sftp.Walk(path)
+			walk := sftpc.Walk(path)
 			// First delete all files and collect directories
 			var dirs []string
 			for walk.Step() {
@@ -664,7 +679,7 @@ func connect(w http.ResponseWriter, r *http.Request) {
 					dirs = append(dirs, walk.Path())
 					continue
 				}
-				if sftp.Remove(walk.Path()) != nil {
+				if sftpc.Remove(walk.Path()) != nil {
 					mutex.Lock()
 					if c.WriteJSON(map[string]interface{}{"id": m.Id, "err": err}) != nil {
 						return
@@ -675,7 +690,7 @@ func connect(w http.ResponseWriter, r *http.Request) {
 			}
 			// Then delete all the dirs (in reverse order)
 			for i := range dirs {
-				if sftp.Remove(dirs[len(dirs)-1-i]) != nil {
+				if sftpc.Remove(dirs[len(dirs)-1-i]) != nil {
 					mutex.Lock()
 					if c.WriteJSON(map[string]interface{}{"id": m.Id, "err": err}) != nil {
 						return
@@ -700,31 +715,40 @@ func connect(w http.ResponseWriter, r *http.Request) {
 		case "runaction":
 			// Sanity check the file name,
 			path := prepath + m.Path
-			if !strings.HasPrefix(filepath.Base(path), "._filetCloudAction_") {
+			filename := filepath.Base(path)
+			dir := filepath.Dir(path)
+			if !strings.HasPrefix(filename, "._filetCloudAction_") {
 				return
 			}
 			// Sanity check the path.
-			realpath, _ := sftp.RealPath(path) // Ignore error as empty string fails on prefix check anyway.
+			realpath, _ := sftpc.RealPath(path) // Ignore error as empty string fails prefix check anyway.
 			if !strings.HasPrefix(realpath, prepath) {
 				return
 			}
+			// Sanity check there a no single quotes to confuse the command - it is weird, just abort.
+			if strings.Contains(path, "'") {
+				return
+			}
+			// Launch the action command.
 			sess, err := sshConn.NewSession()
 			if err != nil {
 				return
 			}
 			go func() {
-				// Launch the action command.
-				outb, err := sess.Output(realpath)
-				if err != nil {
-					return
-				}
+				// Set the cwd, run the command, and output to the sidecar output path.
+				err := sess.Run("cd '" + dir + "'&&'" + path + "'>'" + path + "_'")
 				// Handle the result response redirect.
-				redirect := ""
-				output := string(outb)
-				if output != "" {
-					output = strings.TrimSuffix(output, "\n")
-					redirect = m.Path[:len(m.Path)-len(filepath.Base(m.Path))] + output
+				redirect := m.Path + "_" // Default sidecar output path.
+				if err != nil {
+					redirect = ""
+				} else {
+					// Check for whether the output sidecar file is a redirection via a link.
+					link, err := sftpc.ReadLink(path + "_")
+					if err == nil {
+						redirect = m.Path[:len(m.Path)-len(filepath.Base(m.Path))] + link
+					}
 				}
+				// Send the finished / redirection message.
 				mutex.Lock()
 				if c.WriteJSON(map[string]interface{}{"id": m.Id, "msg": redirect}) != nil {
 					return
@@ -899,6 +923,7 @@ automatic LetsEncrypt configuration by specifying FC_DOMAIN.
 	}))
 
 	// Serve links to storage paths, and dynamic storage paths.
+	http.Handle("/download:/", SMW(http.HandlerFunc(authServeContent)))
 	http.Handle("/file:/", SMW(http.HandlerFunc(authServeContent)))
 	http.Handle("/thumb:/", SMW(http.HandlerFunc(authServeContent)))
 	http.Handle("/zip", SMW(http.HandlerFunc(authServeContent)))

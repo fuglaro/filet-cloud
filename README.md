@@ -19,7 +19,8 @@ Browse files, download, upload, stream videos and music, view images, create and
 * 🗄 Download multiple files or folders in a zip.
 * 🚚 Move multiple files and folders.
 * 🗑 Delete files and folders.
-* 👤 Authentication via local SSH user account credentials.
+* 👤 Authentication via local SSH user account credentials, with optional support for 2FA.
+* 👥 Supports multiple user accounts.
 * 📱 Compatible with automatic phone data upload tools like Folder Sync Pro via the STFP/SSH service running on the same server.
 * 📱 Mobile friendly.
 * 🔐 Be in full control of your own private data.
@@ -30,7 +31,7 @@ Browse files, download, upload, stream videos and music, view images, create and
 * ⌨ Fast keyboard navigation.
 * 🖥 Terminal access to the storage host.
 * 💪 Hardened security.
-* 🧩 Active folder action plugins for creating custom commands which can autogenerate files such as photo albums, or disk usage reports.
+* 🧩 Active folder plugins for creating custom commands which can autogenerate files such as photo albums, or disk usage reports.
 * 🌏 Access from Firefox, Firefox mobile, Safari, Safari mobile, Chrome, Chrome mobile, and other Chromium based browsers.
 * 👁 Customisable thumbnail generation command.
 
@@ -57,15 +58,26 @@ flowchart
     Mobile ----->|Nightly\nSync| SSH
 ```
 
-### Active Folder Action Plugins
+### Active Folder Plugins
 Create action plugins within your backend storage folders to run commands which can generate, update and open files. These will be displayed as action buttons when navigating to the folder they reside in.
 
-Active folder plugins must:
-* Start with the prefix: `._filetCloudAction_` and end with the name of the action (with words separated by underscores), followed by an action icon (any character, unicode, or symbol). E.g: `._filetCloudAction_full_backup🗄`
-* Either output nothing, or output the file or folder to redirect to when the action completes.
-* Be executable.
+Active folder plugins:
+* Have their file name start with the prefix: `._filetCloudAction_` and end with the name of the action (with words separated by underscores), followed by an icon (any character, unicode, or symbol). E.g: `._filetCloudAction_full_backup🗄`
+* Must be executable.
+* Are run with the folder they reside in as the current working directory.
+* Create standard output containing either the command output text log, or generated file contents.
+* Have their standard output sent to an output file alongside the plugin file itself, with an underscore as a suffix.
 
-This can be used for various actions, such as generating a photo album of all photos in a folder, displaying storage statistics, or even triggering a backup.
+On completion of the command, the browser will redirect to show the contents of the output file, or any file the output file links to.
+
+This can be used for various actions, such as generating a photo album of all photos in a folder, displaying storage statistics, or even triggering a backup that runs in the background.
+
+See the following examples which can be used or adapted as templates:
+* [✋ Hello World](deployments/active-folder-plugins/._filetCloudAction_hello_world✋)
+* [🗺 Template Markdown File Generator](deployments/active-folder-plugins/._filetCloudAction_make_markdown🗺)
+* [🔴Template Background Script with Montoring](deployments/active-folder-plugins/._filetCloudAction_background_script🔴)
+* [📊 Server Info Report with Markdown Formatting](deployments/active-folder-plugins/._filetCloudAction_info_📊)
+* [🗄 Storage Status Report with Markdown Formatting](deployments/active-folder-plugins/._filetCloudAction_storage_status🗄)
 
 ### Supported formats
 * Images
@@ -143,52 +155,49 @@ openssl req -x509 -newkey rsa:4096 -sha256 -days 1 -nodes -keyout my.key -out my
 * You can rescale the quality value in the custom thumbnail generator command, if the command does not accept a normalised 1-100 quality range, like with ffmpeg: `ffmpeg -i PATH -q:v $((35-QUALITY/3)) -vf scale=WIDTH:-1 -update 1 -f image2 -vcodec mjpeg -`
 
 # TODO (Current WIP)
-* try thumbnail performance optimisation with gstreamer hardware accelerated.
-* Retest IOS.
+* Retest across, reload, open/close, preview, and nav.
 * Installation enhancement pass:
-  * Check if encryiption, hash, and crypto random fit hardward accelleration options on chosen devices.
-  * Allow COLORTERM env though ssh.
-  * Label RP4+HAT as Advanced Configuration.
-    * Setup and test 2FA (and add to docs)
-    * Storage status active folder plugin.
-    * Full diagnostics active folder plugin (temp etc).
-    * Record idle power consumption - 3.2W
-    * Record folder and file retrieval speed: https://cloud.convex.cc/#browse:/TODO/1TODO.txt
-  * Make (zig?) lightweight optimised fcgenthumb command (libjpeg-turbo) & test speed opimisation.
+  * Try thumbnail performance optimisation with gstreamer hardware accelerated.
+  * Make (zig?) lightweight optimised fcgenthumb command (libjpeg-turbo) for JPG->JPG & test speed opimisation.
+  * RP4+HAT.
+    * Try faster thumbnail things.
   * Low Cost Simple deployment:
     * RP Zero W + 32GB MicroSD + Self Signed Certs + DynamicIP-fixer/0-cost + fcgenthumb.
     * Optional Additions: Case and Heatsink.
     * Record idle power consumption.
-    * Record folder and file retrieval speed: https://cloud.convex.cc/#browse:/TODO/1TODO.txt
+    * Record folder and file retrieval speed: see benchmark folder.
+    * https - accept certs via env var or auto setup with let's encrypt autocert NewListener (with domain provided by FC_DOMAIN).
   * Energy Efficient High Capacity deployment:
     * RP Zero 2 W + Heatsink + 32GB MicroSD + Crucial X9 Pro 4TB + fcgenthumb + Basic Power Optimisation (disable things - https://picockpit.com/raspberry-pi/raspberry-pi-zero-2-battery/).
     * Record idle power consumption.
-    * Record folder and file retrieval speed: https://cloud.convex.cc/#browse:/TODO/1TODO.txt
+    * Record folder and file retrieval speed: see benchmark folder
   * Commodity Hardware Repurpose Deployment:
     * Mobile phone version and 4G for always on.
     * Android Termix.
-    * Record folder and file retrieval speed: https://cloud.convex.cc/#browse:/TODO/1TODO.txt
+    * Record folder and file retrieval speed: see benchmark folder
   * Wee-Mighty Deployment:
     * Radxa ZERO 3W + BEEFY custom heatsink + 512 MicroSD + Crucial X9 Pro 4TB + fcgenthumb + Power Optimisation.
     * Add RockChip Hardware acceleration variation of fcgenthumb (see https://github.com/Fruit-Pi/gstreamer-rockchip)
     * https - accept certs via env var or auto setup with let's encrypt autocert NewListener (with domain provided by FC_DOMAIN).
-    * Backup active-folder plugin.
+    * Backup active-folder plugin. Output file links to a backup output file. Command first outputs the message "Running in background - refresh to monitor...", flushes, then launches the backup in background with redirection of both channels to the backup output file, then returns. Add this as a long-running-actions tips and tricks.
     * Record idle power consumption.
-    * Record folder and file retrieval speed: https://cloud.convex.cc/#browse:/TODO/1TODO.txt
-* Check todo list stored on cloud server.
-* Update demo video (on firefox for mac with darkmode for better styling).
-* Add brief demo video of portrait.
+    * Record folder and file retrieval speed: see benchmark folder.
+    * HW Accelerated thumbnail generation inc. JPEG -> NPU/GPU sampling -> JPEG specific chipset optimisation.
+    * HW Accelerated HS512 in JWT decoding.
+* Update demo video (on firefox for mac with darkmode for better styling) - switch to Mobile phone view to demo profile view..
 * Tag easily deployable release for others, with wide cross compiling ARM/x86/x64/RISC-V Linux/LinuxStaticMusl/Mac/Windows. Must have a 1.0.0
 * Add to xtermjs tools list.
 
 # Wishlist for Future Work
-* Improve EasyMDE enabling a simpler integration, better parsing so images and links inside literals aren't resolved, add link and image manipulation via callbacks, and fix its bug when deactivating the preview button on refresh.
+* Improve EasyMDE enabling a simpler integration, better parsing so images and links inside literals aren't resolved, add link and image manipulation via callbacks, and fix its bug when deactivating the preview button on refresh. Perhaps write a new simpler MDE renderer with WASM (filet-web-mde).
 * Make as a Progressive Web App (PWA).
-* Active folder action plugin for generating a photo album by making collection of markdown files for all photos in a folder.
-* Active folder action plugin for getting storage statistics and status diagnostics.
+* Active folder plugin for generating a photo album by making collection of markdown files for all photos in a folder.
+* Active folder plugin for getting storage statistics and status diagnostics.
 * Improve CSP protection to inline stylesheets when xterm.js supports it. Other renderers or alternate tools could be options. See https://github.com/xtermjs/xterm.js/issues/4445
+* Support Shift+Drag for terminal text selection (overriding passing mouse events) consistenly across client OSs, similar to Alacritty, with a new xtermjs option.
 * Force selection in the terminal on macOS (https://github.com/xtermjs/xterm.js/issues/4329).
-* Support for diagram editing and viewing.
+* Support for diagram editing and viewing (inside MDE).
+* Support for slide deck editiing and viewing.
 * Reduce complexity through more consistent behaviour of major browsers.
 
 # Thanks to

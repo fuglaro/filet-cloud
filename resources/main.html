@@ -54,28 +54,28 @@
 		justify-content: center;
 		margin-bottom: 24px;
 		width: 100% - 48px;
+	}
 
-		button {
-			all: unset;
+	#menu :focus-visible {
+		outline: 1px solid;
+	}
 
-			h1 {
-				height: 1.1em;
-				margin-top: 0px;
-				margin-bottom: 0px;
-				text-align: center;
-			}
+	#menu>button {
+		all: unset;
+	}
 
-			p {
-				font-size: 0.5em;
-				margin-top: 0px;
-				margin-bottom: 0px;
-				text-align: center;
-			}
-		}
+	#menu>button>h1 {
+		height: 1.1em;
+		margin-top: 0px;
+		margin-bottom: 0px;
+		text-align: center;
+	}
 
-		:focus-visible {
-			outline: 1px solid;
-		}
+	#menu>button>p {
+		font-size: 0.5em;
+		margin-top: 0px;
+		margin-bottom: 0px;
+		text-align: center;
 	}
 
 	.maxer {
@@ -124,10 +124,10 @@
 		-webkit-backdrop-filter: invert(4%)
 	}
 
-	#dir>button:nth-child(odd):focus-visible,
-	#dir>button:focus-visible,
-	#data>button:nth-child(odd):focus-visible,
-	#data>button:focus-visible {
+	#dir>button:nth-child(odd).highli,
+	#dir>button.highli,
+	#data>button:nth-child(odd).highli,
+	#data>button.highli {
 		backdrop-filter: invert(20%);
 		-webkit-backdrop-filter: invert(20%);
 	}
@@ -139,12 +139,12 @@
 		margin-right: 0px;
 		width: calc(45% - 24px);
 		height: calc(100% - 48px);
+	}
 
-		#path {
-			margin-top: 6px;
-			font-size: 0.7em;
-			filter: invert(20%);
-		}
+	#dirPane>#path {
+		margin-top: 6px;
+		font-size: 0.7em;
+		filter: invert(20%);
 	}
 
 	#dataPane {
@@ -242,7 +242,7 @@
 			<p>down<br>load</p>
 		</button>
 		<button id=rename>
-			<h1>🖊️</h1>
+			<h1>🏷</h1>
 			<p>rename</p>
 		</button>
 		<button id=cart>
@@ -266,7 +266,7 @@
 </div>
 
 <input id="uploader" type="file" multiple />
-<a id="dwnld" download></a>
+<a id="dwnld" target="_blank" download></a>
 <div id=contenthider></div>
 <div><span><!--terminal font warmer--></span></div>
 
@@ -279,7 +279,7 @@
 			display: flex;
 			flex-direction: column;
 			flex-wrap: wrap-reverse;
-			align-items: flex-start;
+			align-items: center;
 			align-content: end;
 			column-gap: 0.8em;
 			row-gap: 0.2em;
@@ -291,21 +291,20 @@
 		button {
 			all: unset;
 			flex-basis: "min-content";
-			float: right;
+		}
 
-			h1 {
-				cursor: default;
-				height: 1.1em;
-				margin: 0px;
-				text-align: center;
-			}
+		button>h1 {
+			cursor: default;
+			height: 1.1em;
+			margin: 0px;
+			text-align: center;
+		}
 
-			p {
-				cursor: default;
-				font-size: 0.5em;
-				margin: 0px;
-				text-align: center;
-			}
+		button>p {
+			cursor: default;
+			font-size: 0.5em;
+			margin: 0px;
+			text-align: center;
 		}
 
 		#terminal.fullit {
@@ -363,32 +362,32 @@
 
 		ul {
 			list-style: none;
+		}
 
-			li {
-				margin: 3px;
-			}
+		li {
+			margin: 3px;
+		}
 
-			label {
-				display: inline-block;
-				width: 80px;
-				text-align: right;
-			}
+		label {
+			display: inline-block;
+			width: 80px;
+			text-align: right;
+		}
 
-			input {
-				padding: 5px;
-			}
+		input {
+			padding: 5px;
+		}
 
-			button {
-				float: right;
-				font-size: 2em;
-				border-style: solid;
-				border-color: currentColor;
-				background-color: background;
-			}
+		button {
+			float: right;
+			font-size: 2em;
+			border-style: solid;
+			border-color: currentColor;
+			background-color: background;
+		}
 
-			button.loading {
-				filter: blur(3px);
-			}
+		button.loading {
+			filter: blur(3px);
 		}
 	</style>
 	<div tabindex="-1">
@@ -405,7 +404,8 @@
 				</li>
 				<li>
 					<label for=code>(Code)</label>
-					<input type=password id=code name=code title="2FA access code (optional on some servers)" size=8 />
+					<input type=text id=code name=code title="2FA access code (optional on some servers)" size=8
+						autocomplete="off" />
 				</li>
 				<li>
 					<button>Connect</button>
@@ -524,6 +524,7 @@
 					// Setup the active folder plugin action buttons.
 					stThis.listDir(stThis.path()).then(fs => fs.forEach(f => {
 						if (!f.startsWith("._filetCloudAction_") || [...f].length < 20) return
+						if (f.endsWith("_")) return // ignore default sidecar output files.
 						const button = document.createElement("button")
 						const icon = document.createElement("h1")
 						icon.textContent = [...f].slice(-1)
@@ -665,6 +666,8 @@
 		runAction = async (path) => await this.#req({action: "runaction", path: path})
 		// Ensure the connection is still active (for use before using a storage link).
 		authLinks = async () => await this.#req()
+		// Storage link for a file's contents retrieved for downloading.
+		downloadLink = (path) => `/download:${encodeURI(path)}`
 		// Storage link for a file's contents.
 		fileLink = (path) => `/file:${encodeURI(path)}`
 		// Storage link for a thumbnail generated for a file.
@@ -687,7 +690,7 @@
 		* potentially overwriting existing files on the server.
 		*/
 		async upload(path, content) {
-			const plenstr = path.length.toString()
+			const plenstr = (new TextEncoder().encode(path)).length.toString() // get byte length!
 			if (plenstr.length > 20) throw new Error()
 			await this.#req(new Blob([plenstr.padEnd(20), path, content]))
 		}
@@ -752,14 +755,14 @@
 	document.getElementById("rename").onclick = () => rename()
 	document.getElementById("cart").onclick = () => {
 		document.getElementById('cart').classList.toggle('on')
-		cartMode() ? cartSel() : nav(storage.path())
+		cartSel()
+		if (!cartMode()) open(storage.path())
 	}
 	document.getElementById("move").onclick = () => move()
 	document.getElementById("del").onclick = () => del()
 	document.getElementById("close").onclick = () => {
 		setPath("#browse:", cwd())
-		document.getElementById('data').replaceChildren(document.createElement("folder-actions"))
-		menuMode()
+		open(storage.path())
 	}
 	document.getElementById("uploader").onchange = () => send()
 
@@ -786,61 +789,72 @@
 	* Updates the folder area with interactive tree navigation.
 	* Displays file contents as best it can.
 	*/
-	async function nav(path, justOpen) {
-		document.getElementById('data').replaceChildren()
-		if (cartMode()) cartSel()
-		if (!justOpen && storage.mode() === "#browse:") {
+	async function nav(path) {
+		// Update the folder contents.
+		if (storage.mode() === "#browse:") {
 			// Fill the folder contents
 			setPath('#browse:', path)
 			// Refresh the contents of the directory by querying the server
 			const curFile = storage.path().replace(/^.*[\\/]/, '')
 			storage.listDir(cwd()).then(r => {
+				let selected = null
 				dir.replaceChildren(...r.map(n => {
 					const nibIcon = document.createElement("h1")
 					const nib = document.createElement("p")
 					nib.textContent = n.replace(/\/$/, '')
 					nibIcon.textContent = n.endsWith('/') ? '📂' : '📄'
-					if (curFile === n) nibIcon.classList.add("on") // highlight selection
-					const div = document.createElement('button')
+					const btn = document.createElement('button')
 					const path = cwd() // resolve here to avoid double click stacking the path
-					const highlight = () => {
-						Array.from(dir.getElementsByClassName("on")).forEach(n => {
-							n.textContent = '📄' // clear previous loading icons
-							n.classList.remove("on")
-						})
-						nibIcon.classList.add("on") // highlight selection
+					const highlight = () => { // Highlights selected file / folder.
+						Array.from(dir.getElementsByClassName("highli")).forEach(ni => ni.classList.remove("highli"))
+						btn.classList.add("highli")
+						if (n.endsWith('/')) return
+						// Highlight the icon of the open file.
+						Array.from(dir.getElementsByClassName("on")).forEach(ni => ni.classList.remove("on"))
+						nibIcon.classList.add("on")
 					}
-					div.onclick = () => {
+					btn.onclick = () => {
+						highlight()
 						if (!cartMode() || n === "../") {
 							// Handle when cart mode not selected (or clicking ../ which side-steps cart mode).
-							if (n.endsWith('/')) {
-								// Select a folder.
-								highlight()
+							if (n.endsWith('/')) { // Select a folder.
 								nibIcon.textContent = '⏳'
 								nav(n === "../" ? path.replace(/[^/]+\/[^/]*$/g, '') : path + n)
-							}
+							} else if (storage.path() != path + n) btn.focus() // iOS 16 doesn't trigger focus.
 						} else cartSel(path + n) // Add to the cart.
 					}
-					div.tabIndex = -1 // Tab should not go through each file or folder, arrow keys do that.
-					div.onfocus = () => {
+					btn.tabIndex = -1 // Tab should not go through each file or folder, arrow keys do that.
+					btn.onfocus = () => {
+						highlight()
 						if (!cartMode() && !n.endsWith('/')) {
 							// Open the selected file.
-							highlight()
-							nav(path + n, justOpen = true)
+							open(path + n)
 						}
 					}
-					div.replaceChildren(nibIcon, nib)
-					return div
+					if (curFile === n) selected = btn
+					btn.replaceChildren(nibIcon, nib)
+					return btn
 				}))
-				dir.firstChild.focus()
-				if (!cartMode() && path.endsWith("/")) {
-					// Display all the folder actions relevant to this level (including logout and terminal).
-					document.getElementById('data').replaceChildren(document.createElement("folder-actions"))
-				}
+				if (selected) selected.focus()
+				else open(path)
 			})
-			menuMode()
-		}
+		} else open(path)
+	}
+
+	/**
+	 * Display the contents of the file, or the folder actions.
+	 */
+	async function open(path) {
+		const reloading = path === storage.path()
+		// Upate the file / details pane.
 		if (!path.endsWith("/")) {
+			// Do a fast reload of just the content, the content was already loaded (if supported).
+			const reloadable = document.querySelector("#data>div>.reloadable")
+			if (path === storage.path() && reloadable) {
+				reloadable.setAttribute("reload", "")
+				reloadable.setAttribute("preview", storage.mode() === "#browse:" ? "" : null)
+				return
+			}
 			// Open any file contents in the data pane.
 			const div = document.createElement("div")
 			div.classList.add("maxer")
@@ -857,8 +871,11 @@
 			if (storage.mode() === "#open:") document.getElementById("tabopen").click()
 			else nib.setAttribute("preview", "") // otherwise, just display as a preview.
 			div.replaceChildren(nib)
-			menuMode()
+		} else if (!cartMode()) {
+			// Display all the folder actions relevant to this level (including logout and terminal).
+			document.getElementById('data').replaceChildren(document.createElement("folder-actions"))
 		}
+		menuMode()
 	}
 
 	/**
@@ -961,7 +978,7 @@
 		dwn.href = storage.zipLink(paths)
 		if (paths.length === 1 && !paths[0].endsWith('/')) {
 			dwn.download = paths[0].split('/').pop()
-			dwn.href = storage.fileLink(paths[0])
+			dwn.href = storage.downloadLink(paths[0])
 		}
 		dwn.click()
 		if (cart.length) cartRemove()
@@ -996,7 +1013,11 @@
 		})
 	}
 
-	window.onload = window.onpopstate = () => nav(storage.path())
+	window.onload = window.onpopstate = () => {
+		// Ensure we reconstruct the file contents, in case we are going back to a different file.
+		document.getElementById("data").replaceChildren()
+		nav(storage.path())
+	}
 </script>
 
 
@@ -1019,25 +1040,25 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
+	}
 
-		ul {
-			list-style-type: none;
+	.ip>ul {
+		list-style-type: none;
+	}
 
-			input {
-				width: min(80vw, 400px);
-				padding: 5px;
-				margin: 5px
-			}
+	.ip input {
+		width: min(80vw, 400px);
+		padding: 5px;
+		margin: 5px
+	}
 
-			button {
-				font-size: 1.6em;
-				border-style: solid;
-				border-color: currentColor;
-				float: right;
-				margin: 5px;
-				background-color: background;
-			}
-		}
+	.ip button {
+		font-size: 1.6em;
+		border-style: solid;
+		border-color: currentColor;
+		float: right;
+		margin: 5px;
+		background-color: background;
 	}
 </style>
 <template id=input-prompt>
@@ -1175,6 +1196,7 @@
 				vid.controls = "controls"
 				vid.oncanplay = () => img.replaceWith(vid)
 				vid.src = storage.fileLink(path)
+				vid.load()
 			}
 			img.onerror = () => {
 				// Fallback to attempting to load as a video (or audio).
@@ -1191,6 +1213,7 @@
 					sr.querySelector("#fail").style.display = "flex"
 				}
 				vid.src = storage.fileLink(path)
+				vid.load()
 			}
 			(async () => {
 				await storage.authLinks()
@@ -1235,10 +1258,10 @@
 			width: 100%;
 			height: 100%;
 			margin: 0px;
+		}
 
-			button {
-				display: none;
-			}
+		.preview button {
+			display: none;
 		}
 
 		#text {
@@ -1276,11 +1299,11 @@
 				document.getElementById("-mime-text-plain").content.cloneNode(true))
 			const text = this.shadowRoot.querySelector("#text")
 			const path = storage.path()
+			storage.readFile(path).then(r => r.text().then(r => text.value = r))
 			// Load the file contents and setup ability to save changes.
 			const upload = this.shadowRoot.querySelector('#upload')
 			const reload = this.shadowRoot.querySelector('#reload')
-			reload.onclick = () => storage.readFile(path).then(r => r.text().then(r => text.value = r))
-			reload.click()
+			reload.onclick = () => this.attributeChangedCallback("reload", "", "")
 			text.oninput = () => {
 				reload.style.display = "none"
 				upload.style.display = "block"
@@ -1291,13 +1314,30 @@
 				reload.style.display = "block"
 			}
 		}
-		// Handle preview and open editable modes.
-		static observedAttributes = ["preview"]
+		connectedCallback() {
+			// Signal this is reloadable.
+			this.classList.add("reloadable")
+		}
+		// Handle preview and open editable modes, and reload.
+		static observedAttributes = ["preview", "reload"]
 		attributeChangedCallback(name, oldValue, newValue) {
-			this.shadowRoot.querySelector("#text").readOnly = newValue !== null
-			const div = this.shadowRoot.querySelector("div")
-			if (newValue !== null) div.classList.add("preview")
-			else div.classList.remove("preview")
+			switch (name) {
+				case 'reload':
+					// Reload the text content, and keep scrolled to the bottom if it already was.
+					const text = this.shadowRoot.querySelector("#text")
+					const scrollToBottom = text.scrollHeight - text.clientHeight === text.scrollTop
+					storage.readFile(storage.path()).then(r => r.text().then(r => {
+						text.value = r
+						if (scrollToBottom) text.scrollTop = text.scrollHeight
+					}))
+					break
+				case 'preview':
+					// Update editability, and decorations according to the preview mode.
+					this.shadowRoot.querySelector("#text").readOnly = newValue !== null
+					const div = this.shadowRoot.querySelector("div")
+					if (newValue !== null) div.classList.add("preview")
+					else div.classList.remove("preview")
+			}
 		}
 	})
 </script>
@@ -1319,11 +1359,11 @@
 			width: calc(100% - 48px);
 			height: calc(100% - 48px);
 			margin: 24px;
+		}
 
-			.EasyMDEContainer.sided--no-fullscreen .editor-preview-active-side {
-				height: calc(100% - 48px);
-				/* fix for side preview height when not fullscreened */
-			}
+		.EasyMDEContainer.sided--no-fullscreen .editor-preview-active-side {
+			height: calc(100% - 48px);
+			/* fix for side preview height when not fullscreened */
 		}
 
 		/* fix up EasyMDE's trouble with dark mode */
@@ -1351,12 +1391,12 @@
 
 		.editor-toolbar {
 			padding: 0px;
+		}
 
-			button {
-				height: 40px;
-				font-size: 1.2em;
-				width: 2em;
-			}
+		.editor-toolbar button {
+			height: 40px;
+			font-size: 1.2em;
+			width: 2em;
 		}
 
 		/* hide the menu and border in preview mode */
@@ -1364,14 +1404,14 @@
 			width: 100%;
 			height: 100%;
 			margin: 0px;
+		}
 
-			*.editor-toolbar {
-				display: none;
-			}
+		#body.preview *.editor-toolbar {
+			display: none;
+		}
 
-			*.CodeMirror {
-				height: 100%
-			}
+		#body.preview *.CodeMirror {
+			height: 100%
 		}
 
 		img,

@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# Prepare the redirect to the generated file, if it hasn't already been prepared.
+REDIRECT=StorageStatus.md
+OUT=$(basename "$0")_
+if [ ! -L $OUT ]; then
+  mv $OUT $REDIRECT
+  ln -s $REDIRECT $OUT
+fi
+
+now=$(date '+%Y-%m-%d %H:%M:%S')
+
+diskdu=$(df -h /mnt/usb | grep /mnt/usb)
+diskpercent=$(echo $diskdu | awk '{print $5}' | sed -e "s:%::")
+diskused=$(echo $diskdu | awk '{print $3}')
+disktotal=$(echo $diskdu | awk '{print $2}')
+
+rdiskdu=$(df -h / | grep /$)
+rdiskpercent=$(echo $rdiskdu | awk '{print $5}' | sed -e "s:%::")
+rdiskused=$(echo $rdiskdu | awk '{print $3}')
+rdisktotal=$(echo $rdiskdu | awk '{print $2}')
+
+lastsnap=$(sudo btrfs subvolume list --sort=-rootid -rso /mnt/usb/.snapshots/ | grep /filetclouddata- | head -n 1 | awk '{printf("%s %s\n", $11, $12)}')
+
+cat <<EOF
+# Storage Status
+* Date: $now
+
+## Disk Usage
+* USB: \`[$(printf %$((${diskpercent}/5))s|tr " " \#)$(printf %$((20-${diskpercent}/5))s|tr " " -)]\` $diskpercent% ($diskused /$disktotal)
+* SDC: \`[$(printf %$((${rdiskpercent}/5))s|tr " " \#)$(printf %$((20-${rdiskpercent}/5))s|tr " " -)]\` $rdiskpercent% ($rdiskused /$rdisktotal)
+
+## Snapshot Status
+* Last Storage Snapshot: $lastsnap
+EOF
+
