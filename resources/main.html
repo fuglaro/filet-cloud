@@ -1325,10 +1325,10 @@
 				case 'reload':
 					// Reload the text content, and keep scrolled to the bottom if it already was.
 					const text = this.shadowRoot.querySelector("#text")
-					const scrollToBottom = text.scrollHeight - text.clientHeight === text.scrollTop
+					const scrollToBottom = text.scrollHeight - text.clientHeight < text.scrollTop + 2
 					storage.readFile(storage.path()).then(r => r.text().then(r => {
 						text.value = r
-						if (scrollToBottom) text.scrollTop = text.scrollHeight
+						if (scrollToBottom) text.scrollTop = text.scrollHeight - text.clientHeight
 					}))
 					break
 				case 'preview':

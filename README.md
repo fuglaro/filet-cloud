@@ -156,10 +156,7 @@ openssl req -x509 -newkey rsa:4096 -sha256 -days 1 -nodes -keyout my.key -out my
 * You can normalise the quality value in the FC_JPEG_CMD if the command does not accept a normalised 1-100 quality range, like with ffmpeg: `FC_JPEG_CMD=ffmpeg -i PATH -q:v $((35-QUALITY/3)) -vf scale=WIDTH:-1 -update 1 -f image2 -vcodec mjpeg -`
 
 # TODO (Current WIP)
-* Retest across, reload, open/close, preview, and nav.
 * Installation enhancement pass:
-  * RP4+HAT.
-    * Try faster thumbnail things.
   * Low Cost Simple deployment:
     * RP Zero W + 32GB MicroSD + Self Signed Certs + DynamicIP-fixer/0-cost + fcgenthumb.
     * Optional Additions: Case and Heatsink.

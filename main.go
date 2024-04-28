@@ -40,7 +40,7 @@ var connections = map[uint64]*ssh.Client{}
 
 var jpegcmdtemplate = ("gst-launch-1.0 -q filesrc location=PATH ! decodebin ! video/x-raw" +
 	" ! videoscale method=0 ! video/x-raw,width=WIDTH,pixel-aspect-ratio=1/1" +
-	" ! jpegenc quality=QUALITY ! filesink location=/dev/stdout")
+	" ! videoflip video-direction=auto ! jpegenc quality=QUALITY ! filesink location=/dev/stdout")
 
 // Attempt to find the Client IP (without the port) for an incomming request.
 func clientIP(r *http.Request) string {
