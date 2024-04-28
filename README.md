@@ -192,7 +192,6 @@ openssl req -x509 -newkey rsa:4096 -sha256 -days 1 -nodes -keyout my.key -out my
 * Improve EasyMDE enabling a simpler integration, better parsing so images and links inside literals aren't resolved, add link and image manipulation via callbacks, and fix its bug when deactivating the preview button on refresh. Perhaps write a new simpler MDE renderer with WASM (filet-web-mde).
 * Make as a Progressive Web App (PWA).
 * Active folder plugin for generating a photo album by making collection of markdown files for all photos in a folder.
-* Active folder plugin for getting storage statistics and status diagnostics.
 * Improve CSP protection to inline stylesheets when xterm.js supports it. Other renderers or alternate tools could be options. See https://github.com/xtermjs/xterm.js/issues/4445
 * Support Shift+Drag for terminal text selection (overriding passing mouse events) consistenly across client OSs, similar to Alacritty, with a new xtermjs option.
 * Force selection in the terminal on macOS (https://github.com/xtermjs/xterm.js/issues/4329).
