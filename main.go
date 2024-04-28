@@ -37,7 +37,10 @@ var upgrader = websocket.Upgrader{}
 var privateKey = make([]byte, 512/8)
 var connectionID atomic.Uint64 // sequential ID generator making keys for connections.
 var connections = map[uint64]*ssh.Client{}
-var jpegcmdtemplate = "convert PATH -sample \\>WIDTHx -quality QUALITY JPEG:-"
+
+var jpegcmdtemplate = ("gst-launch-1.0 -q filesrc location=PATH ! decodebin ! video/x-raw" +
+	" ! videoscale method=0 ! video/x-raw,width=WIDTH,pixel-aspect-ratio=1/1" +
+	" ! jpegenc quality=QUALITY ! filesink location=/dev/stdout")
 
 // Attempt to find the Client IP (without the port) for an incomming request.
 func clientIP(r *http.Request) string {
@@ -182,7 +185,7 @@ func authServeContent(w http.ResponseWriter, r *http.Request) {
 		_, subpath, _ := strings.Cut(subpath, "/")
 		widStr, subpath, _ := strings.Cut(subpath, ":")
 		comprStr, subpath, _ := strings.Cut(subpath, "/")
-		ppath := strings.Replace(prepath+subpath, "'", "'\\''", -1)
+		ppath := strings.Replace(prepath+"/"+subpath, "'", "'\\''", -1)
 		ppath = "'" + ppath + "'"
 		width, err := strconv.Atoi(widStr)
 		if check(w, err) {

@@ -5,7 +5,7 @@ read -p 'Please enter the domain: ' domain
 
 # Install dependencies
 apt update
-apt install -y ddclient btrfs-tools unattended-upgrades certbot python-certbot-nginx imagemagick libpam-google-authenticator
+apt install -y ddclient btrfs-tools unattended-upgrades certbot python-certbot-nginx libpam-google-authenticator gstreamer1.0-tools
 
 # Prepare USB (data) storage
 mkdir -p /mnt/usb/

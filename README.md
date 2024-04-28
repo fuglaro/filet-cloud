@@ -136,7 +136,7 @@ Supported environment variables:
 * `FC_DOMAIN`: The domain to use with the included Let's Encrypt integration. Use of this implies acceptance of the LetsEncrypt Terms of Service.
 * `FC_LISTEN`: The address to listen on. Defaults to ':443'.
 * `FC_SSH_PORT`: The port to use to connect locally.
-* `FC_JPEG_CMD`: The command to make jpeg thumbnails by injecting parameters into PATH, WIDTH, and QUALITY placeholder values. PATH is the path to the source file and will be auto-quoted. WIDTH is the output JPEG width value. QUALITY is the output JPEG quality value (1-100). The command should write the output JPEG to standard out. The default value uses ImageMagick.
+* `FC_JPEG_CMD`: The command to make jpeg thumbnails by injecting parameters into PATH, WIDTH, and QUALITY placeholder values. PATH is the path to the source file and will be auto-quoted. WIDTH is the output JPEG width value. QUALITY is the output JPEG quality value (1-100). The command should write the output JPEG to standard out. The default value uses GStreamer.
 
 ### Certificate
 If you don't have your own domain, you can set up TLS using a Self Signed Certificate with tools such as minica or openssl.
@@ -146,19 +146,18 @@ E.g, for testing locally:
 openssl req -x509 -newkey rsa:4096 -sha256 -days 1 -nodes -keyout my.key -out my.crt -subj "/CN=localhost" -addext "subjectAltName=DNS:localhost,IP:127.0.0.1"
 ```
 
-## Tricks and Tips
+## Tips and Tricks
 * The dynamic menu is contextual depending on what you have selected, and whether the cart mode is active or has contents.
 * To use Copy/Paste in the terminal from a Linux client, use Ctrl/Shift+Insert rather than Ctr+c/v.
 * Auto logout will cause terminal connections to end. Use a terminal multiplexer like zellij to provide persisent sessions across logins.
 * NerdFont icons are fully supported and can be used for active folder plugin icons.
 * Embed dynamically generated thumbnails inside markdown documents with the format suffix after the image path: `![LABEL](IMAGE =WIDTH:QUALITY)`. E.g: `![My Thumbnail](image1.png =360:100)`.
-* You can rescale the quality value in the custom thumbnail generator command, if the command does not accept a normalised 1-100 quality range, like with ffmpeg: `ffmpeg -i PATH -q:v $((35-QUALITY/3)) -vf scale=WIDTH:-1 -update 1 -f image2 -vcodec mjpeg -`
+* GStreamer is used for the default FC_JPEG_CMD because it has excellent performance from leveraging various kinds of hardware acceleration. Other solutions can be used and ImageMagick gives a particularly simple example: `FC_JPEG_CMD=convert PATH -sample \>WIDTHx -quality QUALITY JPEG:-`
+* You can normalise the quality value in the FC_JPEG_CMD if the command does not accept a normalised 1-100 quality range, like with ffmpeg: `FC_JPEG_CMD=ffmpeg -i PATH -q:v $((35-QUALITY/3)) -vf scale=WIDTH:-1 -update 1 -f image2 -vcodec mjpeg -`
 
 # TODO (Current WIP)
 * Retest across, reload, open/close, preview, and nav.
 * Installation enhancement pass:
-  * Try thumbnail performance optimisation with gstreamer hardware accelerated.
-  * Make (zig?) lightweight optimised fcgenthumb command (libjpeg-turbo) for JPG->JPG & test speed opimisation.
   * RP4+HAT.
     * Try faster thumbnail things.
   * Low Cost Simple deployment:
