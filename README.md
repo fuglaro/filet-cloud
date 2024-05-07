@@ -103,6 +103,8 @@ No database is used, in favor of the simplicity and data longevity provided by a
 
 ## Deployment
 You can use the basic deployment guide below, or simply use one of the provided template deployments:
+* Energy Efficient High Capacity Deployment: [Raspberry Pi Zero W 2 with 4TB SSD and Auto Cert Domain](deployments/raspberry-pi-zero-2-w-ssd-autocert/README.md).
+* Low Cost Simple Deployment: [Raspberry Pi Zero W with Micro SD on Home Network](deployments/raspberry-pi-zero-w-sdcard-no-domain/README.md).
 * Advanced Configuration: [Raspberry Pi 4 with BTRFS snapshotted 4TB HDD, Nginx, and an information control E-ink HAT](deployments/raspberry-pi-4-btrfs-hdd-nginx-with-hat/README.md).
 
 ### Build
@@ -157,20 +159,13 @@ openssl req -x509 -newkey rsa:4096 -sha256 -days 1 -nodes -keyout my.key -out my
 
 # TODO (Current WIP)
 * Installation enhancement pass:
-  * Low Cost Simple deployment:
-    * RP Zero W + 32GB MicroSD + Self Signed Certs + DynamicIP-fixer/0-cost + fcgenthumb.
-    * Optional Additions: Case and Heatsink.
-    * Record idle power consumption.
-    * Record folder and file retrieval speed: see benchmark folder.
-    * https - accept certs via env var or auto setup with let's encrypt autocert NewListener (with domain provided by FC_DOMAIN).
-  * Energy Efficient High Capacity deployment:
-    * RP Zero 2 W + Heatsink + 32GB MicroSD + Crucial X9 Pro 4TB + fcgenthumb + Basic Power Optimisation (disable things - https://picockpit.com/raspberry-pi/raspberry-pi-zero-2-battery/).
-    * Record idle power consumption.
-    * Record folder and file retrieval speed: see benchmark folder
+  * Low Cost Simple deployment - nice shiny photo.
+  * Energy Efficient High Capacity deployment - nice shiny photo.
   * Commodity Hardware Repurpose Deployment:
     * Mobile phone version and 4G for always on.
     * Android Termix.
     * Record folder and file retrieval speed: see benchmark folder
+    * Nice shiny photo.
   * Wee-Mighty Deployment:
     * Radxa ZERO 3W + BEEFY custom heatsink + 512 MicroSD + Crucial X9 Pro 4TB + fcgenthumb + Power Optimisation.
     * Add RockChip Hardware acceleration variation of fcgenthumb (see https://github.com/Fruit-Pi/gstreamer-rockchip)
@@ -181,7 +176,7 @@ openssl req -x509 -newkey rsa:4096 -sha256 -days 1 -nodes -keyout my.key -out my
     * HW Accelerated thumbnail generation inc. JPEG -> NPU/GPU sampling -> JPEG specific chipset optimisation.
     * HW Accelerated HS512 in JWT decoding.
 * Update demo video (on firefox for mac with darkmode for better styling) - switch to Mobile phone view to demo profile view..
-* Tag easily deployable release for others, with wide cross compiling ARM/x86/x64/RISC-V Linux/LinuxStaticMusl/Mac/Windows. Must have a 1.0.0
+* Tag easily deployable release for others with YYMM versioning and update all deps, with wide cross compiling ARM/x86/x64/RISC-V Linux/LinuxStaticMusl/Mac/Windows. Ensure nice build process fro cross compile.
 * Add to xtermjs tools list.
 
 # Wish List for Future Work
@@ -194,6 +189,7 @@ openssl req -x509 -newkey rsa:4096 -sha256 -days 1 -nodes -keyout my.key -out my
 * Support for diagram editing and viewing (inside MDE).
 * Support for slide deck editiing and viewing.
 * Reduce complexity through more consistent behaviour of major browsers.
+* Bring GStreamer 1.24 to Raspberry Pi installations for better image thumbnail flipping (this likely to come reasonable quickly).
 
 # Thanks to
 We stand on the shoulders of giants. They own this, far more than I do.

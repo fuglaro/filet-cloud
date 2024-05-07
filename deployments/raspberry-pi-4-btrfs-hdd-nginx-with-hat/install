@@ -1,15 +1,15 @@
 #!/bin/bash
 
 read -p 'Please enter the domain: ' domain
-[ -z "${domain}" ] && exit
+[ -z "${domain}" ] && exit 1
 
 # Install dependencies
 apt update
-apt install -y ddclient btrfs-tools unattended-upgrades certbot python-certbot-nginx libpam-google-authenticator gstreamer1.0-tools
+apt install -y ddclient btrfs-tools unattended-upgrades certbot python-certbot-nginx libpam-google-authenticator gstreamer1.0-tools gstreamer1.0-plugins-base gstreamer1.0-plugins-good
 
 # Prepare USB (data) storage
 mkdir -p /mnt/usb/
-grep /mnt/usbd/ /etc/fstab || printf "$(blkid /dev/sda1 -o export | grep ^UUID=) /mnt/usb/ btrfs noatime 0 0\n" | sudo tee -a /etc/fstab
+grep /mnt/usb/ /etc/fstab || printf "$(blkid /dev/sda1 -o export | grep ^UUID=) /mnt/usb/ btrfs noatime 0 0\n" | sudo tee -a /etc/fstab
 mount /mnt/usb
 ls -ld /mnt/usb/filetclouddata || btrfs subvolume create /mnt/usb/filetclouddata
 chmod a+w /mnt/usb/filetclouddata

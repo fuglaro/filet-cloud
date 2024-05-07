@@ -1,0 +1,51 @@
+#!/bin/bash
+
+set -e
+
+HOST=$(hostname).local
+
+# Install dependencies.
+apt update
+apt install -y unattended-upgrades gstreamer1.0-tools gstreamer1.0-plugins-base gstreamer1.0-plugins-good
+
+# Configure auto-update.
+sed -i 's:Debian:Raspbian:g' /etc/apt/apt.conf.d/50unattended-upgrades
+
+# Install filet-cloud.
+wget https://github.com/fuglaro/filet-cloud/releases/download/1.0.0/filet-cloud-raspberry-pi -O /usr/bin/filet-cloud
+chmod a+x /usr/bin/filet-cloud
+# Setup the self-signed certificates.
+mkdir -m 755 -p /etc/filet-cloud/
+mkdir -m 700 -p /etc/filet-cloud/private/
+PKEY=/etc/filet-cloud/private/private.key
+CERT=/etc/filet-cloud/certificate.crt
+openssl req -x509 -newkey rsa:2048 -sha256 -nodes -keyout $PKEY -out $CERT -subj "/CN=$HOST"
+
+# Setup filet-cloud as a service.
+cat <<EOF > /etc/systemd/system/filet-cloud.service
+[Unit]
+Description=Filet Cloud
+
+[Service]
+User=root
+Environment="FC_CERT_FILE=$CERT"
+Environment="FC_KEY_FILE=$PKEY"
+Environment="FC_DIR=/home/USERNAME"
+ExecStart=/usr/bin/filet-cloud
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF
+systemctl enable filet-cloud
+systemctl restart filet-cloud
+
+# Allow COLORTERM env var to be passed in by filet-cloud.
+if grep COLORTERM /etc/ssh/sshd_config; then :
+else
+echo | tee -a /etc/ssh/sshd_config
+echo "AcceptEnv COLORTERM" | tee -a /etc/ssh/sshd_config
+fi
+
+# Save a little juice not turning on led
+printf "\ndtparam=act_led_trigger=none\n\n" >> /boot/firmware/config.txt

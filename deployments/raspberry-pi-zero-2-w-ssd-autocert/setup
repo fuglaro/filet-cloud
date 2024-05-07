@@ -1,0 +1,52 @@
+#!/bin/bash
+
+set -e
+
+read -p 'Please enter the domain: ' DOMAIN </dev/tty
+[ -z "$DOMAIN" ] && { echo "error: DOMAIN required."; exit 1; }
+
+HOST=$(hostname).local
+
+# Install dependencies.
+sudo apt update
+sudo apt install -y ddclient unattended-upgrades gstreamer1.0-tools gstreamer1.0-plugins-base gstreamer1.0-plugins-good
+
+# Configure auto-update.
+sudo sed -i 's:Debian:Raspbian:g' /etc/apt/apt.conf.d/50unattended-upgrades
+
+# Setup the USB Drive
+# Find the largest sda mount.
+UUID=$(lsblk -A -n -b -o NAME,UUID -x SIZE | grep "^sd" | sed -e 's:[^ ]* *::' | grep -v '^$' | tail -n 1)
+FSTYPE=$(lsblk -A -n -b -o UUID,FSTYPE | grep "^$UUID " | sed -e 's:[^ ]* *::' | grep -v '^$' | tail -n 1)
+grep "^UUID=$UUID" /etc/fstab || \
+  printf "UUID=$UUID /mnt/filetcloud $FSTYPE uid=$(id -u),gid=$(id -g),defaults,noatime 0 0" | sudo tee -a /etc/fstab
+sudo mkdir -p /mnt/filetcloud
+mountpoint /mnt/filetcloud || sudo mount /mnt/filetcloud
+
+# Install filet-cloud.
+# XXX sudo wget https://github.com/fuglaro/filet-cloud/releases/download/1.0.0/filet-cloud-raspberry-pi -O /usr/bin/filet-cloud
+sudo chmod a+x /usr/bin/filet-cloud
+
+# Setup filet-cloud as a service.
+cat <<EOF | sudo tee /etc/systemd/system/filet-cloud.service
+[Unit]
+Description=Filet Cloud
+
+[Service]
+User=root
+Environment="FC_DOMAIN=$DOMAIN"
+Environment="FC_DIR=/mnt/filetcloud"
+ExecStart=/usr/bin/filet-cloud
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF
+sudo systemctl enable filet-cloud
+sudo systemctl restart filet-cloud
+
+# Allow COLORTERM env var to be passed in by filet-cloud.
+if grep COLORTERM /etc/ssh/sshd_config; then :
+else
+printf "\n\nAcceptEnv COLORTERM\n\n" | sudo tee -a /etc/ssh/sshd_config
+fi

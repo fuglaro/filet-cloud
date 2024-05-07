@@ -21,6 +21,7 @@ It targets a build running on a Raspberry Pi 4 with an E-ink display hat that di
 * SFTP compatibility.
   * Compatibility with many phone syncronisation apps which support SFTP.
   * NAS via SFTP.
+* Automatic OS updates.
 * Supports multiple users.
 * Device e-ink display:
   * Last snapshot time.
@@ -31,6 +32,7 @@ It targets a build running on a Raspberry Pi 4 with an E-ink display hat that di
   * Create snaphot.
   * Trigger update and restart.
 * Daily snapshots (with Btrfs).
+* 4 TB of storage.
 * Note there is no hardware resiliant backup redundancy - please set up a strategy for resiliency against hardware failure which suits your needs.
 * COLORTERM environment variable is passed through from filet-cloud terminal connections, setting the value to `truecolor`.
 * 2FA with google-authenticator.
@@ -41,6 +43,7 @@ The following hardware was used for this build:
 * 32GB Transcend microSDXC/SDHC 300S https://www.transcend-info.com/Products/No-948
 * Seagate 5TB Basic Portable External Drive https://www.seagate.com/gb/en/products/external-hard-drives/basic-external-hard-drive/
 * 2.7inch Mono E-Ink display (with 4 buttons) https://www.waveshare.com/wiki/2.7inch_e-Paper_HAT
+* Head sink case https://shop.pimoroni.com/products/aluminium-heatsink-case-for-raspberry-pi-4
 
 ## Setup
 ### Basic Host Setup
@@ -74,7 +77,6 @@ Setup nightly media and photo backups from your mobile device.
 * Android filesyncer - Folder Sync or Folder Sync Pro
 
 ## Metrics
-
 * Idle power consumption: ~ 3.2W (this has not been optimised and could be improved by managing an idle state including spinning down the HDD)
 * List folder speed: 11ms (tested with 5 entries over WiFi)
 * Retrieve small file speed: 11ms (tested with 5KB file over WiFi)
