@@ -34,7 +34,7 @@ This deployment aims to provide a meaty storage capacity and speedy response, wi
 ```bash
  wget https://raw.githubusercontent.com/fuglaro/filet-cloud/main/deployments/raspberry-pi-zero-2-w-ssd-autocert/setup -O - | sh
 ```
-* Enter your personal domain when prompted.
+  * Enter your personal domain when prompted.
 * Ensure your network is configured to forward ports 80, 443.
 * You should now be able to access your Filet Cloud:
   * From any device on your home network: `https://filetcloud.local/`

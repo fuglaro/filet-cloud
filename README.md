@@ -104,7 +104,9 @@ No database is used, in favor of the simplicity and data longevity provided by a
 ## Deployment
 You can use the basic deployment guide below, or simply use one of the provided template deployments:
 * Energy Efficient High Capacity Deployment: [Raspberry Pi Zero W 2 with 4TB SSD and Auto Cert Domain](deployments/raspberry-pi-zero-2-w-ssd-autocert/README.md).
+* Wee Mighty (Small Form Factor but High Power and Capacity): [Radxa Zero 3W with BTRFS snapshotted 4TB SSD and Auto Cert Domain](deployments/radxa-zero-3w-btrfs-ssd/README.md).
 * Low Cost Simple Deployment: [Raspberry Pi Zero W with Micro SD on Home Network](deployments/raspberry-pi-zero-w-sdcard-no-domain/README.md).
+* Spare Android Repurposed: [Android Termux on Home Network](deployments/android-termux/README.md).
 * Advanced Configuration: [Raspberry Pi 4 with BTRFS snapshotted 4TB HDD, Nginx, and an information control E-ink HAT](deployments/raspberry-pi-4-btrfs-hdd-nginx-with-hat/README.md).
 
 ### Build

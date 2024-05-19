@@ -1,3 +1,4 @@
 #!/bin/bash
-VER=v$(date '+%y.%m').$((16#$(git rev-parse --short HEAD)))
+VER=v$(date '+%y.%m').$(git rev-parse --short HEAD~5 | xxd -r -p | base64)
 GOARCH=arm GOARM=5 GOOS=linux go build -o filet-cloud-$VER-raspberry-pi
+GOARCH=arm64 GOOS=android go build -o filet-cloud-$VER-android

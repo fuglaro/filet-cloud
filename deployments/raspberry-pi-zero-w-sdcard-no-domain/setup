@@ -12,7 +12,7 @@ apt install -y unattended-upgrades gstreamer1.0-tools gstreamer1.0-plugins-base 
 sed -i 's:Debian:Raspbian:g' /etc/apt/apt.conf.d/50unattended-upgrades
 
 # Install filet-cloud.
-wget https://github.com/fuglaro/filet-cloud/releases/download/1.0.0/filet-cloud-raspberry-pi -O /usr/bin/filet-cloud
+wget https://github.com/fuglaro/filet-cloud/releases/latest/download/filet-cloud-raspberry-pi -O /usr/bin/filet-cloud
 chmod a+x /usr/bin/filet-cloud
 # Setup the self-signed certificates.
 mkdir -m 755 -p /etc/filet-cloud/

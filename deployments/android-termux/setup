@@ -1,0 +1,52 @@
+#!/bin/bash
+
+set -e
+
+HOST=$(hostname).local
+
+# Install dependencies.
+apt update -y
+apt upgrade -y
+apt install -y openssh openssl-tool which
+
+# Install filet-cloud.
+wget https://github.com/fuglaro/filet-cloud/releases/latest/download/filet-cloud-android-pi -O $HOME/filet-cloud
+chmod a+x $HOME/filet-cloud
+mkdir -m 700 -p $HOME/filet-cloud-data
+
+# Setup the self-signed certificates.
+mkdir -m 700 -p $HOME/filet-cloud-private/
+PKEY=$HOME/filet-cloud-private/private.key
+CERT=$HOME/filet-cloud-private/certificate.crt
+openssl req -x509 -newkey rsa:2048 -sha256 -nodes -keyout $PKEY -out $CERT -subj "/CN=$HOST"
+
+# Setup filet-cloud.
+cat <<EOF > $HOME/filet-cloud-start
+#!/bin/bash
+export FC_CERT_FILE="$CERT"
+export FC_KEY_FILE="$PKEY"
+export FC_DIR="$HOME/filet-cloud-data"
+export FC_SSH_PORT=8022
+export FC_LISTEN=:8443
+"$HOME/filet-cloud" &>> "$HOME/filet-cloud.log"
+EOF
+chmod a+x $HOME/filet-cloud-start
+
+# Keep process alive.
+mkdir -p ~/.termux/boot/
+ln -s $(which termux-wake-lock) ~/.termux/boot/
+~/.termux/boot/termux-wake-lock
+ln -s $(which sshd) ~/.termux/boot/
+~/.termux/boot/sshd
+ln -s $HOME/filet-cloud-start ~/.termux/boot/
+~/.termux/boot/filet-cloud-start &
+
+# Display helpful connection informtaion
+cat <<EOF > $HOME/filet-cloud-info
+#!/bin/bash
+WANIP=\$(ifconfig 2>/dev/null | tr '\n' _ | sed -e 's;^.*_wlan0: .* inet \([0-9\.]*\).*$;\1;')
+echo "FiletCloud: https://\$WANIP:8022/  (connect as user \$USER)" >&2
+EOF
+chmod a+x $HOME/filet-cloud-info
+$HOME/filet-cloud-info
+echo '$HOME/filet-cloud-info' >> $HOME/.bashrc

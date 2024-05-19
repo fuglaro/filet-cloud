@@ -24,7 +24,7 @@ sudo mkdir -p /mnt/filetcloud
 mountpoint /mnt/filetcloud || sudo mount /mnt/filetcloud
 
 # Install filet-cloud.
-# XXX sudo wget https://github.com/fuglaro/filet-cloud/releases/download/1.0.0/filet-cloud-raspberry-pi -O /usr/bin/filet-cloud
+sudo wget https://github.com/fuglaro/filet-cloud/releases/latest/download/filet-cloud-raspberry-pi -O /usr/bin/filet-cloud
 sudo chmod a+x /usr/bin/filet-cloud
 
 # Setup filet-cloud as a service.

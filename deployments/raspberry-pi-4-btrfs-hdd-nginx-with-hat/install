@@ -28,7 +28,7 @@ ALL ALL=(root) NOPASSWD: /usr/bin/btrfs subvolume list *
 ALL ALL=(root) NOPASSWD: /usr/bin/vcgencmd measure_temp
 EOF
 # Install filet-cloud
-wget https://github.com/fuglaro/filet-cloud/releases/download/1.0.0/filet-cloud-raspberry-pi -O /usr/bin/filet-cloud
+wget https://github.com/fuglaro/filet-cloud/releases/latest/download/filet-cloud-raspberry-pi -O /usr/bin/filet-cloud
 chmod a+x /usr/bin/filet-cloud
 # Register and enable the service
 cp filet-cloud-web.service /etc/systemd/system/
