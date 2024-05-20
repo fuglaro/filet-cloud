@@ -161,13 +161,6 @@ openssl req -x509 -newkey rsa:4096 -sha256 -days 1 -nodes -keyout my.key -out my
 
 # TODO (Current WIP)
 * Installation enhancement pass:
-  * Low Cost Simple deployment - nice shiny photo.
-  * Energy Efficient High Capacity deployment - nice shiny photo.
-  * Commodity Hardware Repurpose Deployment:
-    * Mobile phone version and 4G for always on.
-    * Android Termix.
-    * Record folder and file retrieval speed: see benchmark folder
-    * Nice shiny photo.
   * Wee-Mighty Deployment:
     * Radxa ZERO 3W + BEEFY custom heatsink + 512 MicroSD + Crucial X9 Pro 4TB + fcgenthumb + Power Optimisation.
     * Add RockChip Hardware acceleration variation of fcgenthumb (see https://github.com/Fruit-Pi/gstreamer-rockchip)
@@ -177,6 +170,7 @@ openssl req -x509 -newkey rsa:4096 -sha256 -days 1 -nodes -keyout my.key -out my
     * Record folder and file retrieval speed: see benchmark folder.
     * HW Accelerated thumbnail generation inc. JPEG -> NPU/GPU sampling -> JPEG specific chipset optimisation.
     * HW Accelerated HS512 in JWT decoding.
+    * Nice shiny photo.
 * Update demo video (on firefox for mac with darkmode for better styling) - switch to Mobile phone view to demo profile view..
 * Tag easily deployable release for others with YYMM versioning and update all deps, with wide cross compiling ARM/x86/x64/RISC-V Linux/LinuxStaticMusl/Mac/Windows. Ensure nice build process fro cross compile.
 * Add to xtermjs tools list.

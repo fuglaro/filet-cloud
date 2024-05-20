@@ -2,6 +2,8 @@
 
 This deployment aims to provide a meaty storage capacity and speedy response, with a very low energy utilisation.
 
+![](filet-cloud-pic.jpg)
+
 ## Hardware
 * Raspberry Pi Zero 2 W https://www.raspberrypi.com/products/raspberry-pi-zero-2-w/
 * 32GB SanDisk Ultra MicroSD https://www.westerndigital.com/en-gb/products/memory-cards/sandisk-ultra-uhs-i-microsd

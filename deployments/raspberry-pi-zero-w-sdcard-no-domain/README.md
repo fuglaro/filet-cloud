@@ -2,6 +2,8 @@
 
 This deployment aims to be the simplest, easiest, and cheapest option.
 
+![](filet-cloud-pic.jpg)
+
 ## Hardware
 * Raspberry Pi Zero W https://www.raspberrypi.com/products/raspberry-pi-zero-w/
 * 32GB SanDisk Ultra MicroSD https://www.westerndigital.com/en-gb/products/memory-cards/sandisk-ultra-uhs-i-microsd

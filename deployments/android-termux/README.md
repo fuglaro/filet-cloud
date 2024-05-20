@@ -2,6 +2,8 @@
 
 This deployment aims to repurpose readily available e-waste.
 
+![](filet-cloud-pic.jpg)
+
 ## Hardware
 * Unihertz Jelly Star https://www.unihertz.com/products/jelly-star
 (or any other spare Android)
@@ -26,7 +28,7 @@ This deployment aims to repurpose readily available e-waste.
 * Depending on the android phone, you may have to change the battery saver settings to allow Termux to stay active in the background. Disable App Blocker for all Termux apps, and set battery usage options to Unrestricted.
 
 ## Metrics
-* Idle power consumption: ~ 1.2W
+* Idle power consumption: ~ 0.5W
 * List folder speed: 25ms (tested with 8 entries over WiFi)
 * Retrieve small file speed: 25ms (tested with 5KB file over WiFi)
 * Retrieve big file wait time: 200ms (tested with 4.4MB JPEG over WiFi)
