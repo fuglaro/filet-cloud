@@ -931,20 +931,21 @@
 		const ico = document.createElement("p")
 		ico.classList.add("status")
 		ico.textContent = '📤'
+		document.getElementById("dataPane").appendChild(ico) // Show upload status icon
 		const existing = new Set(Array.from(
-			document.querySelectorAll("#dir>div>p")).map(p => p.textContent))
+			document.querySelectorAll("#dir>button>p")).map(p => p.textContent))
+		let queue = Promise.resolve()
 		Array.from(document.getElementById('uploader').files).forEach(f => {
-			const ico2 = ico.cloneNode(true)
-			document.getElementById("dataPane").appendChild(ico2) // Show upload status icon
 			// Ensure filename for upload is unique
 			let filename = f.name
 			let n = 2
 			while (existing.has(filename)) filename = f.name.replace(/((?:\.|$)[^\.]*)/, `(${n++})$1`)
-			// Upload the file
-			storage.upload(cwd() + filename, f).then((ico3 => () => {
-				nav(cwd());
-				document.getElementById("dataPane").removeChild(ico3) // Clear upload status icon
-			})(ico2))
+			// Queue the upload of the file
+			queue = queue.then(((filename, f) => () => storage.upload(cwd() + filename, f))(filename, f))
+		})
+		queue.then(() => {
+			nav(cwd());
+			document.getElementById("dataPane").removeChild(ico) // Clear upload status icon
 		})
 	}
 
