@@ -26,6 +26,7 @@ This deployment aims to repurpose readily available e-waste.
   * This will run the setup and then it should display information on how to connect from your browser.
 * You should now be able to access your Filet Cloud.
 * Depending on the android phone, you may have to change the battery saver settings to allow Termux to stay active in the background. Disable App Blocker for all Termux apps, and set battery usage options to Unrestricted.
+* If your Android still seems to go to sleep after a while, try keeping the screen on, but long pressing in Termux, selecting More, then setting: Keep Screen On.
 
 ## Metrics
 * Idle power consumption: ~ 0.5W
