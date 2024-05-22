@@ -1,4 +1,14 @@
 #!/bin/bash
 VER=v$(date '+%y.%m').$(git rev-parse --short HEAD~5 | xxd -r -p | base64)
-GOARCH=arm GOARM=5 GOOS=linux go build -o filet-cloud-$VER-raspberry-pi
-GOARCH=arm64 GOOS=android go build -o filet-cloud-$VER-android
+mkdir -p builds
+GOARCH=arm GOARM=5 GOOS=linux go build -ldflags "-X main.version=$VER" -o builds/filet-cloud-raspberry-pi
+GOARCH=arm64 GOOS=android go build -ldflags "-X main.version=$VER" -o builds/filet-cloud-android
+GOARCH=arm64 GOOS=darwin go build -ldflags "-X main.version=$VER" -o builds/filet-cloud-macos-apple
+GOARCH=amd64 GOOS=darwin go build -ldflags "-X main.version=$VER" -o builds/filet-cloud-macos-intel
+GOARCH=amd64 GOOS=linux go build -ldflags "-X main.version=$VER" -o builds/filet-cloud-linux-x64
+GOARCH=386 GOOS=linux go build -ldflags "-X main.version=$VER" -o builds/filet-cloud-linux-x86
+GOARCH=arm64 GOOS=linux go build -ldflags "-X main.version=$VER" -o builds/filet-cloud-linux-arm
+GOARCH=riscv64 GOOS=linux go build -ldflags "-X main.version=$VER" -o builds/filet-cloud-linux-riscv
+echo
+echo "RELEASE: $VER"
+echo

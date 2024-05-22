@@ -1,5 +1,5 @@
 filet-cloud
-filet-cloud-v*
+builds/*
 resources/deps
 **.DS_Store
 **.key

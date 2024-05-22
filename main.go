@@ -32,6 +32,8 @@ import (
 //go:embed favicon.ico
 var res embed.FS
 
+var version string
+
 var sshport = "22"
 var upgrader = websocket.Upgrader{}
 var privateKey = make([]byte, 512/8)
@@ -831,7 +833,7 @@ either FC_CERT_FILE and FC_KEY_FILE to be specified, or,
 if you accept the LetsEncrypt Terms of Service, you can use the
 automatic LetsEncrypt configuration by specifying FC_DOMAIN.
 
-`)
+VERSION: ` + version + "\n")
 		return
 	}
 
