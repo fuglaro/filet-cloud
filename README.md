@@ -160,7 +160,6 @@ openssl req -x509 -newkey rsa:4096 -sha256 -days 1 -nodes -keyout my.key -out my
 * You can normalise the quality value in the FC_JPEG_CMD if the command does not accept a normalised 1-100 quality range, like with ffmpeg: `FC_JPEG_CMD=ffmpeg -i PATH -q:v $((35-QUALITY/3)) -vf scale=WIDTH:-1 -update 1 -f image2 -vcodec mjpeg -`
 
 # TODO (Current WIP)
-* Test on another Android and note on android termux README.
 * Installation enhancement pass:
   * Wee-Mighty Deployment:
     * Radxa ZERO 3W + BEEFY custom heatsink + 512 MicroSD + Crucial X9 Pro 4TB + fcgenthumb + Power Optimisation.

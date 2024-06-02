@@ -45,7 +45,7 @@ ln -s $HOME/filet-cloud-start ~/.termux/boot/
 cat <<EOF > $HOME/filet-cloud-info
 #!/bin/bash
 WANIP=\$(ifconfig 2>/dev/null | tr '\n' _ | sed -e 's;^.*_wlan0: .* inet \([0-9\.]*\).*$;\1;')
-echo "FiletCloud: https://\$WANIP:8022/  (connect as user \$USER)" >&2
+echo "FiletCloud: https://\$WANIP:8443/  (connect as user \$(whoami))" >&2
 EOF
 chmod a+x $HOME/filet-cloud-info
 $HOME/filet-cloud-info

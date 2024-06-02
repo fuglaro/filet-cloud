@@ -5,11 +5,15 @@ This deployment aims to repurpose readily available e-waste.
 ![](filet-cloud-pic.jpg)
 
 ## Hardware
+* Any spare Android smartphone.
+
+Tested against:
 * Unihertz Jelly Star https://www.unihertz.com/products/jelly-star
+* Redmi Note 8 Pro https://www.mi.com/uk/redmi-note-8-pro/
 (or any other spare Android)
 
 ## Features
-* 64TB - 256TB of storage (expandable with MicroSD).
+* 64GB - 256GB of storage (expandable with MicroSD).
 * Builtin uninterruptible power supply.
 
 ## Setup
@@ -17,11 +21,11 @@ This deployment aims to repurpose readily available e-waste.
 * Install Termux (from Google Play Store or F-Droid).
 * Install Termux:Boot.
 * Open Termux.
-* Set up a password with command: `passwd`
+* Set up a password with commands: `pkg update && pkg install && pkg upgrade && termux-auth && passwd`
 * Setup FiletCloud and SSH:
   * Run the following command - note this will run admin commands on your device:
 ```bash
- wget https://raw.githubusercontent.com/fuglaro/filet-cloud/main/deployments/android-termux/setup -O - | sh
+ pkg install wget && wget https://raw.githubusercontent.com/fuglaro/filet-cloud/main/deployments/android-termux/setup -O - | sh
 ```
   * This will run the setup and then it should display information on how to connect from your browser.
 * You should now be able to access your Filet Cloud.
