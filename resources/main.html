@@ -1,6 +1,6 @@
 <!doctype html>
 <meta charset=utf-8>
-<meta name="viewport" content="initial-scale=1, interactive-widget=resizes-content" />
+<meta name="viewport" content="initial-scale=1, user-scalable=0, interactive-widget=resizes-content" />
 <title>Filet Cloud</title>
 <style nonce="{{.Nonce}}">
 	@font-face {
@@ -31,6 +31,7 @@
 		height: 100%;
 		display: flex;
 		flex-direction: row;
+		overscroll-behavior: contain;
 	}
 
 	p,
@@ -496,7 +497,7 @@
 					tb.onclick = () => {
 						const terminal = this.shadowRoot.getElementById("terminal")
 						terminal.classList.add("fullit")
-						const term = new Terminal({fontFamily: terminal.style.fontFamily})
+						const term = new Terminal({fontFamily: terminal.style.fontFamily, fontSize: 12})
 						const fitTerm = new window.FitAddon.FitAddon()
 						term.loadAddon(fitTerm)
 						term.open(terminal)
