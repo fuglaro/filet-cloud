@@ -162,15 +162,11 @@ openssl req -x509 -newkey rsa:4096 -sha256 -days 1 -nodes -keyout my.key -out my
 # TODO (Current WIP)
 * Installation enhancement pass:
   * Wee-Mighty Deployment:
-    * Radxa ZERO 3W + BEEFY custom heatsink + 512 MicroSD + Crucial X9 Pro 4TB + fcgenthumb + Power Optimisation.
     * Add RockChip Hardware acceleration variation of fcgenthumb (see https://github.com/Fruit-Pi/gstreamer-rockchip)
-    * https - accept certs via env var or auto setup with let's encrypt autocert NewListener (with domain provided by FC_DOMAIN).
-    * Backup active-folder plugin. Output file links to a backup output file. Command first outputs the message "Running in background - refresh to monitor...", flushes, then launches the backup in background with redirection of both channels to the backup output file, then returns. Add this as a long-running-actions tips and tricks.
-    * Record idle power consumption.
-    * Record folder and file retrieval speed: see benchmark folder.
     * HW Accelerated thumbnail generation inc. JPEG -> NPU/GPU sampling -> JPEG specific chipset optimisation.
     * HW Accelerated HS512 in JWT decoding.
-    * Nice shiny photo.
+    * Backup active-folder plugin. Output file links to a backup output file. Command first outputs the message "Running in background - refresh to monitor...", flushes, then launches the backup in background with redirection of both channels to the backup output file, then returns. Add this as a long-running-actions tips and tricks.
+    * Record folder and file retrieval speed: see benchmark folder.
 * Update demo video (on firefox for mac with darkmode for better styling) - switch to Mobile phone view to demo profile view..
 * Add to xtermjs tools list.
 
@@ -185,6 +181,7 @@ openssl req -x509 -newkey rsa:4096 -sha256 -days 1 -nodes -keyout my.key -out my
 * Support for slide deck editiing and viewing.
 * Reduce complexity through more consistent behaviour of major browsers.
 * Bring GStreamer 1.24 to Raspberry Pi installations for better image thumbnail flipping (this likely to come reasonable quickly).
+* Linux support for power idling of devices like the Crucial X9 Pro.
 
 # Thanks to
 We stand on the shoulders of giants. They own this, far more than I do.
