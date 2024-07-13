@@ -160,13 +160,7 @@ openssl req -x509 -newkey rsa:4096 -sha256 -days 1 -nodes -keyout my.key -out my
 * You can normalise the quality value in the FC_JPEG_CMD if the command does not accept a normalised 1-100 quality range, like with ffmpeg: `FC_JPEG_CMD=ffmpeg -i PATH -q:v $((35-QUALITY/3)) -vf scale=WIDTH:-1 -update 1 -f image2 -vcodec mjpeg -`
 
 # TODO (Current WIP)
-* Installation enhancement pass:
-  * Wee-Mighty Deployment:
-    * Add RockChip Hardware acceleration variation of fcgenthumb (see https://github.com/Fruit-Pi/gstreamer-rockchip)
-    * HW Accelerated thumbnail generation inc. JPEG -> NPU/GPU sampling -> JPEG specific chipset optimisation.
-    * HW Accelerated HS512 in JWT decoding.
-    * Backup active-folder plugin. Output file links to a backup output file. Command first outputs the message "Running in background - refresh to monitor...", flushes, then launches the backup in background with redirection of both channels to the backup output file, then returns. Add this as a long-running-actions tips and tricks.
-    * Record folder and file retrieval speed: see benchmark folder.
+* Backup active-folder plugin. Output file links to a backup output file. Command first outputs the message "Running in background - refresh to monitor...", flushes, then launches the backup in background with redirection of both channels to the backup output file, then returns. Add this as a long-running-actions tips and tricks.
 * Update demo video (on firefox for mac with darkmode for better styling) - switch to Mobile phone view to demo profile view..
 * Add to xtermjs tools list.
 

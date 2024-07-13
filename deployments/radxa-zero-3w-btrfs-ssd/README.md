@@ -46,9 +46,9 @@ This deployment aims to provide a meaty storage capacity and a powerful backend,
 
 ## Metrics
 * Idle power consumption: ~ 2.2W (suspect major improvements available with device idle optimisations)
-* List folder speed: ms (tested with 8 entries over WiFi)
-* Retrieve small file speed: ms (tested with 5KB file over WiFi)
-* Retrieve big file wait time: ms (tested with 4.4MB JPEG over WiFi)
-* Retrieve big file retrieval time: s (tested with 4.4MB JPEG over WiFi)
-* Retrieve big file thumbnail wait time: s (tested with 4.4MB JPEG over WiFi)
-* Retrieve big file thumbnail time: ms (tested with 4.4MB JPEG over WiFi)
+* List folder speed: 20ms (tested with 8 entries over WiFi)
+* Retrieve small file speed: 24ms (tested with 5KB file over WiFi)
+* Retrieve big file wait time: 60ms (tested with 4.4MB JPEG over WiFi)
+* Retrieve big file retrieval time: 1.3s (tested with 4.4MB JPEG over WiFi)
+* Retrieve big file thumbnail wait time: 1s (tested with 4.4MB JPEG over WiFi)
+* Retrieve big file thumbnail time: 0ms (tested with 4.4MB JPEG over WiFi)
