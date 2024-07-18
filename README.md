@@ -78,6 +78,7 @@ See the following examples which can be used or adapted as templates:
 * [🔴Template Background Script with Montoring](deployments/active-folder-plugins/._filetCloudAction_background_script🔴)
 * [📊 Server Info Report with Markdown Formatting](deployments/active-folder-plugins/._filetCloudAction_info_📊)
 * [🗄 Storage Status Report with Markdown Formatting](deployments/active-folder-plugins/._filetCloudAction_storage_status🗄)
+* [🛡 Backup Launcher with Monitoring](deployments/active-folder-plugins/._filetCloudAction_run_backup_🛡)
 
 ### Supported formats
 * Images
