@@ -1,0 +1,16 @@
+#!/bin/bash
+
+echo "Running in background - reload to monitor..."
+OUT=$(basename "$0")_
+screen -dm bash -c "bash -e <<EOF >>$OUT &&echo DONE>>$OUT ||echo FAIL>>$OUT"'
+
+
+
+echo "Connecting to backup server..."
+ssh backup.local /mnt/backup/run_backup | cat
+
+
+
+exit
+EOF'
+

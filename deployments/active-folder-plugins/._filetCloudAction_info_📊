@@ -10,16 +10,15 @@ fi
 
 now=$(date '+%Y-%m-%d %H:%M:%S')
 
-update=$(date --date "$(stat -c %y /var/lib/apt/periodic/unattended-upgrades-stamp)" '+%Y-%m-%d %H:%M:%S')
-
-temp=$(sudo /usr/bin/vcgencmd measure_temp | sed -e 's:^.*=::')
+cputemp=$(sensors | sed -e 's:^$:===:' | tr "\n" \ | sed -e "s:===:\n:g" | grep soc | sed -e 's;^.*: *\([+0-9\.]*°C\).*$;\1;')
+gputemp=$(sensors | sed -e 's:^$:===:' | tr "\n" \ | sed -e "s:===:\n:g" | grep gpu | sed -e 's;^.*: *\([+0-9\.]*°C\).*$;\1;')
 
 cat <<EOF
 # Status Information
 * Date: $now
 
 ## Server Status
-* Last Software Update: $update
-* Core Temperature: $temp
+* CPU Temperature: $cputemp
+* GPU Temperature: $gputemp
 EOF
 
