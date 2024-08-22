@@ -52,3 +52,5 @@ This deployment aims to provide a meaty storage capacity and a powerful backend,
 * Retrieve big file retrieval time: 1.3s (tested with 4.4MB JPEG over WiFi)
 * Retrieve big file thumbnail wait time: 1s (tested with 4.4MB JPEG over WiFi)
 * Retrieve big file thumbnail time: 0ms (tested with 4.4MB JPEG over WiFi)
+* Retrieve big file cached thumbnail wait time: 69ms (tested with 4.4MB JPEG over WiFi)
+* Retrieve big file cached thumbnail time: 17ms (tested with 4.4MB JPEG over WiFi)

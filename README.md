@@ -79,6 +79,7 @@ See the following examples which can be used or adapted as templates:
 * [📊 Server Info Report with Markdown Formatting](deployments/active-folder-plugins/._filetCloudAction_info_📊)
 * [🗄 Storage Status Report with Markdown Formatting](deployments/active-folder-plugins/._filetCloudAction_storage_status🗄)
 * [🛡 Backup Launcher with Monitoring](deployments/active-folder-plugins/._filetCloudAction_run_backup_🛡)
+* [🖼 Update Thumbnails Cache](deployments/active-folder-plugins/._filetCloudAction_run_thumbnail_update_🖼)
 
 ### Supported formats
 * Images
@@ -159,10 +160,7 @@ openssl req -x509 -newkey rsa:4096 -sha256 -days 1 -nodes -keyout my.key -out my
 * Embed dynamically generated thumbnails inside markdown documents with the format suffix after the image path: `![LABEL](IMAGE =WIDTH:QUALITY)`. E.g: `![My Thumbnail](image1.png =360:100)`.
 * GStreamer is used for the default FC_JPEG_CMD because it has excellent performance from leveraging various kinds of hardware acceleration. Other solutions can be used and ImageMagick gives a particularly simple example: `FC_JPEG_CMD=convert PATH -sample \>WIDTHx -quality QUALITY JPEG:-`
 * You can normalise the quality value in the FC_JPEG_CMD if the command does not accept a normalised 1-100 quality range, like with ffmpeg: `FC_JPEG_CMD=ffmpeg -i PATH -q:v $((35-QUALITY/3)) -vf scale=WIDTH:-1 -update 1 -f image2 -vcodec mjpeg -`
-
-# TODO (Current WIP)
-* Update demo video (on firefox for mac with darkmode for better styling) - switch to Mobile phone view to demo profile view..
-* Add to xtermjs tools list.
+* Setting up the Update Thumbnails Cache active folder plugin in a "thumb" folder at the top level of your FiletCloud storage folder will load the fastest thumbnails.
 
 # Wish List for Future Work
 * Improve EasyMDE enabling a simpler integration, better parsing so images and links inside literals aren't resolved, add link and image manipulation via callbacks, and fix its bug when deactivating the preview button on refresh. Perhaps write a new simpler MDE renderer with WASM (filet-web-mde).

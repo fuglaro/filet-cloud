@@ -182,11 +182,26 @@ func authServeContent(w http.ResponseWriter, r *http.Request) {
 	 */
 	case "/thumb":
 		w.Header().Set("Content-Type", "image/jpeg")
-		// Single quoted POSIX command argument input sanitisation,
-		// necessary due to needing to travel through the ssh stream.
 		_, subpath, _ := strings.Cut(subpath, "/")
 		widStr, subpath, _ := strings.Cut(subpath, ":")
 		comprStr, subpath, _ := strings.Cut(subpath, "/")
+
+		// First check for cached thumbnail.
+		thumb := prepath + "/thumbs/" + subpath
+		// try to get the thumbnail stat information
+		stat, err := sftpc.Stat(thumb)
+		if !check(w, err) {
+			// try to stream the file contents
+			contents, err := sftpc.Open(thumb)
+			if !check(w, err) {
+				defer contents.Close()
+				http.ServeContent(w, r, filepath.Base(thumb), stat.ModTime(), contents)
+				break
+			}
+		}
+
+		// Single quoted POSIX command argument input sanitisation,
+		// necessary due to needing to travel through the ssh stream.
 		ppath := strings.Replace(prepath+"/"+subpath, "'", "'\\''", -1)
 		ppath = "'" + ppath + "'"
 		width, err := strconv.Atoi(widStr)

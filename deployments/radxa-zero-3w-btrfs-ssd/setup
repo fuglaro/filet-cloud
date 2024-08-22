@@ -12,7 +12,7 @@ class/leds/board-led/trigger = none
 EOF
 
 # Install dependencies.
-sudo apt install -y ddclient btrfs-progs avahi-daemon libnss-mdns cron
+sudo apt install -y ddclient btrfs-progs avahi-daemon libnss-mdns cron imagemagick
 
 # Setup the USB Drive
 # Find the largest sda mount.

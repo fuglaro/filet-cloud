@@ -8,6 +8,8 @@ if [ ! -L $OUT ]; then
   ln -s $REDIRECT $OUT
 fi
 
+dir=$(dirname "$0")
+
 now=$(date '+%Y-%m-%d %H:%M:%S')
 
 diskdu=$(df -h /mnt/filetcloud | grep /mnt/filetcloud)
@@ -27,6 +29,7 @@ fdisktotal=$(echo $fdiskdu | awk '{print $2}')
 
 lastsnap=$(sudo btrfs subvolume list --sort=-rootid -rso /mnt/filetcloud/.snapshots/ | grep /filetclouddata- | head -n 1 | awk '{printf("%s %s\n", $11, $12)}')
 lastbackup=$(ssh backup.local sudo btrfs subvolume list --sort=-rootid -rso /mnt/backup/snapshots/ | grep /backup- | head -n 1 | awk '{printf("%s %s\n", $11, $12)}')
+[[ -n "$lastbackup" ]] && [[ "$(<$dir/._filetCloudAction_run_backup_🛡_)" != *FAIL* ]] && date -r "$dir/._filetCloudAction_run_backup_🛡" '+%Y-%m-%d %H:%M:%S' || lastbackup=FAILED
 
 cat <<EOF
 # Storage Status

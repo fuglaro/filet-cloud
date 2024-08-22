@@ -1,0 +1,51 @@
+#!/bin/bash
+
+# Place inside a "thumb" folder top level of your Filet Cloud folder.
+# This will generate thumbnails inside that thumb folder
+# which will be utilised by Filet Cloud.
+
+export SCAN_ROOT=..
+
+cd $(dirname "$0")
+
+echo "Running in background - reload to monitor..."
+OUT=$(basename "$0")_
+screen -dm bash -c "bash -e <<'EOF' >>$OUT &&echo DONE>>$OUT ||echo FAIL>>$OUT"'
+
+THMS="$(realpath "$(pwd)")"
+SRC="$(realpath "$(pwd)/$SCAN_ROOT")"
+
+if [ "$(basename "$(pwd)")" != "thumbs" ]; then
+  echo "Run in a \"thumb\" folder at the top level of your FiletCloud folder."
+  exit -1
+fi
+
+echo "Preparing..."
+mkdir -p "$THMS"
+
+echo "Updating Thumbnails..."
+
+shopt -s globstar
+for FILE in $SRC/**/*; do
+  if [ ! -f "$FILE" ]; then
+    continue
+  fi
+  if [ "${FILE::${#THMS}}" == "$THMS" ]; then
+    # Avoid making thumbnails of thumbnails.
+    continue
+  fi
+  THUMB="$THMS${FILE:${#SRC}}"
+
+  if [ -f "$THUMB" ] && [ "$THUMB" -nt "$FILE" ]; then
+    echo "$FILE -> OK"
+  else
+    mkdir -p "$(dirname "$THUMB")"
+    convert "$FILE" -resize 420x -quality 70% "$THUMB" \
+      && echo "$FILE -> $THUMB" \
+      || echo "$FILE -> FAILED"
+  fi
+done
+
+exit
+EOF'
+

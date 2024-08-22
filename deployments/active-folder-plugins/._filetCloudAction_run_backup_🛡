@@ -2,7 +2,7 @@
 
 echo "Running in background - reload to monitor..."
 OUT=$(basename "$0")_
-screen -dm bash -c "bash -e <<EOF >>$OUT &&echo DONE>>$OUT ||echo FAIL>>$OUT"'
+screen -dm bash -c "bash -e <<'EOF' >>$OUT &&echo DONE>>$OUT ||echo FAIL>>$OUT"'
 
 
 
