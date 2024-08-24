@@ -1131,36 +1131,39 @@
 <ref-load id=-ext-mp3 loader=misc-media />
 <template id=-misc-media loader=misc-media>
 	<style nonce="{{.Nonce}}">
-		#body.preview,
-		#body>video {
-			width: 100%;
+		#body {
+			position: relative;
 			height: 100%;
-			margin: 0px;
+
+			>* {
+				position: absolute;
+				margin: 0px;
+				width: 100%;
+				object-fit: contain;
+			}
 		}
 
-		video,
-		img {
-			display: block;
-			margin: auto;
-			width: 100%;
-			max-height: 100%;
-			object-fit: contain;
+		#body>video,
+		#body.preview>* {
+			height: 100%;
 		}
 
 		#fail {
 			display: none;
 			flex-direction: column;
 			align-items: center;
-		}
 
-		h1,
-		p {
-			text-align: center;
-			margin: 0
+			h1,
+			p {
+				text-align: center;
+				margin: 2px;
+			}
 		}
 	</style>
 	<div id=body>
-		<p>⏳</p>
+		<p id=wait>⏳</p>
+		<p id=load1></p>
+		<p id=load2></p>
 	</div>
 	<div id=fail>
 		<h1 id=titlename></h1>
@@ -1181,30 +1184,30 @@
 		connectedCallback() {
 			const path = storage.path()
 			const sr = this.shadowRoot
-			const wait = sr.querySelector("#body > *")
+			const wait = sr.querySelector("#wait")
 			const ext = path.split('.').pop();
-			// Prepare the thumbnail loader.
 			const thm = document.createElement("img")
 			thm.onload = () => wait.replaceWith(thm)
+			const vid = document.createElement("video")
+			vid.controls = "controls"
+			vid.oncanplay = () => {
+				wait.style.display = "none"
+				sr.querySelector("#load2").replaceWith(vid)
+				vid.oncanplay = () => { }
+			}
 			// Ready an attempted load of an img.
 			const img = document.createElement("img")
 			img.onload = () => {
-				wait.replaceWith(img)
-				thm.replaceWith(img)
+				sr.querySelector("#load1").replaceWith(img)
+				wait.style.display = "none"
 				// Safari weirdly loads videos into image elements, so try to update to video playback,
 				// but don't upgrade for known image formats.
 				if (ext === "jpg" || ext === "png" || ext === "svg" || ext === "gif" || ext === "webp") return
-				const vid = document.createElement("video")
-				vid.controls = "controls"
-				vid.oncanplay = () => img.replaceWith(vid)
 				vid.src = storage.fileLink(path)
 				vid.load()
 			}
 			img.onerror = () => {
 				// Fallback to attempting to load as a video (or audio).
-				const vid = document.createElement("video")
-				vid.controls = "controls"
-				vid.oncanplay = () => {wait.replaceWith(vid); thm.replaceWith(vid)}
 				vid.onerror = () => {
 					// Fallback to dowload link.
 					const filename = path.split('/').pop()
