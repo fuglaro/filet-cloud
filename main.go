@@ -39,6 +39,7 @@ var upgrader = websocket.Upgrader{}
 var privateKey = make([]byte, 512/8)
 var connectionID atomic.Uint64 // sequential ID generator making keys for connections.
 var connections = map[uint64]*ssh.Client{}
+var connectionsSFTP = map[uint64]*sftp.Client{}
 
 var jpegcmdtemplate = ("gst-launch-1.0 -q filesrc location=PATH ! decodebin ! video/x-raw" +
 	" ! videoscale method=0 ! video/x-raw,width=WIDTH,pixel-aspect-ratio=1/1" +
@@ -135,16 +136,11 @@ func authServeContent(w http.ResponseWriter, r *http.Request) {
 	}
 	cID, err := strconv.ParseUint(cIDs, 10, 64)
 	sshConn := connections[cID]
-	if sshConn == nil {
+	sftpc := connectionsSFTP[cID]
+	if sshConn == nil || sftpc == nil {
 		http.Error(w, "Invalid authentication token.", http.StatusForbidden)
 		return
 	}
-	// Wrap SSH connection with SFTP interface.
-	sftpc, err := sftp.NewClient(sshConn)
-	if check(w, err) {
-		return
-	}
-	defer sftpc.Close()
 	user := sshConn.Conn.User()
 	prepath := strings.Replace(os.Getenv("FC_DIR"), "USERNAME", string(user), -1)
 
@@ -190,10 +186,10 @@ func authServeContent(w http.ResponseWriter, r *http.Request) {
 		thumb := prepath + "/thumbs/" + subpath
 		// try to get the thumbnail stat information
 		stat, err := sftpc.Stat(thumb)
-		if !check(w, err) {
+		if err == nil {
 			// try to stream the file contents
 			contents, err := sftpc.Open(thumb)
-			if !check(w, err) {
+			if err == nil {
 				defer contents.Close()
 				http.ServeContent(w, r, filepath.Base(thumb), stat.ModTime(), contents)
 				break
@@ -483,8 +479,10 @@ func connect(w http.ResponseWriter, r *http.Request) {
 	// Associate the connection with a unique ID for subsequent authenticated access.
 	connID := connectionID.Add(1)
 	connections[connID] = sshConn
+	connectionsSFTP[connID] = sftpc
 	// Ensure the connection is cleared when the WebSocket connection closes.
 	defer delete(connections, connID)
+	defer delete(connectionsSFTP, connID)
 	// Handle messages on the established authenticated connection.
 	type Msg struct {
 		Action string
