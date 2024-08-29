@@ -1162,16 +1162,14 @@
 	</style>
 	<div id=body>
 		<p id=wait>⏳</p>
-		<p id=load1></p>
-		<p id=load2></p>
-	</div>
-	<div id=fail>
-		<h1 id=titlename></h1>
-		<p id=details></p>
-		<button id="download">
-			<h1>📥</h1>
-			<p>Download</p>
-		</button>
+		<div id=fail>
+			<h1 id=titlename></h1>
+			<p id=details></p>
+			<button id="download">
+				<h1>📥</h1>
+				<p>Download</p>
+			</button>
+		</div>
 	</div>
 </template>
 <script nonce="{{.Nonce}}">
@@ -1192,13 +1190,13 @@
 			vid.controls = "controls"
 			vid.oncanplay = () => {
 				wait.style.display = "none"
-				sr.querySelector("#load2").replaceWith(vid)
+				sr.querySelector("#body").appendChild(vid)
 				vid.oncanplay = () => { }
 			}
 			// Ready an attempted load of an img.
 			const img = document.createElement("img")
 			img.onload = () => {
-				sr.querySelector("#load1").replaceWith(img)
+				sr.querySelector("#body").appendChild(img)
 				wait.style.display = "none"
 				// Safari weirdly loads videos into image elements, so try to update to video playback,
 				// but don't upgrade for known image formats.
@@ -1214,7 +1212,6 @@
 					sr.querySelector("#titlename").textContent = filename
 					sr.querySelector("#details").textContent = path
 					sr.querySelector("#download").onclick = () => download()
-					wait.replaceWith(sr.querySelector("#fail"))
 					sr.querySelector("#fail").style.display = "flex"
 				}
 				vid.src = storage.fileLink(path)
