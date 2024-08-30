@@ -1,6 +1,8 @@
 # ⛅ Filet Cloud
 A simple and powerful personal cloud storage solution, with an elegant web interface.
 
+![](deployments/raspberry-pi-zero-2-w-ssd-autocert/filet-cloud-pic.jpg)
+
 Simple to self host, and adhering to the [file-over-app](https://stephango.com/file-over-app) philosophy, this gives you complete data privacy and full ownership over your own data. Its simple design provides a lean and fast web interface which connects via Websocket proxied SSH to the host's storage. You provision the storage host however you like, giving you full freedom on storage capacity.
 
 ![demo video](filet-cloud-demo.gif)
