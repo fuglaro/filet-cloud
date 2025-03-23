@@ -795,9 +795,10 @@
 		if (storage.mode() === "#browse:") {
 			// Fill the folder contents
 			setPath('#browse:', path)
+			const snapPath = cwd()
 			// Refresh the contents of the directory by querying the server
 			const curFile = storage.path().replace(/^.*[\\/]/, '')
-			storage.listDir(cwd()).then(r => {
+			storage.listDir(snapPath).then((path => r => {
 				let selected = null
 				dir.replaceChildren(...r.map(n => {
 					const nibIcon = document.createElement("h1")
@@ -805,7 +806,6 @@
 					nib.textContent = n.replace(/\/$/, '')
 					nibIcon.textContent = n.endsWith('/') ? '📂' : '📄'
 					const btn = document.createElement('button')
-					const path = cwd() // resolve here to avoid double click stacking the path
 					const highlight = () => { // Highlights selected file / folder.
 						Array.from(dir.getElementsByClassName("highli")).forEach(ni => ni.classList.remove("highli"))
 						btn.classList.add("highli")
@@ -836,9 +836,10 @@
 					btn.replaceChildren(nibIcon, nib)
 					return btn
 				}))
+				setPath('#browse:', snapPath)
 				if (selected) selected.focus()
 				else open(path)
-			})
+			})(snapPath))
 		} else open(path)
 	}
 
