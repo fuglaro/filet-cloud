@@ -578,7 +578,7 @@
 			ws.onerror = () => ws.close()
 			// Setup normal message response handling.
 			const onmessage = async m => {
-				let id = null, v = null
+				let id = null, v = null, err = null
 				// Handle binary, or json response mesage.
 				if (m.data instanceof Blob) {
 					id = Number(await m.data.slice(0, 20).text())
@@ -587,11 +587,18 @@
 					const d = JSON.parse(m.data)
 					id = d.id
 					v = d.msg
+					err = d.err
 				}
 				// Handle terminal data.
 				if (id < 0) {
 					if (id === -1) this.#onTermMsg(new Uint8Array(await v.arrayBuffer()))
 					else this.#onTermMsg(null) // Close terminal.
+					return
+				}
+				// Handle err messages.
+				if (err !== undefined && err !== null) {
+					console.log("Connection aborted: " + JSON.stringify(err))
+					ws.close()
 					return
 				}
 				// Activate the prepared response handler.

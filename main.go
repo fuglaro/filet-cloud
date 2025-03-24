@@ -75,6 +75,20 @@ func check(w http.ResponseWriter, e error) bool {
 }
 
 /**
+ * Similar to the check function, this checks and on encountering
+ * an error, will send a websocket message indicating the error,
+ * then will return false so the websocket can be dropped.
+ */
+func checkInWS(c *websocket.Conn, mutex *sync.Mutex, id int, e error) bool {
+	if e != nil {
+		mutex.Lock()
+		_ = c.WriteJSON(map[string]interface{}{"id": id, "err": e.Error()})
+		mutex.Unlock()
+	}
+	return e != nil
+}
+
+/**
  * Endpoints for content that is served for browser access like
  * images, streaming or downloads, and which requires authentication
  * to be previously established through the WebSocket connection.
@@ -336,21 +350,22 @@ func connect(w http.ResponseWriter, r *http.Request) {
 	}
 	// Establish Websocket connection.
 	c, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
+	if check(w, err) {
 		return
 	}
+	var mutex sync.Mutex // Websocket writer mutex.
 	defer c.Close()
 	_, csrf64, err := c.ReadMessage()
-	if err != nil {
+	if checkInWS(c, &mutex, -99, err) {
 		return
 	}
 	// Validate the CSRF Token
 	csrf, err := base64.URLEncoding.DecodeString(string(csrf64))
-	if err != nil {
+	if checkInWS(c, &mutex, -99, err) {
 		return
 	}
 	csrfhash, err := base64.URLEncoding.DecodeString(string(csrfcookie.Value))
-	if err != nil {
+	if checkInWS(c, &mutex, -99, err) {
 		return
 	}
 	hash := hmac.New(sha256.New, privateKey)
@@ -360,15 +375,15 @@ func connect(w http.ResponseWriter, r *http.Request) {
 	}
 	// Authenticate and establish SSH connection.
 	_, user, err := c.ReadMessage()
-	if err != nil {
+	if checkInWS(c, &mutex, -99, err) {
 		return
 	}
 	_, pass, err := c.ReadMessage()
-	if err != nil {
+	if checkInWS(c, &mutex, -99, err) {
 		return
 	}
 	_, code, err := c.ReadMessage()
-	if err != nil {
+	if checkInWS(c, &mutex, -99, err) {
 		return
 	}
 	var codeUsed = false
@@ -390,7 +405,7 @@ func connect(w http.ResponseWriter, r *http.Request) {
 			ssh.Password(string(pass))},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(), // trust localhost
 	})
-	if err != nil {
+	if checkInWS(c, &mutex, -99, err) {
 		return
 	}
 	defer sshConn.Close()
@@ -404,31 +419,31 @@ func connect(w http.ResponseWriter, r *http.Request) {
 	var sessRunning = false
 	var sess *ssh.Session
 	var sessIn io.WriteCloser
-	var mutex sync.Mutex // Websocket writer mutex.
 	runSession := func() {
 		if sessRunning { // Reuse existing sessions if available.
 			return
 		}
 		sess, err = sshConn.NewSession()
-		if err != nil {
+		if checkInWS(c, &mutex, -99, err) {
 			c.Close()
 			return
 		}
 		sessIn, err = sess.StdinPipe()
-		if err != nil {
+		if checkInWS(c, &mutex, -99, err) {
 			sess.Close()
 			c.Close()
 			return
 		}
 		sessOut, err := sess.StdoutPipe()
-		if err != nil {
+		if checkInWS(c, &mutex, -99, err) {
 			sess.Close()
 			c.Close()
 			return
 		}
 		sess.Stderr = os.Stderr
 		_ = sess.Setenv("COLORTERM", "truecolor")
-		if sess.RequestPty("xterm-256color", 80, 40, nil) != nil || sess.Shell() != nil {
+		if err = sess.RequestPty("xterm-256color", 80, 40, nil); err != nil || sess.Shell() != nil {
+			_ = checkInWS(c, &mutex, -99, err)
 			sess.Close()
 			c.Close()
 			return
@@ -444,6 +459,7 @@ func connect(w http.ResponseWriter, r *http.Request) {
 				mw, err := c.NextWriter(websocket.BinaryMessage)
 				if err != nil {
 					sess.Close()
+					mutex.Unlock()
 					c.Close()
 					return
 				}
@@ -451,19 +467,21 @@ func connect(w http.ResponseWriter, r *http.Request) {
 				mw.Write(buf[:n])
 				if mw.Close() != nil {
 					sess.Close()
+					mutex.Unlock()
 					c.Close()
 					return
 				}
 				if rerr != nil {
 					sessRunning = false
 					sess.Close()
+					mutex.Unlock()
 					if rerr != io.EOF {
+						_ = checkInWS(c, &mutex, -99, err)
 						c.Close()
 					} else if c.WriteMessage( /* Send a term closed message */
 						websocket.BinaryMessage, []byte("-2                  ")) != nil {
 						c.Close()
 					}
-					mutex.Unlock()
 					return
 				}
 				mutex.Unlock()
@@ -473,7 +491,7 @@ func connect(w http.ResponseWriter, r *http.Request) {
 
 	// Wrap SSH connection with SFTP interface.
 	sftpc, err := sftp.NewClient(sshConn)
-	if err != nil {
+	if checkInWS(c, &mutex, -99, err) {
 		return
 	}
 	// Associate the connection with a unique ID for subsequent authenticated access.
@@ -497,7 +515,7 @@ func connect(w http.ResponseWriter, r *http.Request) {
 	for {
 		// Wait for the next message.
 		mtype, re, err := c.NextReader()
-		if err != nil {
+		if checkInWS(c, &mutex, -99, err) {
 			return
 		}
 
@@ -507,38 +525,38 @@ func connect(w http.ResponseWriter, r *http.Request) {
 		if mtype == websocket.BinaryMessage {
 			// Unpack the message header to get the path name then store the rest.
 			idbuf := make([]byte, 20)
-			if _, err = io.ReadFull(re, idbuf); err != nil {
+			if _, err = io.ReadFull(re, idbuf); checkInWS(c, &mutex, -99, err) {
 				return
 			}
 			id, err := strconv.Atoi(strings.TrimSpace(string(idbuf)))
-			if err != nil {
+			if checkInWS(c, &mutex, -99, err) {
 				return
 			}
 			pathlenbuf := make([]byte, 20)
-			if _, err = io.ReadFull(re, pathlenbuf); err != nil {
+			if _, err = io.ReadFull(re, pathlenbuf); checkInWS(c, &mutex, -99, err) {
 				return
 			}
 			pathlen, err := strconv.Atoi(strings.TrimSpace(string(pathlenbuf)))
-			if err != nil {
+			if checkInWS(c, &mutex, -99, err) {
 				return
 			}
 			pathbuf := make([]byte, pathlen)
-			if _, err = io.ReadFull(re, pathbuf); err != nil {
+			if _, err = io.ReadFull(re, pathbuf); checkInWS(c, &mutex, -99, err) {
 				return
 			}
 			path := strings.TrimSpace(string(pathbuf))
 			// create new file on server
 			dest, err := sftpc.Create(prepath + path)
-			if err != nil {
+			if checkInWS(c, &mutex, -99, err) {
 				return
 			}
 			defer dest.Close()
 			// copy contents of uploaded file to the server
-			if _, err = io.Copy(dest, re); err != nil {
+			if _, err = io.Copy(dest, re); checkInWS(c, &mutex, -99, err) {
 				return
 			}
 			mutex.Lock()
-			if c.WriteJSON(map[string]interface{}{"id": id}) != nil {
+			if err = c.WriteJSON(map[string]interface{}{"id": id}); checkInWS(c, &mutex, -99, err) {
 				return
 			}
 			mutex.Unlock()
@@ -548,7 +566,7 @@ func connect(w http.ResponseWriter, r *http.Request) {
 		m := Msg{}
 		mstr, err := io.ReadAll(re)
 		err = json.Unmarshal(mstr, &m)
-		if err != nil {
+		if checkInWS(c, &mutex, -99, err) {
 			return
 		}
 	action:
@@ -561,7 +579,7 @@ func connect(w http.ResponseWriter, r *http.Request) {
 				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 5)),
 				Subject:   strconv.FormatUint(connID, 10)})
 			s, err := t.SignedString(privateKey)
-			if err != nil {
+			if checkInWS(c, &mutex, m.Id, err) {
 				return
 			}
 			mutex.Lock()
@@ -576,7 +594,7 @@ func connect(w http.ResponseWriter, r *http.Request) {
 		case "dir":
 			// find contents of the directory
 			contents, err := sftpc.ReadDir(prepath + m.Path)
-			if err != nil {
+			if checkInWS(c, &mutex, m.Id, err) {
 				return
 			}
 			// build json export
@@ -595,7 +613,7 @@ func connect(w http.ResponseWriter, r *http.Request) {
 		case "file":
 			// stream the file contents
 			contents, err := sftpc.Open(prepath + m.Path)
-			if err != nil {
+			if checkInWS(c, &mutex, m.Id, err) {
 				return
 			}
 			defer contents.Close()
@@ -611,6 +629,9 @@ func connect(w http.ResponseWriter, r *http.Request) {
 			mw.Write([]byte(idstr))
 			mw.Write([]byte(strings.Repeat(" ", 20-len(idstr))))
 			if _, err = io.Copy(mw, contents); err != nil {
+				if mw.Close() == nil {
+					_ = checkInWS(c, &mutex, m.Id, err)
+				}
 				return
 			}
 			if mw.Close() != nil {
@@ -622,7 +643,7 @@ func connect(w http.ResponseWriter, r *http.Request) {
 		case "mime":
 			// find the mime type of the file
 			contents, err := sftpc.Open(prepath + m.Path)
-			if err != nil {
+			if checkInWS(c, &mutex, m.Id, err) {
 				return
 			}
 			defer contents.Close()
@@ -749,7 +770,7 @@ func connect(w http.ResponseWriter, r *http.Request) {
 			}
 			// Launch the action command.
 			sess, err := sshConn.NewSession()
-			if err != nil {
+			if checkInWS(c, &mutex, m.Id, err) {
 				return
 			}
 			go func() {
@@ -787,7 +808,7 @@ func connect(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 			_, err = sessIn.Write([]byte(m.Data))
-			if err != nil {
+			if checkInWS(c, &mutex, -99, err) {
 				if !sessRunning {
 					continue
 				}
