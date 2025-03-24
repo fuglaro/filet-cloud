@@ -667,7 +667,7 @@ func connect(w http.ResponseWriter, r *http.Request) {
 
 		// Creates a new file.
 		case "newfile":
-			dest, err := sftpc.Create(prepath + m.Path)
+			dest, err := sftpc.OpenFile(prepath+m.Path, os.O_CREATE)
 			dest.Close()
 			mutex.Lock()
 			if c.WriteJSON(map[string]interface{}{"id": m.Id, "err": err}) != nil {
