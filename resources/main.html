@@ -440,7 +440,7 @@
 				// Establish WebSocket connection.
 				fetch("/preconnect").then(() => {
 					const ws = new WebSocket(`wss://${window.location.host}/connect`)
-					ws.onclose = () => login()
+					ws.onclose = () => location.reload(true)
 					ws.onerror = () => ws.close()
 					ws.onopen = () => {
 						// Set up auto-logout mechanism.
@@ -572,7 +572,7 @@
 					this.#req(v[0], v[1])
 				}
 				// Trigger a re-login prompt.
-				login()
+				location.reload(true)
 			}
 			window.onbeforeunload = () => ws.close() // Force logout ASAP
 			ws.onerror = () => ws.close()
