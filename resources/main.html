@@ -458,7 +458,7 @@
 						storage.connect(ws)
 					}
 					document.body.removeChild(document.querySelector("login-form"))
-				})
+				}).catch(() => location.reload())
 			})
 			this.shadowRoot.querySelector("#username").focus()
 		}
