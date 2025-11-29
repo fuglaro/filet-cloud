@@ -176,6 +176,7 @@ openssl req -x509 -newkey rsa:4096 -sha256 -days 1 -nodes -keyout my.key -out my
 * Reduce complexity through more consistent behaviour of major browsers.
 * Bring GStreamer 1.24 to Raspberry Pi installations for better image thumbnail flipping (this likely to come reasonable quickly).
 * Linux support for power idling of devices like the Crucial X9 Pro.
+* Search (https://github.com/quickwit-oss/tantivy + img-to-text)
 
 # Thanks to
 We stand on the shoulders of giants. They own this, far more than I do.
